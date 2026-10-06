@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { brand } from "@voyajes/core";
+import { CommentThread } from "../components/CommentThread";
+import { EmojiPicker, QuickReactionBar } from "../components/EmojiPicker";
 import { Logo } from "../components/Logo";
 import { getBeatByRef } from "../data/beats";
 import { getThemeById } from "../data/themes";
+import {
+  getShareReactions,
+  toggleShareReaction,
+  type ShareReactionMap,
+} from "../lib/commentStore";
 import { getBlob, loadDraft, saveDraft, type DraftState } from "../lib/draftStore";
+import { rememberEmoji } from "../lib/emoji";
 import {
   ensureShareFromDraft,
   formatDuration,
@@ -13,6 +21,29 @@ import {
   updateShare,
   type ShareRecord,
 } from "../lib/shareStore";
+
+function myReactKey(id: string) {
+  return `voyajes.share.myreact.${id}`;
+}
+
+function loadMyShareReacts(id: string): string[] {
+  try {
+    const raw = sessionStorage.getItem(myReactKey(id));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((e): e is string => typeof e === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMyShareReacts(id: string, emojis: string[]) {
+  try {
+    sessionStorage.setItem(myReactKey(id), JSON.stringify(emojis));
+  } catch {
+    /* ignore */
+  }
+}
 
 function unlockKey(id: string) {
   return `voyajes.share.unlock.${id}`;
@@ -30,6 +61,9 @@ export function Share() {
   const [gateError, setGateError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [shareReactions, setShareReactions] = useState<ShareReactionMap>({});
+  const [myReacts, setMyReacts] = useState<string[]>([]);
+  const [titleEdit, setTitleEdit] = useState("");
 
   // Resolve share: /v/:id or bootstrap from draft when visiting /share → redirected here
   useEffect(() => {
@@ -70,6 +104,9 @@ export function Share() {
 
       setRecord(share);
       setPasswordOn(share.passwordProtected);
+      setTitleEdit(share.title);
+      setShareReactions(getShareReactions(share.id));
+      setMyReacts(loadMyShareReacts(share.id));
       try {
         setUnlocked(
           !share.passwordProtected ||
@@ -182,6 +219,35 @@ export function Share() {
     setGateError(null);
     setPasswordInput("");
   };
+
+  const onShareReact = useCallback(
+    (emoji: string) => {
+      if (!record) return;
+      rememberEmoji(emoji);
+      const on = myReacts.includes(emoji);
+      const nextMap = toggleShareReaction(record.id, emoji, on);
+      setShareReactions(nextMap);
+      const nextMine = on
+        ? myReacts.filter((e) => e !== emoji)
+        : [...myReacts, emoji];
+      setMyReacts(nextMine);
+      saveMyShareReacts(record.id, nextMine);
+    },
+    [record, myReacts],
+  );
+
+  const persistTitle = useCallback(() => {
+    if (!record) return;
+    const next = titleEdit.trim() || "Untitled voyage";
+    if (next === record.title) return;
+    const updated = updateShare(record.id, { title: next });
+    if (updated) setRecord(updated);
+    const draft = loadDraft();
+    if (draft && (draft.shareId === record.id || !draft.shareId)) {
+      saveDraft({ ...draft, shareId: record.id, title: next });
+    }
+    setStatus("Title updated (emoji OK)");
+  }, [record, titleEdit]);
 
   if (!ready) {
     return (
@@ -410,6 +476,67 @@ export function Share() {
               Instagram &amp; TikTok rank uploads higher — export a file for those
               feeds; use this link for chats &amp; sites. Encode stays stubbed.
             </p>
+
+            {!locked && (
+              <section className="share-react-section" aria-label="Reactions">
+                <div className="share-react-head">
+                  <h3 style={{ margin: "0 0 4px", fontSize: "1rem" }}>Reactions</h3>
+                  <EmojiPicker onSelect={onShareReact} label="😀＋" />
+                </div>
+                <QuickReactionBar onSelect={onShareReact} active={myReacts} />
+                <div className="share-react-counts">
+                  {Object.entries(shareReactions)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([emoji, count]) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`comment-react-chip${
+                          myReacts.includes(emoji) ? " is-mine" : ""
+                        }`}
+                        onClick={() => onShareReact(emoji)}
+                      >
+                        {emoji} <span>{count}</span>
+                      </button>
+                    ))}
+                  {Object.keys(shareReactions).length === 0 && (
+                    <span className="muted" style={{ fontSize: "0.8rem" }}>
+                      Tap an emoji to react (stored locally)
+                    </span>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {!locked && (
+              <div className="share-title-edit">
+                <label className="muted" style={{ fontSize: "0.8rem" }}>
+                  Title / caption overlay (emoji welcome)
+                </label>
+                <div className="comment-compose-row">
+                  <input
+                    value={titleEdit}
+                    onChange={(e) => setTitleEdit(e.target.value)}
+                    onBlur={persistTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        persistTitle();
+                      }
+                    }}
+                    aria-label="Share title"
+                  />
+                  <EmojiPicker
+                    onSelect={(emoji) => {
+                      setTitleEdit((t) => t + emoji);
+                      rememberEmoji(emoji);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!locked && <CommentThread shareId={record.id} />}
           </div>
         </div>
 

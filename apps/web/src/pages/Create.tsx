@@ -9,6 +9,7 @@ import {
   type DragEvent,
 } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { EmojiPicker } from "../components/EmojiPicker";
 import {
   packRef,
   textStyleLabel,
@@ -138,6 +139,7 @@ export function Create() {
     paramTemplate?.textTransition ?? "fade",
   );
   const [captionStyle, setCaptionStyle] = useState<TextStyle>("caption-pill");
+  const [captionText, setCaptionText] = useState("");
   const [watermark, setWatermark] = useState(false);
   const [durationTargetSec, setDurationTargetSec] = useState<
     DurationTarget | undefined
@@ -245,6 +247,7 @@ export function Create() {
       setTextStyle(base.textStyle);
       setTextTransition(base.textTransition);
       setCaptionStyle(base.captionStyle);
+      setCaptionText(base.captionText ?? "");
       setWatermark(base.watermark);
       setDurationTargetSec(base.durationTargetSec);
       setExportDestination(base.exportDestination);
@@ -290,6 +293,7 @@ export function Create() {
       textStyle,
       textTransition,
       captionStyle,
+      captionText,
       watermark,
       durationTargetSec,
       exportDestination,
@@ -322,6 +326,7 @@ export function Create() {
     textStyle,
     textTransition,
     captionStyle,
+    captionText,
     watermark,
     durationTargetSec,
     exportDestination,
@@ -641,6 +646,7 @@ export function Create() {
     setTextStyle(d.textStyle);
     setTextTransition(d.textTransition);
     setCaptionStyle(d.captionStyle);
+    setCaptionText(d.captionText ?? "");
     setWatermark(false);
     setDurationTargetSec(undefined);
     setExportDestination("custom");
@@ -749,6 +755,7 @@ export function Create() {
       textStyle,
       textTransition,
       captionStyle,
+      captionText,
       watermark,
       durationTargetSec,
       exportDestination,
@@ -795,6 +802,7 @@ export function Create() {
       textStyle,
       textTransition,
       captionStyle,
+      captionText,
       watermark,
       durationTargetSec,
       exportDestination,
@@ -851,23 +859,27 @@ export function Create() {
           <p className="muted" style={{ margin: "4px 0 0", fontSize: "0.85rem" }}>
             Every voyage, in motion — drop photos or clips, pick a theme, play.
           </p>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            aria-label="Project title"
-            style={{
-              marginTop: 8,
-              background: "transparent",
-              border: "none",
-              borderBottom: "1px solid var(--border-subtle)",
-              color: "var(--text-primary)",
-              fontSize: "1rem",
-              fontFamily: "Sora, sans-serif",
-              fontWeight: 600,
-              width: "min(100%, 320px)",
-              padding: "4px 0",
-            }}
-          />
+          <div className="title-emoji-row" style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, maxWidth: 360 }}>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              aria-label="Project title"
+              placeholder="Untitled voyage ✨"
+              style={{
+                background: "transparent",
+                border: "none",
+                borderBottom: "1px solid var(--border-subtle)",
+                color: "var(--text-primary)",
+                fontSize: "1rem",
+                fontFamily: "Sora, sans-serif",
+                fontWeight: 600,
+                flex: 1,
+                minWidth: 0,
+                padding: "4px 0",
+              }}
+            />
+            <EmojiPicker onSelect={(emoji) => setTitle((t) => t + emoji)} />
+          </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button type="button" className="btn btn-ghost" onClick={downloadProjectJson}>
@@ -1205,9 +1217,11 @@ export function Create() {
             >
               {title}
               <div className={`preview-sub text-style-${captionStyle}`}>
-                {activeTransition} · {theme.motion} · {textStyleLabel(textStyle)}
-                {active ? ` · ${activeIndex + 1}/${clips.length}` : ""}
-                {durationTargetSec ? ` · target ${durationTargetSec}s` : ""}
+                {captionText.trim()
+                  ? captionText
+                  : `${activeTransition} · ${theme.motion} · ${textStyleLabel(textStyle)}${
+                      active ? ` · ${activeIndex + 1}/${clips.length}` : ""
+                    }${durationTargetSec ? ` · target ${durationTargetSec}s` : ""}`}
               </div>
             </div>
             {watermark && (
@@ -1539,8 +1553,28 @@ export function Create() {
           <section aria-label="Text & captions">
             <h3 style={{ marginBottom: 4 }}>Text &amp; captions</h3>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
-              Title style, entrance, and caption preset (original Voyajes packs).
+              Title style, entrance, and caption preset (original Voyajes packs). Emoji welcome in title &amp; caption.
             </p>
+            <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+              Caption text
+            </div>
+            <div className="comment-compose-row" style={{ marginBottom: 12 }}>
+              <input
+                value={captionText}
+                onChange={(e) => setCaptionText(e.target.value)}
+                placeholder="Overlay caption… 🌴✈️"
+                aria-label="Caption text"
+                style={{
+                  flex: 1,
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: 8,
+                  color: "var(--text-primary)",
+                  padding: "8px 10px",
+                }}
+              />
+              <EmojiPicker onSelect={(emoji) => setCaptionText((t) => t + emoji)} />
+            </div>
             <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
               Title style
             </div>

@@ -39,6 +39,8 @@ export type DraftState = {
   textStyle: TextStyle;
   textTransition: TextTransition;
   captionStyle: TextStyle;
+  /** Overlay caption under title (emoji OK). */
+  captionText: string;
   watermark: boolean;
   durationTargetSec?: DurationTarget;
   exportDestination: ExportDestination;
@@ -95,6 +97,7 @@ export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
     textStyle: "clean-sans",
     textTransition: "fade",
     captionStyle: "caption-pill",
+    captionText: "",
     watermark: false,
     durationTargetSec: undefined,
     exportDestination: "custom",
@@ -147,6 +150,7 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     textStyle: asTextStyle(parsed.textStyle, "clean-sans"),
     textTransition: asTextTx(parsed.textTransition, "fade"),
     captionStyle: asTextStyle(parsed.captionStyle, "caption-pill"),
+    captionText: typeof parsed.captionText === "string" ? parsed.captionText : "",
     watermark: parsed.watermark === true,
     durationTargetSec,
     exportDestination,
@@ -204,6 +208,15 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
         role: "title",
         value: draft.title.trim() || "Untitled voyage",
       },
+      ...(draft.captionText.trim()
+        ? [
+            {
+              at: 0.4,
+              role: "caption" as const,
+              value: draft.captionText.trim(),
+            },
+          ]
+        : []),
     ],
     textStyle: draft.textStyle,
     textTransition: draft.textTransition,

@@ -1502,3 +1502,444 @@ button {
 .export-panel {
   border: 1px solid var(--border-subtle);
 }
+
+/* —— Emoji picker —— */
+.emoji-picker {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.emoji-picker-trigger {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--duration-snappy) var(--motion-snappy),
+    transform var(--duration-snappy) var(--motion-snappy);
+}
+
+.emoji-picker-trigger:hover {
+  border-color: var(--accent-brand);
+  transform: translateY(-1px);
+}
+
+.emoji-picker-pop {
+  position: absolute;
+  z-index: 40;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(292px, 86vw);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.emoji-picker-section {
+  margin-bottom: 8px;
+}
+
+.emoji-picker-section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.emoji-picker-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.emoji-tab {
+  width: 32px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.emoji-tab.is-active,
+.emoji-tab:hover {
+  background: var(--bg-elevated);
+}
+
+.emoji-picker-search {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.emoji-grid-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.emoji-cell {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.emoji-cell:hover {
+  background: var(--bg-elevated);
+}
+
+.quick-react-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.quick-react-btn {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-pill);
+  padding: 4px 8px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.quick-react-btn.is-active,
+.quick-react-btn:hover {
+  border-color: var(--accent-brand);
+  background: rgba(124, 92, 255, 0.18);
+}
+
+/* —— Comments —— */
+.comment-thread {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.comment-thread-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.comment-sync-note {
+  font-size: 0.78rem;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+.comment-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.comment-author-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.comment-author-field input,
+.comment-compose textarea,
+.comment-compose-row input,
+.comment-reply-form input,
+.share-title-edit input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.comment-compose-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.comment-compose-row textarea,
+.comment-compose-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-list,
+.comment-replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comment-replies {
+  margin-top: 8px;
+  margin-left: 14px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.comment-item {
+  margin-bottom: 10px;
+}
+
+.comment-card {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.comment-meta {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.comment-body {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.95rem;
+}
+
+.comment-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.comment-react-chip {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.comment-react-chip.is-mine {
+  border-color: var(--accent-brand);
+  background: rgba(124, 92, 255, 0.16);
+}
+
+.comment-react-wrap {
+  position: relative;
+}
+
+.comment-react-pop {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  top: calc(100% + 4px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  min-width: 200px;
+}
+
+.btn-linkish {
+  border: none;
+  background: none;
+  color: var(--accent-brand);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.comment-reply-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-react-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.share-react-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.share-react-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  min-height: 28px;
+  align-items: center;
+}
+
+.share-title-edit {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* —— Auth QR / OTP —— */
+.auth-card-wide {
+  max-width: 640px;
+}
+
+.auth-alt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .auth-alt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-alt-panel {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.auth-alt-title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-family: Sora, Inter, system-ui, sans-serif;
+}
+
+.auth-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.auth-qr-img {
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+
+.auth-qr-url {
+  font-size: 0.68rem;
+  word-break: break-all;
+  text-align: center;
+  max-width: 100%;
+}
+
+.auth-alt-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.otp-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.otp-tab {
+  flex: 1;
+  min-width: 72px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.otp-tab.is-active {
+  border-color: var(--accent-brand);
+  color: var(--text-primary);
+  background: rgba(124, 92, 255, 0.16);
+}
+
+.otp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+.otp-field input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font: inherit;
+  letter-spacing: 0.04em;
+}
+
+.otp-verify {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.otp-demo-code {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(61, 220, 151, 0.12);
+  border: 1px solid rgba(61, 220, 151, 0.35);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}

@@ -283,3 +283,175 @@ export function signInDemo(provider: AuthProviderId = "github"): AuthSession {
   setSession(session);
   return session;
 }
+
+/* —— QR session pairing (mock) + OTP demo —— */
+
+export type OtpChannel = "sms" | "whatsapp" | "telegram";
+
+const QR_SESSION_KEY = "voyajes.auth.qr_session";
+const OTP_PENDING_KEY = "voyajes.auth.otp_pending";
+
+export type QrPairSession = {
+  token: string;
+  createdAt: string;
+  /** Device that showed the QR claims “waiting” until phone confirms */
+  status: "waiting" | "approved";
+};
+
+export type OtpPending = {
+  channel: OtpChannel;
+  destination: string;
+  /** Demo only — never store real OTPs client-side in production */
+  code: string;
+  expiresAt: string;
+};
+
+function randomToken(bytes = 16): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Create a mock QR pairing session and return the deep-link URL for the QR payload. */
+export function createQrPairSession(): { session: QrPairSession; pairUrl: string } {
+  const token = randomToken(12);
+  const session: QrPairSession = {
+    token,
+    createdAt: new Date().toISOString(),
+    status: "waiting",
+  };
+  sessionStorage.setItem(QR_SESSION_KEY, JSON.stringify(session));
+  const base = appOriginPath();
+  const pairUrl = `${base}/signin?qr=${encodeURIComponent(token)}`;
+  return { session, pairUrl };
+}
+
+export function getQrPairSession(): QrPairSession | null {
+  try {
+    const raw = sessionStorage.getItem(QR_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as QrPairSession;
+  } catch {
+    return null;
+  }
+}
+
+/** Phone (or second tab) approving the QR session — mock. */
+export function approveQrPairSession(token: string): boolean {
+  const session = getQrPairSession();
+  if (!session || session.token !== token) {
+    // Allow approving even if this tab didn't create it (cross-tab demo):
+    // store an approved marker keyed by token.
+    const approved: QrPairSession = {
+      token,
+      createdAt: new Date().toISOString(),
+      status: "approved",
+    };
+    sessionStorage.setItem(QR_SESSION_KEY, JSON.stringify(approved));
+    const sess: AuthSession = {
+      provider: "github",
+      displayName: "QR voyager",
+      email: "qr@voyajes.local",
+      signedInAt: new Date().toISOString(),
+      stub: true,
+    };
+    setSession(sess);
+    return true;
+  }
+  session.status = "approved";
+  sessionStorage.setItem(QR_SESSION_KEY, JSON.stringify(session));
+  const sess: AuthSession = {
+    provider: "github",
+    displayName: "QR voyager",
+    email: "qr@voyajes.local",
+    signedInAt: new Date().toISOString(),
+    stub: true,
+  };
+  setSession(sess);
+  return true;
+}
+
+export function clearQrPairSession(): void {
+  sessionStorage.removeItem(QR_SESSION_KEY);
+}
+
+/** Public QR image URL (third-party stub — swap for local generator later). */
+export function qrImageUrl(data: string, size = 180): string {
+  const encoded = encodeURIComponent(data);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=8&data=${encoded}`;
+}
+
+function mockSixDigit(): string {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
+  return n.toString().padStart(6, "0");
+}
+
+/**
+ * “Send” a demo OTP. Code is stored in sessionStorage for verify.
+ * Real SMS/WhatsApp/Telegram delivery requires a backend (see SETUP_AUTH.md).
+ */
+export function sendMockOtp(
+  channel: OtpChannel,
+  destination: string,
+): { ok: true; pending: OtpPending; demoCode: string } | { ok: false; reason: string } {
+  const dest = destination.trim();
+  if (!dest) {
+    return { ok: false, reason: "Enter a phone number or email." };
+  }
+  if (channel === "sms" || channel === "whatsapp") {
+    // loose check
+    if (!/[+\d]/.test(dest) && !dest.includes("@")) {
+      return { ok: false, reason: "Use a phone (+E.164) or email for this channel." };
+    }
+  }
+  const code = mockSixDigit();
+  const pending: OtpPending = {
+    channel,
+    destination: dest,
+    code,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+  };
+  sessionStorage.setItem(OTP_PENDING_KEY, JSON.stringify(pending));
+  return { ok: true, pending, demoCode: code };
+}
+
+export function getPendingOtp(): OtpPending | null {
+  try {
+    const raw = sessionStorage.getItem(OTP_PENDING_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as OtpPending;
+  } catch {
+    return null;
+  }
+}
+
+export function verifyMockOtp(
+  code: string,
+): { ok: true; session: AuthSession } | { ok: false; reason: string } {
+  const pending = getPendingOtp();
+  if (!pending) {
+    return { ok: false, reason: "No code pending — tap Send code first." };
+  }
+  if (new Date(pending.expiresAt).getTime() < Date.now()) {
+    sessionStorage.removeItem(OTP_PENDING_KEY);
+    return { ok: false, reason: "Code expired — send a new one." };
+  }
+  if (code.trim() !== pending.code) {
+    return { ok: false, reason: "Incorrect code. Check the demo code shown after send." };
+  }
+  sessionStorage.removeItem(OTP_PENDING_KEY);
+  const labels: Record<OtpChannel, string> = {
+    sms: "SMS voyager",
+    whatsapp: "WhatsApp voyager",
+    telegram: "Telegram voyager",
+  };
+  const session: AuthSession = {
+    provider: "github",
+    displayName: labels[pending.channel],
+    email: pending.destination.includes("@") ? pending.destination : undefined,
+    signedInAt: new Date().toISOString(),
+    stub: true,
+  };
+  setSession(session);
+  return { ok: true, session };
+}

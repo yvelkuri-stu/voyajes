@@ -1,11 +1,17 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   anyProviderConfigured,
+  approveQrPairSession,
+  createQrPairSession,
   getProviders,
+  qrImageUrl,
+  sendMockOtp,
   signInDemo,
   startOAuth,
+  verifyMockOtp,
   type AuthProviderId,
+  type OtpChannel,
 } from "../lib/auth";
 
 const providerIcons: Record<AuthProviderId, string> = {
@@ -16,12 +22,56 @@ const providerIcons: Record<AuthProviderId, string> = {
   github: "",
 };
 
+const OTP_TABS: { id: OtpChannel; label: string; icon: string }[] = [
+  { id: "sms", label: "SMS", icon: "📱" },
+  { id: "whatsapp", label: "WhatsApp", icon: "💬" },
+  { id: "telegram", label: "Telegram", icon: "✈️" },
+];
+
 export function SignIn() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const providers = useMemo(() => getProviders(), []);
   const anyConfigured = anyProviderConfigured();
   const [busy, setBusy] = useState<AuthProviderId | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+
+  // QR stub
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrToken, setQrToken] = useState<string | null>(null);
+  const [qrStatus, setQrStatus] = useState<string | null>(null);
+
+  // OTP stub
+  const [otpChannel, setOtpChannel] = useState<OtpChannel>("sms");
+  const [otpDest, setOtpDest] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpDemoCode, setOtpDemoCode] = useState<string | null>(null);
+  const [otpHint, setOtpHint] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+
+  // Incoming QR deep-link: /signin?qr=TOKEN
+  useEffect(() => {
+    const token = params.get("qr");
+    if (!token) return;
+    const ok = approveQrPairSession(token);
+    if (ok) {
+      setQrStatus("QR session approved — signed in as QR voyager (mock).");
+      navigate("/", { replace: true });
+    } else {
+      setHint("Could not approve QR session.");
+    }
+  }, [params, navigate]);
+
+  function refreshQr() {
+    const { pairUrl, session } = createQrPairSession();
+    setQrUrl(pairUrl);
+    setQrToken(session.token);
+    setQrStatus("Scan or open the link on another device to approve (demo).");
+  }
+
+  useEffect(() => {
+    refreshQr();
+  }, []);
 
   async function onProvider(id: AuthProviderId) {
     setHint(null);
@@ -31,7 +81,6 @@ export function SignIn() {
       setHint(result.reason);
       setBusy(null);
     }
-    // if ok, browser navigates away
   }
 
   function onDemo() {
@@ -39,9 +88,42 @@ export function SignIn() {
     navigate("/");
   }
 
+  function onSendOtp() {
+    setOtpHint(null);
+    const result = sendMockOtp(otpChannel, otpDest);
+    if (!result.ok) {
+      setOtpHint(result.reason);
+      setOtpSent(false);
+      setOtpDemoCode(null);
+      return;
+    }
+    setOtpSent(true);
+    setOtpDemoCode(result.demoCode);
+    setOtpHint(
+      `Demo code sent via ${otpChannel.toUpperCase()} stub → stored in sessionStorage. Real delivery needs a backend (SETUP_AUTH.md).`,
+    );
+  }
+
+  function onVerifyOtp() {
+    setOtpHint(null);
+    const result = verifyMockOtp(otpCode);
+    if (!result.ok) {
+      setOtpHint(result.reason);
+      return;
+    }
+    navigate("/");
+  }
+
+  const destPlaceholder =
+    otpChannel === "telegram"
+      ? "@username or phone"
+      : otpChannel === "whatsapp"
+        ? "+1… WhatsApp number"
+        : "Phone (+E.164) or email";
+
   return (
     <div className="auth-page">
-      <div className="auth-card">
+      <div className="auth-card auth-card-wide">
         <p className="muted" style={{ margin: "0 0 6px", fontSize: "0.8rem", fontWeight: 600 }}>
           VOYAJES
         </p>
@@ -49,8 +131,8 @@ export function SignIn() {
           Sign in to pack your voyage
         </h1>
         <p className="muted" style={{ margin: "0 0 24px", fontSize: "0.95rem" }}>
-          Sync drafts across devices someday. Today: OAuth shell — paste client IDs
-          in <code>.env</code> (see <code>SETUP_AUTH.md</code>).
+          Sync drafts across devices someday. Today: OAuth shell + QR / OTP demos —
+          see <code>SETUP_AUTH.md</code>.
         </p>
 
         {!anyConfigured && (
@@ -98,6 +180,145 @@ export function SignIn() {
             {hint}
           </p>
         )}
+
+        <div className="auth-divider">
+          <span>or QR / one-time code</span>
+        </div>
+
+        <div className="auth-alt-grid">
+          <section className="auth-alt-panel" aria-label="QR code login">
+            <h2 className="auth-alt-title">QR code login</h2>
+            <p className="muted" style={{ fontSize: "0.8rem", marginTop: 0 }}>
+              Pairing stub — QR links to <code>/signin?qr=…</code>. Real pairing
+              needs a short-lived server session.
+            </p>
+            {qrUrl && (
+              <div className="auth-qr-wrap">
+                <img
+                  src={qrImageUrl(qrUrl, 168)}
+                  alt="Sign-in QR code"
+                  width={168}
+                  height={168}
+                  className="auth-qr-img"
+                />
+                <p className="auth-qr-url muted" title={qrUrl}>
+                  {qrUrl}
+                </p>
+                {qrToken && (
+                  <p className="muted" style={{ fontSize: "0.72rem", margin: "4px 0 0" }}>
+                    Token <code>{qrToken.slice(0, 8)}…</code>
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="auth-alt-actions">
+              <button type="button" className="btn btn-ghost" onClick={refreshQr}>
+                New QR
+              </button>
+              {qrToken && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    approveQrPairSession(qrToken);
+                    navigate("/");
+                  }}
+                >
+                  Simulate scan
+                </button>
+              )}
+            </div>
+            {qrStatus && (
+              <p className="muted" style={{ fontSize: "0.78rem", marginTop: 10 }}>
+                {qrStatus}
+              </p>
+            )}
+          </section>
+
+          <section className="auth-alt-panel" aria-label="OTP login">
+            <h2 className="auth-alt-title">One-time code</h2>
+            <p className="muted" style={{ fontSize: "0.8rem", marginTop: 0 }}>
+              Mock 6-digit OTP. Provider tabs preview SMS / WhatsApp / Telegram
+              — delivery is stubbed.
+            </p>
+            <div className="otp-tabs" role="tablist" aria-label="OTP channel">
+              {OTP_TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={otpChannel === t.id}
+                  className={`otp-tab${otpChannel === t.id ? " is-active" : ""}`}
+                  onClick={() => {
+                    setOtpChannel(t.id);
+                    setOtpSent(false);
+                    setOtpDemoCode(null);
+                    setOtpHint(null);
+                  }}
+                >
+                  <span aria-hidden>{t.icon}</span> {t.label}
+                </button>
+              ))}
+            </div>
+            <label className="otp-field">
+              <span className="muted">Phone or email</span>
+              <input
+                type="text"
+                value={otpDest}
+                onChange={(e) => setOtpDest(e.target.value)}
+                placeholder={destPlaceholder}
+                autoComplete="tel"
+                aria-label="OTP destination"
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: "100%", marginTop: 8 }}
+              onClick={onSendOtp}
+            >
+              Send code ({OTP_TABS.find((t) => t.id === otpChannel)?.label})
+            </button>
+            {otpSent && (
+              <div className="otp-verify">
+                {otpDemoCode && (
+                  <p className="otp-demo-code" role="status">
+                    Demo code: <strong>{otpDemoCode}</strong>
+                  </p>
+                )}
+                <label className="otp-field">
+                  <span className="muted">6-digit code</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) =>
+                      setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    placeholder="••••••"
+                    aria-label="OTP code"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ width: "100%", marginTop: 8 }}
+                  disabled={otpCode.length !== 6}
+                  onClick={onVerifyOtp}
+                >
+                  Verify &amp; sign in
+                </button>
+              </div>
+            )}
+            {otpHint && (
+              <p className="muted" style={{ fontSize: "0.78rem", marginTop: 10 }}>
+                {otpHint}
+              </p>
+            )}
+          </section>
+        </div>
 
         <div className="auth-divider">
           <span>or</span>

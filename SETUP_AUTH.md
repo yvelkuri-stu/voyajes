@@ -3,6 +3,7 @@
 Voyajes is a **Vite + React** SPA. This repo ships an **OAuth shell**:
 
 - Sign-in UI for **Google · Apple · Microsoft · Meta · GitHub**
+- **QR pairing** + **OTP** demos (SMS / WhatsApp / Telegram tabs) — see §§6–7
 - Buttons stay **disabled** with “Add credentials in .env” until you paste a client ID
 - When a client ID is present, the app **redirects to the provider** (auth-code + PKCE for Google/Microsoft)
 - `/auth/callback` stores a **stub session** in `localStorage` — it does **not** exchange the code for tokens (that needs a small backend + client secret)
@@ -143,3 +144,99 @@ Until then, treat the stub session as UI chrome only — don’t gate secrets or
 - [ ] Restarted `pnpm dev`  
 - [ ] `/signin` button enabled for that provider  
 - [ ] Secrets nowhere near `VITE_*` or git  
+
+---
+
+## 6. QR code login (stub → real)
+
+The sign-in page shows a **QR pairing stub**:
+
+1. Desktop generates a short-lived token and encodes  
+   `{origin}{base}/signin?qr={token}` into a QR image.
+2. Phone opens that URL → mock “approve” → stub session in `localStorage`.
+3. **Simulate scan** on the same device works for demos without a second phone.
+
+### Wire a real QR session later
+
+| Piece | Notes |
+| --- | --- |
+| Backend | `POST /api/auth/qr/start` → `{ token, expiresAt }` stored server-side |
+| Polling / WS | Desktop polls `GET /api/auth/qr/:token` until `approved` |
+| Phone | Authenticated device (or OTP) hits `POST /api/auth/qr/:token/approve` |
+| Cookie | On approve, set httpOnly session cookie; desktop receives session |
+
+Do **not** put long-lived secrets in the QR payload — only an opaque, single-use token.
+
+Env (future):
+
+```bash
+# VITE_AUTH_QR_API=https://api.example.com/auth/qr
+```
+
+---
+
+## 7. OTP via SMS / WhatsApp / Telegram (stub → real)
+
+UI on `/signin`:
+
+- Channel tabs: **SMS · WhatsApp · Telegram**
+- Destination field (phone E.164 or email / @username)
+- **Send code** → generates a mock 6-digit code, stores it in **`sessionStorage`** (`voyajes.auth.otp_pending`) and displays it for the demo
+- **Verify** → creates a stub session if the code matches
+
+**Honest status:** No SMS/WhatsApp/Telegram message is actually sent from this SPA. Client-side OTP is for UI demos only. Production OTP **must** be generated, rate-limited, and verified on a backend.
+
+### Env vars (future backend — never put secrets in `VITE_*`)
+
+```bash
+# Twilio SMS / Verify
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_VERIFY_SERVICE_SID=
+# or Messaging Service / From number:
+TWILIO_FROM_NUMBER=
+
+# WhatsApp Business (Twilio or Meta Cloud API)
+WHATSAPP_PROVIDER=twilio   # or meta
+WHATSAPP_FROM_NUMBER=      # Twilio WhatsApp-enabled sender
+# Meta Cloud API:
+META_WHATSAPP_TOKEN=
+META_WHATSAPP_PHONE_NUMBER_ID=
+
+# Telegram Login Widget / bot OTP
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=
+# Optional: VITE_TELEGRAM_BOT_USERNAME=YourBot  (public username only)
+```
+
+### Suggested API shape
+
+```text
+POST /api/auth/otp/send   { channel: "sms"|"whatsapp"|"telegram", destination }
+POST /api/auth/otp/verify { channel, destination, code } → session cookie
+```
+
+### Provider notes
+
+**Twilio Verify (SMS / WhatsApp)**  
+1. Create a [Twilio](https://www.twilio.com/) account → Verify service  
+2. Enable SMS (+ WhatsApp channel if approved)  
+3. Backend calls Verify `verifications` / `verificationChecks` with your Auth Token  
+4. Never expose `TWILIO_AUTH_TOKEN` to Vite
+
+**WhatsApp Business API (Meta)**  
+1. [Meta for Developers](https://developers.facebook.com/) → WhatsApp product  
+2. Template messages required for outbound OTP outside the 24h window  
+3. Backend sends template with `{{1}}` = code; verify on your server
+
+**Telegram**  
+- **Login Widget:** embed [Telegram Login Widget](https://core.telegram.org/widgets/login) with bot domain; verify `hash` on the server using `TELEGRAM_BOT_TOKEN`  
+- **Bot OTP:** bot DMs a code after `/start`; store challenge server-side, verify in `POST /api/auth/otp/verify`
+
+### Checklist
+
+- [ ] OTP UI reviewed on `/signin` (demo path works without keys)  
+- [ ] Backend send/verify routes sketched  
+- [ ] Twilio / WhatsApp / Telegram credentials only in server env  
+- [ ] Rate limits + expiry (≤10 min) + attempt caps  
+- [ ] Removed any client-side storage of real OTP codes  

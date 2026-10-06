@@ -149,15 +149,32 @@ Private / unpublished — all rights reserved by the Voyajes family project.
 
 ## GitHub Pages
 
-Live (after Actions deploy): **https://yvelkuri-stu.github.io/voyajes/**
+**Live:** https://yvelkuri-stu.github.io/voyajes/
 
-The web app builds with `base: /voyajes/` when `GITHUB_PAGES=1`. Workflow: `.github/workflows/deploy-pages.yml` (push to `master` or manual `workflow_dispatch`).
+Currently served from the **`gh-pages`** branch (built with `GITHUB_PAGES=1` → Vite `base: /voyajes/`). SPA routes use a copied `404.html`. Router basename and catalog `/catalog/...` assets resolve under that base.
 
-Enable once under **Settings → Pages → Source: GitHub Actions**, or via API:
+### Optional: switch to GitHub Actions
+
+Workflow file is ready at `.github/workflows/deploy-pages.yml` (local). Pushing it needs the **`workflow`** OAuth scope:
 
 ```bash
-gh api -X POST repos/yvelkuri-stu/voyajes/pages \
-  -f build_type=workflow \
-  -f source[branch]=master \
-  -f source[path]=/
+gh auth refresh -h github.com -s workflow
+git add .github/workflows/deploy-pages.yml
+git commit -m "ci: add GitHub Pages Actions deploy"
+git push
+```
+
+Then set Pages source to **GitHub Actions** (Settings → Pages), or:
+
+```bash
+gh api -X PUT repos/yvelkuri-stu/voyajes/pages -f build_type=workflow
+```
+
+### Manual redeploy (current)
+
+```bash
+GITHUB_PAGES=1 pnpm --filter @voyajes/core build
+GITHUB_PAGES=1 pnpm --filter @voyajes/web build
+cp apps/web/dist/index.html apps/web/dist/404.html
+# publish apps/web/dist to origin/gh-pages
 ```

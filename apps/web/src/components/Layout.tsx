@@ -1,6 +1,7 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, Link } from "react-router-dom";
 import { Logo } from "./Logo";
 import { brand } from "@voyajes/core";
+import { useAuthSession } from "../hooks/useAuthSession";
 
 const links = [
   { to: "/", label: "Home", end: true },
@@ -10,6 +11,8 @@ const links = [
 ];
 
 export function Layout() {
+  const { session, signOut } = useAuthSession();
+
   return (
     <div className="app-shell">
       <header className="topnav">
@@ -33,9 +36,26 @@ export function Layout() {
         <span className="usage-chip" title="Free plan stub">
           Free · 2 GB
         </span>
-        <button type="button" className="btn btn-ghost" style={{ padding: "8px 14px" }}>
-          Sign in
-        </button>
+        {session ? (
+          <div className="auth-nav">
+            <span className="auth-nav-name" title={`${session.provider} · stub session`}>
+              {session.displayName}
+              {session.stub ? " · stub" : ""}
+            </span>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: "8px 14px" }}
+              onClick={signOut}
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <Link to="/signin" className="btn btn-ghost" style={{ padding: "8px 14px" }}>
+            Sign in
+          </Link>
+        )}
       </header>
       <p
         className="muted"

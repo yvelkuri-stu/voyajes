@@ -2,134 +2,128 @@
 
 **Every voyage, in motion.**
 
-Family-letter brand (Ye · Va · Ja · Sr · Ve). Color & motion-first templated video for humans and robots — theme before timeline, beautiful share links, CLI parity.
+Yes, it’s spelled **Voyajes** on purpose. Not a typo. Not autocorrect losing a fight with “voyages.” We kept the *j* because it looks like a passport stamp and sounds like you’re already halfway out the door. Say it like *voy-AH-hess* (or yell it at your render queue — both work).
 
-## Tagline options
+Drop in a messy camera roll. Pick a color & motion theme. Hit play. Walk away with a short film that feels like you meant it — in the browser, or from the CLI your robots already love.
 
-| # | Line | Notes |
+> Theme before timeline. Beauty before spreadsheet energy.
+
+**Live demo:** https://yvelkuri-stu.github.io/voyajes/  
+**Repo:** https://github.com/yvelkuri-stu/voyajes
+
+---
+
+## Taglines (pick your mood)
+
+| # | Line | Vibes |
 | --- | --- | --- |
-| **1 (chosen)** | **Every voyage, in motion** | Journey + motion; used in UI chrome & CLI `--help` |
-| 2 | Color your journey | Palette-first; great for marketing |
-| 3 | Photos to films, with feeling | Emotional / memory-reel |
+| **1 (in the UI)** | **Every voyage, in motion** | Journey + kinetic |
+| 2 | Color your journey | Palette-first marketing |
+| 3 | Photos to films, with feeling | Soft memory-reel |
 
-UI and `@voyajes/core` `brand.tagline` use **#1**. Swap in `packages/core/src/tokens.ts` if you prefer another.
+Swap in `packages/core/src/tokens.ts` if #2 or #3 steals your heart.
 
-## What’s in this MVP
+---
+
+## What’s in the box
 
 ```text
 voyajes/
-  apps/web/          Vite + React + TypeScript UI shell
-  packages/core/     Zod project schema, theme types, design tokens
+  apps/web/          Vite + React + TypeScript UI
+  packages/core/     Zod project schema, themes, design tokens
   packages/cli/      `voyajes` CLI (init, sync, catalog, ffmpeg render, doctor)
-  catalog/           Official manifest (themes + audio beats)
+  catalog/           Official themes + audio beats
+  SETUP_AUTH.md      Google / Apple / Microsoft / Meta / GitHub OAuth setup
 ```
 
-**Screens:** Home · Create/Compose (import + slideshow preview) · Theme picker (Neon Night, Soft Film, Ocean Pop, Golden Hour) · Share page stub.
+**Screens:** Home · Create/Compose · Themes (Neon Night, Soft Film, Ocean Pop, Golden Hour) · Share · Sign-in (OAuth shell)
 
-### Create / Import / Preview (working in web)
+### Create / import / preview / export
 
-- Drag-drop or file picker for **images** (JPG/PNG/WebP/…) and **video** (MP4/WebM/MOV)
-- Object-URL preview in the phone-frame stage with theme **grade overlay**, Ken Burns, and timed transitions (dissolve / push / whip / light-leak)
-- Filmstrip: select, **reorder** (↑↓), **remove**, hold-duration edit
-- **Play / Pause** auto-advances clips; timing uses theme `transitionDurationMs` + per-clip duration
-- Draft persists as Voyajes project JSON in `localStorage` (`voyajes.project.draft.json`) matching `@voyajes/core` schema; media blobs in IndexedDB
-- **Export JSON** downloads `voyajes.project.json` for the CLI (`voyajes render`)
-- **Export video** (browser): canvas + MediaRecorder records the Create slideshow to **WebM** (VP9/VP8 + Opus when supported; MP4 only if the browser allows). Includes theme grade/vignette, Ken Burns on stills, best-effort transitions, on-video title, and **selected beat audio** muxed via Web Audio (`decodeAudioData` → `MediaStreamAudioDestinationNode`) when a catalog `previewUrl` exists. Progress + cancel on the Compose toolbar. Named from the project title.
-- **Audio panel:** catalog beats (Warm Acoustic, Neon Pulse, Ocean Drift) with ▶ preview (MP3 stubs under `public/catalog/previews/`, WebAudio BPM metronome fallback), **license badges** (personal / creator), **beat-sync** (off/soft/medium/hard snaps image holds to beat/bar grid), **ducking** toggle (mild export gain trim; true dialogue duck still metadata)
+- Drag-drop **images** + **video**; phone-frame preview with theme grades, Ken Burns, transitions
+- Filmstrip reorder, hold timing, play/pause
+- Draft in `localStorage` + media blobs in IndexedDB
+- **Export JSON** for the CLI · **Export video** → browser WebM (VP9/VP8 + Opus beat mux when the browser cooperates)
+- Audio panel: Warm Acoustic / Neon Pulse / Ocean Drift, beat-sync, ducking metadata, license badges
 
-**Browser export limits (honest):** runs in near real-time (length ≈ slideshow duration); beat audio mux is best-effort — if decode/`MediaRecorder` rejects audio, export continues **video-only** with a soft status warning; metronome preview is **not** recorded (file preview only); clip camera audio is never captured; Safari often lacks WebM+Opus (may fall back to video-only or unsupported); Firefox/Chrome differ on `vp8/vp9,opus`; Autoplay/AudioContext usually fine after the Export click gesture. Transitions/Ken Burns approximate the CSS preview. **CLI local encode** via `voyajes render` (ffmpeg) is available when ffmpeg is installed — best-effort grades/xfade/title/beat mux, not a pixel-perfect match of the canvas exporter. Also not done: OAuth, cloud billing, HLS playback, true dialogue ducking, Remotion. Preview MP3s are short demo tone loops, not commercial stems.
+**Honest limits:** export ≈ real-time length; Safari often skips WebM+Opus; clip camera audio isn’t captured; transitions approximate CSS; CLI ffmpeg render is best-effort parity, not pixel-identical. Cloud encode / HLS / billing = later.
 
-## Design docs (parent workspace)
+### Sign-in (shell)
 
-- `/workspace/media-app-design.md` — UX & tokens (originally “Chroma”; product is now **Voyajes**)
-- `/workspace/media-app-nextgen-brief.md` — research & product brief
-- `/workspace/media-app-sync-pricing.md` — catalog sync, R2, Free→Studio pricing
+Buttons for **Google, Apple, Microsoft, Meta, GitHub**. No client IDs → buttons locked with “Add credentials in .env”. IDs present → OAuth redirect; callback saves a **stub session** (no secret token exchange in the SPA). Full paste-where guide: **[SETUP_AUTH.md](./SETUP_AUTH.md)**.
+
+---
+
+## Stack
+
+- **Web:** Vite 5, React 18, React Router, TypeScript  
+- **Core:** Zod schema + shared tokens (`@voyajes/core`)  
+- **CLI:** Node, commander-style `voyajes` binary, ffmpeg for render  
+- **Catalog:** JSON manifest (themes + beats)
+
+---
 
 ## Prerequisites
 
 - Node 18+
-- [pnpm](https://pnpm.io) 9+ (repo uses `pnpm@10`)
+- [pnpm](https://pnpm.io) 9+ (repo pins pnpm 10)
+- **ffmpeg** on PATH for `voyajes render` (optional for web-only)
 
-## Install
+## Install & run
 
 ```bash
-cd /workspace/voyajes
+cd voyajes   # or /workspace/voyajes
 pnpm install
-pnpm build:core   # compile @voyajes/core for the CLI
+pnpm build:core
 pnpm build:cli
-```
-
-## Run the web app
-
-```bash
-cd /workspace/voyajes
 pnpm dev
 ```
 
-Open **http://localhost:5173** — Home, Create, Themes, Share (`/v/demo`).
+Open **http://localhost:5173** — Home, Create, Themes, Share (`/v/demo`), Sign-in (`/signin`).
 
-## Run the CLI
-
-Requires **ffmpeg** on PATH for `voyajes render` (web export uses the browser; CLI uses ffmpeg).
+### Optional: social login env
 
 ```bash
-# macOS / Ubuntu
-brew install ffmpeg   # or: sudo apt install ffmpeg
-which ffmpeg
+cp .env.example apps/web/.env
+# paste VITE_AUTH_*_CLIENT_ID values — see SETUP_AUTH.md
+pnpm dev
 ```
 
+---
+
+## CLI
+
 ```bash
-cd /workspace/voyajes
-pnpm build:core && pnpm build:cli
-
-# help
 pnpm voyajes --help
-# or
-node packages/cli/dist/index.js --help
 
-# catalog
 pnpm voyajes catalog list --kind theme
-pnpm voyajes catalog list --kind audio-beat
 pnpm voyajes sync
 
-# init a project folder (creates media/ + voyajes.project.json;
-# generates 3 sample PNGs with ffmpeg when media/ is empty)
 pnpm voyajes init ./my-voyage \
   --theme theme.ocean-pop \
   --title "Goa 2026" \
   --beat-sync medium \
   --beat audio.warm-acoustic-092
 
-# drop your own photos into ./my-voyage/media/ and re-run init to refresh paths
-
-# validate schema + media paths + ffmpeg
 pnpm voyajes doctor ./my-voyage/voyajes.project.json
 
-# render → WebM (VP9 + Opus beat audio) — matches web export concepts
+# WebM (VP9 + Opus) or MP4 — same concepts as Create export
 pnpm voyajes render ./my-voyage/voyajes.project.json -o ./my-voyage/out.webm
-
-# or MP4 (H.264 + AAC), with overrides aligned to the Create UI
 pnpm voyajes render ./my-voyage/voyajes.project.json -o ./my-voyage/out.mp4 \
-  --theme theme.neon-night \
-  --beat-sync hard \
-  --title "Neon voyage" \
-  --quality 1080p \
-  --json
+  --theme theme.neon-night --beat-sync hard --title "Neon voyage" --quality 1080p
 ```
-
-**CLI ↔ web parity**
 
 | Concept | Web Create | CLI |
 | --- | --- | --- |
 | Theme grades + transitions | CSS / canvas | ffmpeg `eq`/`colorbalance` + `xfade` |
-| Beat-sync holds | soft/medium/hard snap | `--beat-sync` + project `audio.beatSync` |
-| On-video title | canvas draw | `--title` / `drawtext` |
-| Beat audio mux | MediaRecorder + AudioContext | catalog `previews/*.mp3` via ffmpeg |
-| Output | browser WebM download | `-o out.webm` or `-o out.mp4` |
+| Beat-sync holds | soft/medium/hard | `--beat-sync` + project audio |
+| On-video title | canvas | `--title` / `drawtext` |
+| Beat audio mux | MediaRecorder + AudioContext | catalog preview MP3 via ffmpeg |
+| Output | browser WebM download | `-o out.webm` / `-o out.mp4` |
 
-If ffmpeg is missing, `render` still **Zod-validates** the project, prints install hints, and exits `2`.
+No ffmpeg? `render` still Zod-validates and exits `2` with install hints.
 
-Binary name: **`voyajes`** (same as the product).
+---
 
 ## Project schema (sketch)
 
@@ -145,9 +139,9 @@ Binary name: **`voyajes`** (same as the product).
 }
 ```
 
-Validated by Zod in `@voyajes/core` (`VoyajesProjectSchema`).
+Validated by `@voyajes/core` (`VoyajesProjectSchema`).
 
-## Themes (catalog)
+## Themes
 
 | Name | Id | Mood |
 | --- | --- | --- |
@@ -156,61 +150,53 @@ Validated by Zod in `@voyajes/core` (`VoyajesProjectSchema`).
 | Ocean Pop | `theme.ocean-pop` | Mint/indigo, soft push |
 | Golden Hour | `theme.golden-hour` | Coral sun, light-leak |
 
-Source: `catalog/manifest.json` (copied to `apps/web/public/catalog-manifest.json` for the UI).
+Source: `catalog/manifest.json` → also `apps/web/public/catalog-manifest.json`.
 
 ## Scripts
 
 | Script | What |
 | --- | --- |
-| `pnpm install` | Install workspace deps |
+| `pnpm install` | Workspace deps |
 | `pnpm dev` | Vite web app |
-| `pnpm build` | Build all packages |
-| `pnpm build:core` | Compile core |
-| `pnpm build:cli` | Compile CLI |
-| `pnpm voyajes …` | Run CLI via workspace |
+| `pnpm build` | Build all |
+| `pnpm build:core` / `pnpm build:cli` | Package builds |
+| `pnpm voyajes …` | CLI via workspace |
 
-## Roadmap (next)
-
-1. ~~Media import + local preview~~ (done in Create)  
-2. ~~Browser WebM export (canvas + MediaRecorder)~~ (best-effort slideshow)  
-3. ~~CLI local ffmpeg render~~ (`voyajes render` → WebM/MP4 + beat audio)  
-4. Catalog CDN sync + signed audio stems  
-5. Social OAuth + public share HLS/OG  
-6. Cloud / Remotion encode queue (optional) + Spark/Pro billing  
-
-## License
-
-Private / unpublished — all rights reserved by the Voyajes family project.
-
+---
 
 ## GitHub Pages
 
 **Live:** https://yvelkuri-stu.github.io/voyajes/
 
-Currently served from the **`gh-pages`** branch (built with `GITHUB_PAGES=1` → Vite `base: /voyajes/`). SPA routes use a copied `404.html`. Router basename and catalog `/catalog/...` assets resolve under that base.
-
-### Optional: switch to GitHub Actions
-
-Workflow file is ready at `.github/workflows/deploy-pages.yml` (local). Pushing it needs the **`workflow`** OAuth scope:
+Served from the **`gh-pages`** branch (`GITHUB_PAGES=1` → Vite `base: /voyajes/`). SPA fallback via `404.html`.
 
 ```bash
-gh auth refresh -h github.com -s workflow
-git add .github/workflows/deploy-pages.yml
-git commit -m "ci: add GitHub Pages Actions deploy"
-git push
-```
-
-Then set Pages source to **GitHub Actions** (Settings → Pages), or:
-
-```bash
-gh api -X PUT repos/yvelkuri-stu/voyajes/pages -f build_type=workflow
-```
-
-### Manual redeploy (current)
-
-```bash
+./scripts/deploy-gh-pages.sh
+# or:
 GITHUB_PAGES=1 pnpm --filter @voyajes/core build
 GITHUB_PAGES=1 pnpm --filter @voyajes/web build
 cp apps/web/dist/index.html apps/web/dist/404.html
-# publish apps/web/dist to origin/gh-pages
+# publish apps/web/dist → origin/gh-pages
 ```
+
+Optional Actions workflow: `.github/workflows/deploy-pages.yml` (needs `workflow` scope to push).
+
+---
+
+## Roadmap
+
+1. ~~Media import + local preview~~  
+2. ~~Browser WebM export~~  
+3. ~~CLI ffmpeg render~~  
+4. ~~Sign-in UI + OAuth setup docs~~ (stub session; real token API next)  
+5. Catalog CDN sync + signed stems  
+6. Backend OAuth exchange + durable share / HLS  
+7. Cloud / Remotion encode + Spark/Pro billing  
+
+---
+
+## License
+
+Source in this repo is published for the Voyajes project — all rights reserved unless a LICENSE file says otherwise.
+
+Now go make something that looks expensive. Your camera roll has been waiting.

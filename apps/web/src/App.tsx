@@ -4,6 +4,8 @@ import { Home } from "./pages/Home";
 import { Create } from "./pages/Create";
 import { Themes } from "./pages/Themes";
 import { Share, ShareBootstrap } from "./pages/Share";
+import { SignIn } from "./pages/SignIn";
+import { AuthCallback } from "./pages/AuthCallback";
 
 export default function App() {
   return (
@@ -14,6 +16,8 @@ export default function App() {
         <Route path="themes" element={<Themes />} />
         <Route path="share" element={<ShareBootstrap />} />
         <Route path="v/:id" element={<Share />} />
+        <Route path="signin" element={<SignIn />} />
+        <Route path="auth/callback" element={<AuthCallback />} />
       </Route>
     </Routes>
   );

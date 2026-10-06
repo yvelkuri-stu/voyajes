@@ -48,7 +48,7 @@ export function Layout() {
           background: "rgba(232,74,255,0.06)",
         }}
       >
-        {brand.tagline} · MVP shell — render encoding not wired yet
+        {brand.tagline} · Import & preview live — video encode still stubbed
       </p>
       <main className="main">
         <Outlet />

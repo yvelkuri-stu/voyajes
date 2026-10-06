@@ -24,9 +24,18 @@ voyajes/
   catalog/           Official manifest (themes + audio beats)
 ```
 
-**Screens:** Home · Create/Compose (theme panel + preview placeholder) · Theme picker (Neon Night, Soft Film, Ocean Pop, Golden Hour) · Share page stub.
+**Screens:** Home · Create/Compose (import + slideshow preview) · Theme picker (Neon Night, Soft Film, Ocean Pop, Golden Hour) · Share page stub.
 
-**Not implemented (intentional stubs):** real video encoding / FFmpeg / Remotion, OAuth, cloud billing, HLS playback. `voyajes render` validates the project and prints a clear TODO.
+### Create / Import / Preview (working in web)
+
+- Drag-drop or file picker for **images** (JPG/PNG/WebP/…) and **video** (MP4/WebM/MOV)
+- Object-URL preview in the phone-frame stage with theme **grade overlay**, Ken Burns, and timed transitions (dissolve / push / whip / light-leak)
+- Filmstrip: select, **reorder** (↑↓), **remove**, hold-duration edit
+- **Play / Pause** auto-advances clips; timing uses theme `transitionDurationMs` + per-clip duration
+- Draft persists as Voyajes project JSON in `localStorage` (`voyajes.project.draft.json`) matching `@voyajes/core` schema; media blobs in IndexedDB
+- **Export JSON** downloads `voyajes.project.json` for the CLI
+
+**Not implemented (intentional stubs):** real video encoding / FFmpeg / Remotion export, OAuth, cloud billing, HLS playback. UI **Export video** is disabled; `voyajes render` validates the project and prints a clear TODO.
 
 ## Design docs (parent workspace)
 
@@ -124,7 +133,7 @@ Source: `catalog/manifest.json` (copied to `apps/web/public/catalog-manifest.jso
 
 ## Roadmap (next)
 
-1. Media import + proxy thumbs  
+1. ~~Media import + local preview~~ (done in Create)  
 2. Real local/cloud render (FFmpeg or Remotion) — **not claimed done**  
 3. Catalog CDN sync + signed audio stems  
 4. Social OAuth + public share HLS/OG  

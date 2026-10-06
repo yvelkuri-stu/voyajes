@@ -1,24 +1,418 @@
-import { useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getThemes, getThemeById } from "../data/themes";
+import { packRef, type Aspect } from "@voyajes/core";
+import { getThemes, getThemeById, type ThemeCard } from "../data/themes";
+import {
+  clearAllBlobs,
+  clearDraft,
+  clipKindFromMime,
+  defaultDraft,
+  defaultImageDuration,
+  deleteBlob,
+  getBlob,
+  loadDraft,
+  newClipId,
+  putBlob,
+  readVideoDuration,
+  saveDraft,
+  toVoyajesProject,
+  validatePersistedProject,
+  type DraftClipMeta,
+  type DraftState,
+} from "../lib/draftStore";
+
+type LiveClip = DraftClipMeta & { objectUrl: string };
+
+const ASPECTS: Aspect[] = ["9:16", "16:9", "1:1", "4:5"];
+
+function formatTime(sec: number): string {
+  if (!Number.isFinite(sec) || sec < 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function aspectCss(aspect: Aspect): string {
+  if (aspect === "16:9") return "16 / 9";
+  if (aspect === "1:1") return "1 / 1";
+  if (aspect === "4:5") return "4 / 5";
+  return "9 / 16";
+}
 
 export function Create() {
   const [params] = useSearchParams();
   const themes = getThemes();
-  const initial =
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const advanceTimer = useRef<number | null>(null);
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+
+  const paramTheme =
     getThemeById(params.get("theme") ?? "") ??
     themes.find((t) => t.id === "theme.ocean-pop") ??
     themes[0];
 
-  const [themeId, setThemeId] = useState(initial.id);
+  const [hydrated, setHydrated] = useState(false);
   const [title, setTitle] = useState("Untitled voyage");
-  const [aspect, setAspect] = useState("9:16");
-  const theme = useMemo(
+  const [aspect, setAspect] = useState<Aspect>("9:16");
+  const [themeId, setThemeId] = useState(paramTheme.id);
+  const [audioTrackRef, setAudioTrackRef] = useState(
+    "audio.ocean-drift-084@1.0.0",
+  );
+  const [clips, setClips] = useState<LiveClip[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [transitionKey, setTransitionKey] = useState(0);
+  const [schemaOk, setSchemaOk] = useState(true);
+
+  const theme: ThemeCard = useMemo(
     () => getThemeById(themeId) ?? themes[0],
     [themeId, themes],
   );
 
-  const clips = ["1", "2", "3", "4", "+"];
+  const totalDuration = useMemo(
+    () => clips.reduce((sum, c) => sum + c.durationSec, 0),
+    [clips],
+  );
+
+  const trackElapsed = useMemo(() => {
+    let before = 0;
+    for (let i = 0; i < activeIndex && i < clips.length; i++) {
+      before += clips[i].durationSec;
+    }
+    return before + elapsed;
+  }, [activeIndex, clips, elapsed]);
+
+  const revokeUrl = useCallback((url: string) => {
+    URL.revokeObjectURL(url);
+    objectUrlsRef.current.delete(url);
+  }, []);
+
+  const trackUrl = useCallback((url: string) => {
+    objectUrlsRef.current.add(url);
+    return url;
+  }, []);
+
+  // Hydrate from localStorage + IndexedDB
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const draft = loadDraft();
+      const base = draft ?? defaultDraft(paramTheme.id);
+      if (!draft && params.get("theme")) {
+        base.themeId = paramTheme.id;
+        base.themeVersion = paramTheme.version;
+      }
+      if (cancelled) return;
+      setTitle(base.title);
+      setAspect(base.aspect);
+      setThemeId(base.themeId);
+      setAudioTrackRef(base.audioTrackRef);
+      const live: LiveClip[] = [];
+      for (const meta of base.clips) {
+        const blob = await getBlob(meta.id);
+        if (cancelled) return;
+        if (blob) {
+          const objectUrl = trackUrl(URL.createObjectURL(blob));
+          live.push({ ...meta, objectUrl });
+        }
+      }
+      setClips(live);
+      setHydrated(true);
+      setSchemaOk(validatePersistedProject().ok || live.length === 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist draft whenever project fields change
+  useEffect(() => {
+    if (!hydrated) return;
+    const draft: DraftState = {
+      title,
+      aspect,
+      themeId,
+      themeVersion: theme.version,
+      audioTrackRef,
+      clips: clips.map(
+        ({ id, fileName, mimeType, kind, durationSec, mute }): DraftClipMeta => ({
+          id,
+          fileName,
+          mimeType,
+          kind,
+          durationSec,
+          mute,
+        }),
+      ),
+      updatedAt: new Date().toISOString(),
+    };
+    saveDraft(draft);
+    setSchemaOk(validatePersistedProject().ok);
+  }, [
+    hydrated,
+    title,
+    aspect,
+    themeId,
+    theme.version,
+    audioTrackRef,
+    clips,
+  ]);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+      for (const url of objectUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+      objectUrlsRef.current.clear();
+    };
+  }, []);
+
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimer.current) {
+      window.clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+    }
+  }, []);
+
+  const goToClip = useCallback(
+    (index: number, withTransition = true) => {
+      if (clips.length === 0) return;
+      const next = ((index % clips.length) + clips.length) % clips.length;
+      setActiveIndex(next);
+      setElapsed(0);
+      if (withTransition) setTransitionKey((k) => k + 1);
+    },
+    [clips.length],
+  );
+
+  // Slideshow auto-advance
+  useEffect(() => {
+    clearAdvanceTimer();
+    if (!playing || clips.length === 0) return;
+
+    const clip = clips[activeIndex];
+    if (!clip) return;
+
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const holdMs = Math.max(400, clip.durationSec * 1000);
+    const tickStart = performance.now();
+
+    const tick = () => {
+      const t = (performance.now() - tickStart) / 1000;
+      setElapsed(Math.min(t, clip.durationSec));
+      if (t < clip.durationSec) {
+        advanceTimer.current = window.setTimeout(tick, 50);
+      } else {
+        const next = (activeIndex + 1) % clips.length;
+        goToClip(next, !reduced);
+      }
+    };
+    advanceTimer.current = window.setTimeout(tick, 50);
+
+    return clearAdvanceTimer;
+  }, [playing, activeIndex, clips, clearAdvanceTimer, goToClip]);
+
+  // Drive video element when active clip is video
+  useEffect(() => {
+    const clip = clips[activeIndex];
+    const el = videoRef.current;
+    if (!clip || clip.kind !== "video" || !el) return;
+    el.currentTime = 0;
+    if (playing) {
+      void el.play().catch(() => {
+        /* autoplay may fail without gesture; Play button covers it */
+      });
+    } else {
+      el.pause();
+    }
+  }, [playing, activeIndex, clips]);
+
+  const importFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const list = Array.from(files);
+      if (list.length === 0) return;
+      const added: LiveClip[] = [];
+      const skipped: string[] = [];
+
+      for (const file of list) {
+        const kind = clipKindFromMime(file.type, file.name);
+        if (!kind) {
+          skipped.push(file.name);
+          continue;
+        }
+        if (clips.length + added.length >= 40) {
+          skipped.push(`${file.name} (limit 40)`);
+          continue;
+        }
+        const id = newClipId();
+        const durationSec =
+          kind === "video"
+            ? await readVideoDuration(file)
+            : defaultImageDuration(theme.motion);
+        await putBlob(id, file);
+        const objectUrl = trackUrl(URL.createObjectURL(file));
+        added.push({
+          id,
+          fileName: file.name,
+          mimeType: file.type || (kind === "image" ? "image/jpeg" : "video/mp4"),
+          kind,
+          durationSec,
+          mute: true,
+          objectUrl,
+        });
+      }
+
+      if (added.length) {
+        setClips((prev) => {
+          const next = [...prev, ...added];
+          if (prev.length === 0) setActiveIndex(0);
+          return next;
+        });
+        setStatus(
+          `Imported ${added.length} clip${added.length === 1 ? "" : "s"}${
+            skipped.length ? ` · skipped ${skipped.length}` : ""
+          }`,
+        );
+      } else if (skipped.length) {
+        setStatus(`Could not import: ${skipped.join(", ")}`);
+      }
+    },
+    [clips.length, theme.motion, trackUrl],
+  );
+
+  const onDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      if (e.dataTransfer.files?.length) {
+        void importFiles(e.dataTransfer.files);
+      }
+    },
+    [importFiles],
+  );
+
+  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.length) void importFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  const removeClip = async (index: number) => {
+    const clip = clips[index];
+    if (!clip) return;
+    setPlaying(false);
+    clearAdvanceTimer();
+    revokeUrl(clip.objectUrl);
+    await deleteBlob(clip.id);
+    setClips((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      setActiveIndex((ai) => {
+        if (next.length === 0) return 0;
+        if (ai > index) return ai - 1;
+        if (ai >= next.length) return next.length - 1;
+        return ai;
+      });
+      return next;
+    });
+    setStatus("Clip removed");
+  };
+
+  const moveClip = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= clips.length) return;
+    setClips((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
+    setActiveIndex((ai) => {
+      if (ai === index) return target;
+      if (ai === target) return index;
+      return ai;
+    });
+  };
+
+  const resetProject = async () => {
+    setPlaying(false);
+    clearAdvanceTimer();
+    for (const c of clips) revokeUrl(c.objectUrl);
+    await clearAllBlobs();
+    clearDraft();
+    const d = defaultDraft(themeId);
+    setTitle(d.title);
+    setAspect(d.aspect);
+    setAudioTrackRef(d.audioTrackRef);
+    setClips([]);
+    setActiveIndex(0);
+    setElapsed(0);
+    setStatus("Draft cleared");
+  };
+
+  const downloadProjectJson = () => {
+    const draft: DraftState = {
+      title,
+      aspect,
+      themeId,
+      themeVersion: theme.version,
+      audioTrackRef,
+      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
+        id,
+        fileName,
+        mimeType,
+        kind,
+        durationSec,
+        mute,
+      })),
+      updatedAt: new Date().toISOString(),
+    };
+    const project = toVoyajesProject(draft);
+    const blob = new Blob([JSON.stringify(project, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "voyajes.project.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus(
+      "Downloaded project JSON · video encode still stubbed (use CLI render later)",
+    );
+  };
+
+  const active = clips[activeIndex];
+  const transitionClass = `tx-${theme.transition}`;
+  const kenBurns =
+    active?.kind === "image" && theme.photoMotion !== "off"
+      ? theme.photoMotion === "bold"
+        ? "ken-bold"
+        : "ken-gentle"
+      : "";
+
+  const audioLabel =
+    audioTrackRef.startsWith("audio.neon")
+      ? "Neon Pulse"
+      : audioTrackRef.startsWith("audio.warm")
+        ? "Warm Acoustic"
+        : "Ocean Drift";
 
   return (
     <div>
@@ -36,6 +430,9 @@ export function Create() {
           <h1 className="display" style={{ margin: 0, fontSize: "1.35rem" }}>
             Compose · Auto
           </h1>
+          <p className="muted" style={{ margin: "4px 0 0", fontSize: "0.85rem" }}>
+            Every voyage, in motion — drop photos or clips, pick a theme, play.
+          </p>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -49,14 +446,22 @@ export function Create() {
               fontSize: "1rem",
               fontFamily: "Sora, sans-serif",
               fontWeight: 600,
-              width: "min(100%, 280px)",
+              width: "min(100%, 320px)",
               padding: "4px 0",
             }}
           />
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn btn-ghost">
-            Export file
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="btn btn-ghost" onClick={downloadProjectJson}>
+            Export JSON
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled
+            title="Video encode not wired yet — FFmpeg/Remotion stub"
+          >
+            Export video
           </button>
           <Link to="/v/demo" className="btn btn-primary">
             Share
@@ -70,51 +475,158 @@ export function Create() {
           gap: 8,
           flexWrap: "wrap",
           marginBottom: 16,
+          alignItems: "center",
         }}
       >
-        <Link to="/themes" className="chip" title="Change theme">
+        <Link to="/themes" className="chip" title="Browse themes">
           <span className="swatch" style={{ background: theme.palette.accent }} />
           Theme {theme.name}
         </Link>
-        <span className="chip">Audio · Ocean Drift</span>
         <button
           type="button"
           className="chip"
           onClick={() =>
-            setAspect((a) => (a === "9:16" ? "16:9" : a === "16:9" ? "1:1" : "9:16"))
+            setAudioTrackRef((a) =>
+              a.startsWith("audio.ocean")
+                ? "audio.warm-acoustic-092@1.0.0"
+                : a.startsWith("audio.warm")
+                  ? "audio.neon-pulse-118@1.0.0"
+                  : "audio.ocean-drift-084@1.0.0",
+            )
+          }
+        >
+          Audio · {audioLabel}
+        </button>
+        <button
+          type="button"
+          className="chip"
+          onClick={() =>
+            setAspect((a) => {
+              const i = ASPECTS.indexOf(a);
+              return ASPECTS[(i + 1) % ASPECTS.length];
+            })
           }
         >
           {aspect}
         </button>
-        <span className="chip">Title</span>
+        <span className="chip" title="Draft persistence">
+          Draft {schemaOk ? "✓" : "!"} · {clips.length} clip
+          {clips.length === 1 ? "" : "s"}
+        </span>
+        {status && (
+          <span className="muted" style={{ fontSize: "0.8rem" }}>
+            {status}
+          </span>
+        )}
       </div>
 
       <div className="compose-layout">
         <div>
           <div
+            className={`dropzone${dragOver ? " drag-over" : ""}`}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+            }}
+            onDrop={onDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/mp4,video/webm,video/quicktime,.mov,.m4v"
+              multiple
+              hidden
+              onChange={onFileChange}
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import photos &amp; video
+            </button>
+            <span className="muted" style={{ fontSize: "0.85rem" }}>
+              or drag &amp; drop here · JPG, PNG, WebP, MP4, WebM
+            </span>
+          </div>
+
+          <div
             className="preview-stage"
             style={{
-              aspectRatio: aspect === "16:9" ? "16/9" : aspect === "1:1" ? "1" : "9/16",
-              width: aspect === "9:16" ? "min(100%, 360px)" : "100%",
-              maxHeight: aspect === "9:16" ? "70vh" : 360,
+              aspectRatio: aspectCss(aspect),
+              width: aspect === "9:16" || aspect === "4:5" ? "min(100%, 360px)" : "100%",
+              maxHeight: aspect === "9:16" || aspect === "4:5" ? "70vh" : 420,
+              marginTop: 16,
             }}
           >
+            {active ? (
+              <div
+                key={`${active.id}-${transitionKey}`}
+                className={`preview-media ${transitionClass} ${kenBurns}`}
+                style={
+                  {
+                    "--tx-ms": `${theme.transitionDurationMs}ms`,
+                    "--tx-ease":
+                      theme.motion === "snappy"
+                        ? "var(--motion-snappy)"
+                        : theme.motion === "float" || theme.motion === "cinematic"
+                          ? "var(--motion-float)"
+                          : "var(--motion-soft)",
+                  } as CSSProperties
+                }
+              >
+                {active.kind === "image" ? (
+                  <img src={active.objectUrl} alt={active.fileName} draggable={false} />
+                ) : (
+                  <video
+                    ref={videoRef}
+                    src={active.objectUrl}
+                    muted={active.mute}
+                    playsInline
+                    loop={false}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="preview-empty">
+                <div className="display" style={{ fontSize: "1.1rem", opacity: 0.9 }}>
+                  Your voyage starts here
+                </div>
+                <div className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
+                  Import media to preview with {theme.name}
+                </div>
+              </div>
+            )}
+
             <div
               className="grade"
-              style={{ background: theme.gradient }}
+              style={{
+                background: theme.gradient,
+                mixBlendMode: "soft-light",
+                opacity: active ? 0.45 : 0.55,
+              }}
             />
+            <div
+              className="grade grade-vignette"
+              style={{
+                background: `radial-gradient(ellipse at center, transparent 40%, ${theme.palette.bg}cc 100%)`,
+                opacity: active ? 0.7 : 0.4,
+              }}
+            />
+
             <div className="preview-title" style={{ color: theme.palette.text }}>
               {title}
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  marginTop: 8,
-                  opacity: 0.85,
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Preview placeholder · {theme.transition} · {theme.motion}
+              <div className="preview-sub">
+                {theme.transition} · {theme.motion}
+                {active ? ` · ${activeIndex + 1}/${clips.length}` : ""}
               </div>
             </div>
           </div>
@@ -126,42 +638,120 @@ export function Create() {
               gap: 12,
               marginTop: 12,
               alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            <button type="button" className="btn btn-ghost" style={{ padding: "8px 16px" }}>
-              ▶ Play
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: "8px 16px" }}
+              disabled={clips.length === 0}
+              onClick={() => goToClip(activeIndex - 1)}
+              aria-label="Previous clip"
+            >
+              ‹
             </button>
-            <span className="muted" style={{ fontSize: "0.85rem" }}>
-              0:00 / 0:28
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ padding: "8px 20px", minWidth: 96 }}
+              disabled={clips.length === 0}
+              onClick={() => setPlaying((p) => !p)}
+            >
+              {playing ? "Pause" : "Play"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: "8px 16px" }}
+              disabled={clips.length === 0}
+              onClick={() => goToClip(activeIndex + 1)}
+              aria-label="Next clip"
+            >
+              ›
+            </button>
+            <span className="muted" style={{ fontSize: "0.85rem", fontVariantNumeric: "tabular-nums" }}>
+              {formatTime(trackElapsed)} / {formatTime(totalDuration)}
             </span>
           </div>
 
           <div className="filmstrip" aria-label="Clip filmstrip">
             {clips.map((c, i) => (
-              <div
-                key={c + i}
-                className={`film-clip${i === 0 ? " active" : ""}`}
-                style={
-                  c !== "+"
-                    ? {
-                        background: `linear-gradient(145deg, #1C2230, ${theme.palette.accent}55)`,
-                      }
-                    : undefined
-                }
-              >
-                {c}
+              <div key={c.id} className="film-clip-wrap">
+                <button
+                  type="button"
+                  className={`film-clip${i === activeIndex ? " active" : ""}`}
+                  onClick={() => {
+                    setPlaying(false);
+                    goToClip(i, true);
+                  }}
+                  style={{
+                    backgroundImage: c.kind === "image" ? `url(${c.objectUrl})` : undefined,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    borderColor:
+                      i === activeIndex ? theme.palette.accent : undefined,
+                  }}
+                  title={c.fileName}
+                >
+                  {c.kind === "video" && (
+                    <video src={c.objectUrl} muted playsInline preload="metadata" />
+                  )}
+                  <span className="film-clip-label">
+                    {c.kind === "video" ? "▶" : i + 1}
+                  </span>
+                </button>
+                <div className="film-clip-actions">
+                  <button
+                    type="button"
+                    aria-label="Move earlier"
+                    disabled={i === 0}
+                    onClick={() => moveClip(i, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Move later"
+                    disabled={i === clips.length - 1}
+                    onClick={() => moveClip(i, 1)}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${c.fileName}`}
+                    onClick={() => void removeClip(i)}
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
+            <button
+              type="button"
+              className="film-clip film-add"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Add clips"
+            >
+              +
+            </button>
           </div>
           <p className="muted" style={{ fontSize: "0.8rem", textAlign: "center" }}>
-            Filmstrip stub — import &amp; trim come next. Studio timeline is opt-in later.
+            Draft saves to localStorage (+ media in IndexedDB). Encode stays stubbed —
+            Export JSON for the CLI.
           </p>
+          <div style={{ textAlign: "center", marginTop: 8 }}>
+            <button type="button" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => void resetProject()}>
+              Clear draft
+            </button>
+          </div>
         </div>
 
         <aside className="panel">
           <h3>Theme panel</h3>
           <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
-            Live recolor of titles, grade, and default transition.
+            Live grade, title color, Ken Burns, and transition timing.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {themes.map((t) => (
@@ -198,9 +788,60 @@ export function Create() {
           />
           <div style={{ fontSize: "0.8rem" }}>
             <div className="muted">Pack ref (CLI)</div>
-            <code style={{ fontSize: "0.75rem" }}>
-              {theme.id}@{theme.version}
+            <code style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>
+              {packRef(theme.id, theme.version)}
             </code>
+            <div className="muted" style={{ marginTop: 12 }}>
+              Transition
+            </div>
+            <div>
+              {theme.transition} · {theme.transitionDurationMs}ms
+            </div>
+            {active && (
+              <>
+                <div className="muted" style={{ marginTop: 12 }}>
+                  Active clip
+                </div>
+                <div style={{ wordBreak: "break-all" }}>{active.fileName}</div>
+                <label
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    marginTop: 8,
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Hold (sec)
+                  <input
+                    type="number"
+                    min={0.5}
+                    max={30}
+                    step={0.1}
+                    value={active.durationSec}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (!Number.isFinite(v)) return;
+                      setClips((prev) =>
+                        prev.map((c, i) =>
+                          i === activeIndex
+                            ? { ...c, durationSec: Math.min(30, Math.max(0.5, v)) }
+                            : c,
+                        ),
+                      );
+                    }}
+                    style={{
+                      width: 72,
+                      background: "var(--bg-elevated)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: 8,
+                      color: "var(--text-primary)",
+                      padding: "4px 8px",
+                    }}
+                  />
+                </label>
+              </>
+            )}
           </div>
         </aside>
       </div>

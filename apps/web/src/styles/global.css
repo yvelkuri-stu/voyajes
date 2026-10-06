@@ -384,3 +384,209 @@ button {
   border: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
 }
+
+/* —— Create: import + preview —— */
+.dropzone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed var(--border-subtle);
+  background:
+    linear-gradient(135deg, rgba(232, 74, 255, 0.06), rgba(61, 220, 151, 0.05)),
+    var(--bg-surface);
+  transition: border-color var(--duration-soft) var(--motion-soft),
+    background var(--duration-soft) var(--motion-soft),
+    box-shadow var(--duration-soft) var(--motion-soft);
+}
+
+.dropzone.drag-over {
+  border-color: var(--accent-magenta);
+  box-shadow: 0 0 0 4px rgba(232, 74, 255, 0.15);
+  background:
+    linear-gradient(135deg, rgba(232, 74, 255, 0.14), rgba(124, 92, 255, 0.1)),
+    var(--bg-surface);
+}
+
+.preview-empty {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: var(--space-5);
+}
+
+.preview-media {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.preview-media img,
+.preview-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-stage .grade-vignette {
+  opacity: 0.65;
+  mix-blend-mode: normal;
+}
+
+.preview-title {
+  pointer-events: none;
+}
+
+.preview-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 8px;
+  opacity: 0.85;
+  font-family: Inter, sans-serif;
+}
+
+/* Theme transitions (enter) */
+.tx-cut {
+  animation: none;
+}
+
+.tx-dissolve {
+  animation: vj-dissolve var(--tx-ms, 360ms) var(--tx-ease, var(--motion-soft)) both;
+}
+
+.tx-push {
+  animation: vj-push var(--tx-ms, 360ms) var(--tx-ease, var(--motion-soft)) both;
+}
+
+.tx-whip {
+  animation: vj-whip var(--tx-ms, 220ms) var(--tx-ease, var(--motion-snappy)) both;
+}
+
+.tx-light-leak {
+  animation: vj-leak var(--tx-ms, 520ms) var(--tx-ease, var(--motion-float)) both;
+}
+
+@keyframes vj-dissolve {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes vj-push {
+  from { transform: translateX(28%); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes vj-whip {
+  from { transform: translateX(60%) skewX(-6deg); opacity: 0.2; filter: blur(2px); }
+  to { transform: translateX(0) skewX(0); opacity: 1; filter: blur(0); }
+}
+
+@keyframes vj-leak {
+  0% { opacity: 0; filter: brightness(2.2) saturate(1.4); }
+  35% { opacity: 1; filter: brightness(1.35) saturate(1.2); }
+  100% { opacity: 1; filter: brightness(1) saturate(1); }
+}
+
+/* Ken Burns on stills */
+.ken-gentle img {
+  animation: vj-ken-gentle 8s var(--motion-float) infinite alternate;
+}
+
+.ken-bold img {
+  animation: vj-ken-bold 5s var(--motion-snappy) infinite alternate;
+}
+
+@keyframes vj-ken-gentle {
+  from { transform: scale(1) translate(0, 0); }
+  to { transform: scale(1.06) translate(-1.5%, -1%); }
+}
+
+@keyframes vj-ken-bold {
+  from { transform: scale(1.02) translate(0, 0); }
+  to { transform: scale(1.12) translate(-2.5%, 1.5%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-dissolve,
+  .tx-push,
+  .tx-whip,
+  .tx-light-leak,
+  .ken-gentle img,
+  .ken-bold img {
+    animation: none !important;
+  }
+}
+
+.film-clip-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.film-clip {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.film-clip video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.film-clip-label {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  z-index: 1;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.film-add {
+  border-style: dashed;
+  background: linear-gradient(145deg, var(--bg-elevated), rgba(124, 92, 255, 0.15));
+  font-size: 1.4rem;
+  color: var(--text-primary);
+}
+
+.film-clip-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.film-clip-actions button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.film-clip-actions button:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--accent-brand);
+}
+
+.film-clip-actions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

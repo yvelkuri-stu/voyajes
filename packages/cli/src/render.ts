@@ -275,6 +275,7 @@ type PreparedClip = {
   absPath: string;
   kind: "image" | "video";
   durationSec: number;
+  transitionOut?: import("@voyajes/core").TransitionKind;
 };
 
 function prepareClips(
@@ -307,7 +308,12 @@ function prepareClips(
       (theme.transitionDurationMs / 1000) * 2 + 0.2,
     );
     duration = Math.max(duration, minHold);
-    clips.push({ absPath: abs, kind, durationSec: duration });
+    clips.push({
+      absPath: abs,
+      kind,
+      durationSec: duration,
+      transitionOut: m.transitionOut,
+    });
   }
   return clips;
 }
@@ -335,6 +341,14 @@ function buildVideoFilters(
   txSec: number,
   useXfade: boolean,
   title: string | null,
+  defaultTransition?: import("@voyajes/core").TransitionKind,
+  textOverlays?: Array<{
+    at: number;
+    end?: number;
+    value: string;
+    color?: string;
+    position?: string;
+  }>,
 ): { filterComplex: string; outputLabel: string; totalDuration: number } {
   const grade = gradeFilter(theme.palette.grade);
   const parts: string[] = [];
@@ -356,7 +370,11 @@ function buildVideoFilters(
       for (let i = 1; i < clips.length; i++) {
         const out = i === clips.length - 1 ? "vx" : `xf${i}`;
         const offset = Math.max(0, cumulative - txSec);
-        const name = xfadeName(theme.transition);
+        const edgeKind =
+          clips[i - 1].transitionOut ??
+          defaultTransition ??
+          theme.transition;
+        const name = xfadeName(edgeKind);
         parts.push(
           `[${prev}][v${i}]xfade=transition=${name}:duration=${txSec}:offset=${offset.toFixed(3)}[${out}]`,
         );
@@ -372,25 +390,56 @@ function buildVideoFilters(
     }
   }
 
-  if (title && title.trim()) {
-    const titleEsc = escapeDrawtext(title.trim());
+  let label = composed;
+  let layer = 0;
+  const pushDraw = (
+    text: string,
+    yExpr: string,
+    color: string,
+    enable?: string,
+  ) => {
+    const titleEsc = escapeDrawtext(text);
     const fontsize = Math.max(28, Math.round(width / 18));
+    const next = `dt${layer++}`;
+    const enableExpr = enable ? `:enable='${enable}'` : "";
     parts.push(
-      `[${composed}]drawtext=text='${titleEsc}':` +
+      `[${label}]drawtext=text='${titleEsc}':` +
         `fontsize=${fontsize}:` +
-        `fontcolor=white@0.92:borderw=2:bordercolor=black@0.45:` +
-        `x=(w-text_w)/2:y=h*0.08:shadowcolor=black@0.5:shadowx=2:shadowy=2[vout]`,
+        `fontcolor=${color}:borderw=2:bordercolor=black@0.45:` +
+        `x=(w-text_w)/2:y=${yExpr}:shadowcolor=black@0.5:shadowx=2:shadowy=2${enableExpr}[${next}]`,
     );
-    return {
-      filterComplex: parts.join(";"),
-      outputLabel: "vout",
-      totalDuration,
-    };
+    label = next;
+  };
+
+  if (title && title.trim()) {
+    pushDraw(title.trim(), "h*0.08", "white@0.92");
+  }
+
+  if (textOverlays?.length) {
+    for (const o of textOverlays) {
+      if (!o.value?.trim()) continue;
+      const start = Math.max(0, o.at);
+      const end =
+        typeof o.end === "number" ? o.end : start + Math.max(1, totalDuration);
+      const y =
+        o.position === "center"
+          ? "(h-text_h)/2"
+          : o.position === "bottom" || o.position === "lower-third"
+            ? "h*0.82"
+            : "h*0.08";
+      const color = (o.color || "#ffffff").replace("#", "0x") + "@0.92";
+      pushDraw(
+        o.value.trim(),
+        y,
+        color,
+        `between(t\,${start.toFixed(3)}\,${end.toFixed(3)})`,
+      );
+    }
   }
 
   return {
     filterComplex: parts.join(";"),
-    outputLabel: composed,
+    outputLabel: label,
     totalDuration,
   };
 }
@@ -437,7 +486,8 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
 
   const beatRef =
     opts.beatOverride ?? opts.project.audio?.track ?? "audio.warm-acoustic-092";
-  const beat = findBeat(opts.catalog, beatRef);
+  const isCustomBeat = typeof beatRef === "string" && beatRef.startsWith("custom:");
+  const beat = isCustomBeat ? undefined : findBeat(opts.catalog, beatRef);
   const bpm = beat?.bpm ?? 92;
 
   if (!opts.project.media.length) {
@@ -466,7 +516,12 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
     0.8,
     Math.max(0.12, theme.transitionDurationMs / 1000),
   );
-  const useXfade = theme.transition !== "cut" && clips.length > 1;
+  const defaultTransition = opts.project.transition ?? theme.transition;
+  const anyEdgeTransition = clips.some(
+    (c) => c.transitionOut && c.transitionOut !== "cut",
+  );
+  const useXfade =
+    (defaultTransition !== "cut" || anyEdgeTransition) && clips.length > 1;
 
   const outAbs = resolve(opts.out);
   mkdirSync(dirname(outAbs), { recursive: true });
@@ -474,11 +529,28 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
   const wantWebm = ext === ".webm";
 
   const work = mkdtempSync(join(tmpdir(), "voyajes-render-"));
-  const audioFile = resolveBeatAudioFile(
-    opts.catalogRoot,
-    beat?.previewUrl,
-    beat?.id,
-  );
+  let audioFile: string | null = null;
+  if (isCustomBeat) {
+    const customId = beatRef.slice("custom:".length);
+    const custom = opts.project.audio?.customSounds?.find((s) => s.id === customId);
+    if (custom?.path) {
+      const abs = resolveMediaPath(custom.path, projectDir);
+      if (existsSync(abs)) audioFile = abs;
+    }
+    if (!audioFile && custom?.url && custom.url.startsWith("file:")) {
+      /* ignore */
+    }
+    if (!audioFile && custom?.url && !custom.url.startsWith("http")) {
+      const abs = resolveMediaPath(custom.url, projectDir);
+      if (existsSync(abs)) audioFile = abs;
+    }
+  } else {
+    audioFile = resolveBeatAudioFile(
+      opts.catalogRoot,
+      beat?.previewUrl,
+      beat?.id,
+    );
+  }
   const ducking = opts.project.audio?.ducking !== false;
   const audioVolume = ducking ? 0.72 : 0.9;
 
@@ -543,6 +615,15 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
     }
 
     const attempt = (withTitle: boolean): { status: number; stderr: string; totalDuration: number; outputLabel: string } => {
+      const overlays = (opts.project.text ?? [])
+        .filter((t) => t.role !== "title" || t.at > 0 || t.end != null)
+        .map((t) => ({
+          at: t.at,
+          end: t.end,
+          value: t.value,
+          color: t.color,
+          position: t.position,
+        }));
       const built = buildVideoFilters(
         clips,
         theme,
@@ -552,6 +633,8 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
         txSec,
         useXfade,
         withTitle ? title : null,
+        defaultTransition,
+        overlays,
       );
       writeFileSync(join(work, withTitle ? "filter.txt" : "filter-notitle.txt"), built.filterComplex + "\n");
 

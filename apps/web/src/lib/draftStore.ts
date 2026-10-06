@@ -1,13 +1,19 @@
 import type {
   Aspect,
+  AudioMixMode,
   BeatSync,
+  CustomSound,
   DurationTarget,
   ExportDestination,
+  TextCard,
+  TextPosition,
   TextStyle,
   TextTransition,
+  TransitionKindSchemaType,
   VoyajesProject,
 } from "@voyajes/core";
 import { packRef, safeParseProject } from "@voyajes/core";
+import type { TransitionKind } from "@voyajes/core";
 
 const LS_DRAFT = "voyajes.draft.v1";
 const LS_PROJECT = "voyajes.project.draft.json";
@@ -24,6 +30,25 @@ export type DraftClipMeta = {
   kind: ClipKind;
   durationSec: number;
   mute: boolean;
+  /** Transition into the next clip (filmstrip gap after this clip). */
+  transitionOut?: TransitionKind | null;
+};
+
+export type DraftTextOverlay = {
+  id: string;
+  at: number;
+  end: number;
+  role: "title" | "subtitle" | "caption";
+  value: string;
+  style: TextStyle;
+  color: string;
+  position: TextPosition;
+  animationIn: TextTransition;
+  animationOut: TextTransition;
+};
+
+export type DraftCustomSound = CustomSound & {
+  /** object URL resolved at runtime from IndexedDB / remote URL */
 };
 
 export type DraftState = {
@@ -36,18 +61,22 @@ export type DraftState = {
   audioTrackRef: string;
   beatSync: BeatSync;
   ducking: boolean;
+  audioMixMode: AudioMixMode;
+  customSounds: CustomSound[];
   textStyle: TextStyle;
   textTransition: TextTransition;
   captionStyle: TextStyle;
-  /** Overlay caption under title (emoji OK). */
+  /** Overlay caption under title (emoji OK) — legacy single caption. */
   captionText: string;
+  /** Timed text overlays on the timeline. */
+  textOverlays: DraftTextOverlay[];
+  /** Global default transition (null = theme default). */
+  transitionOverride: TransitionKind | null;
   watermark: boolean;
   durationTargetSec?: DurationTarget;
   exportDestination: ExportDestination;
   clips: DraftClipMeta[];
-  /** Stable public share id (local stub until cloud). */
   shareId?: string;
-  /** When true, share page asks for a password (local stub). */
   sharePassword?: boolean;
   updatedAt: string;
 };
@@ -74,6 +103,8 @@ const TEXT_TX: TextTransition[] = [
   "flash-in",
 ];
 
+const TEXT_POS: TextPosition[] = ["top", "center", "bottom", "lower-third"];
+
 const DESTINATIONS: ExportDestination[] = [
   "youtube",
   "tiktok",
@@ -81,6 +112,18 @@ const DESTINATIONS: ExportDestination[] = [
   "instagram-feed",
   "instagram-portrait",
   "custom",
+];
+
+const TRANSITIONS: TransitionKind[] = [
+  "cut",
+  "dissolve",
+  "push",
+  "whip",
+  "light-leak",
+  "fade-black",
+  "zoom-through",
+  "slide-up",
+  "flash",
 ];
 
 export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
@@ -94,10 +137,14 @@ export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
     audioTrackRef: "audio.ocean-drift-084@1.0.0",
     beatSync: "medium",
     ducking: true,
+    audioMixMode: "replace",
+    customSounds: [],
     textStyle: "clean-sans",
     textTransition: "fade",
     captionStyle: "caption-pill",
     captionText: "",
+    textOverlays: [],
+    transitionOverride: null,
     watermark: false,
     durationTargetSec: undefined,
     exportDestination: "custom",
@@ -114,6 +161,74 @@ function asTextStyle(v: unknown, fallback: TextStyle): TextStyle {
 
 function asTextTx(v: unknown, fallback: TextTransition): TextTransition {
   return TEXT_TX.includes(v as TextTransition) ? (v as TextTransition) : fallback;
+}
+
+function asTextPos(v: unknown, fallback: TextPosition): TextPosition {
+  return TEXT_POS.includes(v as TextPosition) ? (v as TextPosition) : fallback;
+}
+
+function asTransition(v: unknown): TransitionKind | null {
+  if (v == null) return null;
+  return TRANSITIONS.includes(v as TransitionKind) ? (v as TransitionKind) : null;
+}
+
+function normalizeOverlay(raw: Partial<DraftTextOverlay>): DraftTextOverlay | null {
+  if (!raw || typeof raw.value !== "string") return null;
+  const id =
+    typeof raw.id === "string" && raw.id
+      ? raw.id
+      : newClipId();
+  const at = typeof raw.at === "number" && Number.isFinite(raw.at) ? Math.max(0, raw.at) : 0;
+  const end =
+    typeof raw.end === "number" && Number.isFinite(raw.end)
+      ? Math.max(at, raw.end)
+      : at + 3;
+  return {
+    id,
+    at,
+    end,
+    role:
+      raw.role === "subtitle" || raw.role === "caption" || raw.role === "title"
+        ? raw.role
+        : "caption",
+    value: raw.value,
+    style: asTextStyle(raw.style, "clean-sans"),
+    color: typeof raw.color === "string" && raw.color ? raw.color : "#ffffff",
+    position: asTextPos(raw.position, "bottom"),
+    animationIn: asTextTx(raw.animationIn, "fade"),
+    animationOut: asTextTx(raw.animationOut, "fade"),
+  };
+}
+
+function normalizeCustomSound(raw: Partial<CustomSound>): CustomSound | null {
+  if (!raw || typeof raw.id !== "string" || typeof raw.name !== "string") return null;
+  if (raw.source !== "file" && raw.source !== "url") return null;
+  return {
+    id: raw.id,
+    name: raw.name,
+    mimeType: typeof raw.mimeType === "string" ? raw.mimeType : undefined,
+    source: raw.source,
+    url: typeof raw.url === "string" ? raw.url : undefined,
+    path: typeof raw.path === "string" ? raw.path : undefined,
+  };
+}
+
+function normalizeClip(c: Partial<DraftClipMeta>): DraftClipMeta | null {
+  if (!c || typeof c.id !== "string" || typeof c.fileName !== "string") return null;
+  const kind = c.kind === "video" || c.kind === "image" ? c.kind : null;
+  if (!kind) return null;
+  return {
+    id: c.id,
+    fileName: c.fileName,
+    mimeType: typeof c.mimeType === "string" ? c.mimeType : "application/octet-stream",
+    kind,
+    durationSec:
+      typeof c.durationSec === "number" && Number.isFinite(c.durationSec)
+        ? Math.min(60, Math.max(0.5, c.durationSec))
+        : 2.8,
+    mute: c.mute === true,
+    transitionOut: asTransition(c.transitionOut),
+  };
 }
 
 function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] }): DraftState | null {
@@ -136,6 +251,21 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
   )
     ? (parsed.exportDestination as ExportDestination)
     : "custom";
+  const audioMixMode: AudioMixMode =
+    parsed.audioMixMode === "mix" ? "mix" : "replace";
+  const clips = parsed.clips
+    .map((c) => normalizeClip(c))
+    .filter((c): c is DraftClipMeta => Boolean(c));
+  const textOverlays = Array.isArray(parsed.textOverlays)
+    ? parsed.textOverlays
+        .map((o) => normalizeOverlay(o as Partial<DraftTextOverlay>))
+        .filter((o): o is DraftTextOverlay => Boolean(o))
+    : [];
+  const customSounds = Array.isArray(parsed.customSounds)
+    ? parsed.customSounds
+        .map((s) => normalizeCustomSound(s as Partial<CustomSound>))
+        .filter((s): s is CustomSound => Boolean(s))
+    : [];
   return {
     title: parsed.title,
     aspect: (parsed.aspect as Aspect) ?? "9:16",
@@ -147,14 +277,18 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     audioTrackRef: parsed.audioTrackRef ?? "audio.ocean-drift-084@1.0.0",
     beatSync,
     ducking: parsed.ducking !== false,
+    audioMixMode,
+    customSounds,
     textStyle: asTextStyle(parsed.textStyle, "clean-sans"),
     textTransition: asTextTx(parsed.textTransition, "fade"),
     captionStyle: asTextStyle(parsed.captionStyle, "caption-pill"),
     captionText: typeof parsed.captionText === "string" ? parsed.captionText : "",
+    textOverlays,
+    transitionOverride: asTransition(parsed.transitionOverride),
     watermark: parsed.watermark === true,
     durationTargetSec,
     exportDestination,
-    clips: parsed.clips,
+    clips,
     shareId: typeof parsed.shareId === "string" ? parsed.shareId : undefined,
     sharePassword: parsed.sharePassword === true,
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
@@ -183,6 +317,51 @@ export function clearDraft(): void {
 }
 
 export function toVoyajesProject(draft: DraftState): VoyajesProject {
+  const overlays: TextCard[] = draft.textOverlays
+    .filter((o) => o.value.trim())
+    .map((o) => ({
+      id: o.id,
+      at: o.at,
+      end: o.end,
+      role: o.role,
+      value: o.value.trim(),
+      style: o.style,
+      color: o.color,
+      position: o.position,
+      animationIn: o.animationIn,
+      animationOut: o.animationOut,
+    }));
+
+  const legacyText: TextCard[] = [
+    {
+      at: 0,
+      role: "title",
+      value: draft.title.trim() || "Untitled voyage",
+      style: draft.textStyle,
+      animationIn: draft.textTransition,
+      position: "bottom",
+    },
+    ...(draft.captionText.trim()
+      ? [
+          {
+            at: 0.4,
+            role: "caption" as const,
+            value: draft.captionText.trim(),
+            style: draft.captionStyle,
+            position: "lower-third" as const,
+          },
+        ]
+      : []),
+  ];
+
+  const transitionEdges = draft.clips
+    .map((c, i) =>
+      c.transitionOut
+        ? { afterIndex: i, kind: c.transitionOut as TransitionKindSchemaType }
+        : null,
+    )
+    .filter((e): e is { afterIndex: number; kind: TransitionKindSchemaType } => Boolean(e));
+
   const project: VoyajesProject = {
     schema: 1,
     title: draft.title.trim() || "Untitled voyage",
@@ -196,28 +375,20 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       path: `local:${c.id}/${c.fileName}`,
       mute: c.mute,
       durationSec: c.durationSec,
+      ...(c.transitionOut ? { transitionOut: c.transitionOut } : {}),
     })),
+    ...(draft.transitionOverride
+      ? { transition: draft.transitionOverride }
+      : {}),
+    ...(transitionEdges.length ? { transitionEdges } : {}),
     audio: {
       track: draft.audioTrackRef,
       beatSync: draft.beatSync,
       ducking: draft.ducking,
+      mixMode: draft.audioMixMode,
+      customSounds: draft.customSounds.length ? draft.customSounds : undefined,
     },
-    text: [
-      {
-        at: 0,
-        role: "title",
-        value: draft.title.trim() || "Untitled voyage",
-      },
-      ...(draft.captionText.trim()
-        ? [
-            {
-              at: 0.4,
-              role: "caption" as const,
-              value: draft.captionText.trim(),
-            },
-          ]
-        : []),
-    ],
+    text: [...legacyText, ...overlays],
     textStyle: draft.textStyle,
     textTransition: draft.textTransition,
     captionStyle: draft.captionStyle,
@@ -317,6 +488,27 @@ export function newClipId(): string {
   return `clip-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function newOverlayId(): string {
+  return `text-${newClipId()}`;
+}
+
+export function newSoundId(): string {
+  return `sound-${newClipId()}`;
+}
+
+export function soundBlobKey(id: string): string {
+  return `sound:${id}`;
+}
+
+export function isCustomTrackRef(ref: string): boolean {
+  return ref.startsWith("custom:");
+}
+
+export function customIdFromTrackRef(ref: string): string | null {
+  if (!isCustomTrackRef(ref)) return null;
+  return ref.slice("custom:".length) || null;
+}
+
 export function clipKindFromMime(mime: string, name: string): ClipKind | null {
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
@@ -324,6 +516,12 @@ export function clipKindFromMime(mime: string, name: string): ClipKind | null {
   if (/\.(jpe?g|png|gif|webp|avif|bmp|heic)$/.test(lower)) return "image";
   if (/\.(mp4|webm|mov|m4v)$/.test(lower)) return "video";
   return null;
+}
+
+export function audioKindFromMime(mime: string, name: string): boolean {
+  if (mime.startsWith("audio/")) return true;
+  const lower = name.toLowerCase();
+  return /\.(mp3|wav|m4a|ogg|aac|flac|opus)$/.test(lower);
 }
 
 export function defaultImageDuration(motion: string): number {
@@ -349,4 +547,35 @@ export async function readVideoDuration(file: File): Promise<number> {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Transition into clip at `toIndex` given previous clip's transitionOut + global default. */
+export function transitionIntoClip(
+  clips: DraftClipMeta[],
+  toIndex: number,
+  globalDefault: TransitionKind,
+): TransitionKind {
+  if (toIndex <= 0) return "cut";
+  const prev = clips[toIndex - 1];
+  if (prev?.transitionOut) return prev.transitionOut;
+  return globalDefault;
+}
+
+export function defaultTextOverlay(
+  at = 0,
+  end = 3,
+  value = "New text",
+): DraftTextOverlay {
+  return {
+    id: newOverlayId(),
+    at,
+    end,
+    role: "caption",
+    value,
+    style: "clean-sans",
+    color: "#ffffff",
+    position: "center",
+    animationIn: "fade",
+    animationOut: "fade",
+  };
 }

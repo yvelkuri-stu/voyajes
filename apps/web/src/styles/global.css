@@ -328,9 +328,10 @@ button {
 
 .filmstrip {
   display: flex;
+  align-items: flex-start;
   gap: var(--space-2);
   overflow-x: auto;
-  padding: var(--space-3) 0;
+  padding: var(--space-3) 0 48px;
   justify-content: center;
 }
 
@@ -1942,4 +1943,167 @@ button {
   border: 1px solid rgba(61, 220, 151, 0.35);
   font-size: 0.85rem;
   color: var(--text-primary);
+}
+
+
+/* ——— Per-gap transitions on filmstrip ——— */
+.film-gap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  align-self: flex-start;
+  padding-top: 18px;
+  flex: 0 0 auto;
+  z-index: 2;
+}
+.film-gap-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 36px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.1;
+  cursor: pointer;
+}
+.film-gap-btn:hover,
+.film-gap-btn.open,
+.film-gap-btn.custom {
+  border-color: var(--accent-brand);
+  color: var(--text-primary);
+}
+.film-gap-label {
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6rem;
+}
+.film-gap-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  min-width: 160px;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  padding: 6px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.film-gap-menu button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.film-gap-menu button:hover,
+.film-gap-menu button.active {
+  background: rgba(124, 92, 255, 0.18);
+  color: var(--text-primary);
+}
+
+/* Timed text overlays on preview */
+.preview-overlay {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  z-index: 4;
+  pointer-events: none;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.55);
+  font-size: clamp(0.95rem, 4.2vw, 1.35rem);
+  font-weight: 700;
+  text-align: left;
+}
+.preview-overlay.overlay-pos-top {
+  top: 8%;
+}
+.preview-overlay.overlay-pos-center {
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+}
+.preview-overlay.overlay-pos-bottom {
+  bottom: 12%;
+}
+.preview-overlay.overlay-pos-lower-third {
+  top: 68%;
+  text-align: center;
+}
+
+.overlay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.overlay-row {
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+.overlay-row.open {
+  border-color: var(--accent-brand);
+}
+.overlay-row-head {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.85rem;
+}
+.overlay-editor {
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 8px;
+}
+.overlay-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.overlay-editor input[type="number"],
+.overlay-editor input:not([type="color"]) {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 6px 8px;
+}
+.overlay-time-row {
+  display: flex;
+  gap: 8px;
+}
+.overlay-time-row label {
+  flex: 1;
 }

@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -17,9 +18,12 @@ import {
   TEXT_STYLE_KINDS,
   TEXT_TRANSITION_KINDS,
   type Aspect,
+  type AudioMixMode,
   type BeatSync,
+  type CustomSound,
   type DurationTarget,
   type ExportDestination,
+  type TextPosition,
   type TextStyle,
   type TextTransition,
   type TransitionKind,
@@ -49,22 +53,30 @@ import {
 import { startBeatPreview, type PreviewHandle } from "../lib/beatPreview";
 import { describeBeatSync, snapDurationToBeat } from "../lib/beatSync";
 import {
+  audioKindFromMime,
   clearAllBlobs,
   clearDraft,
   clipKindFromMime,
+  customIdFromTrackRef,
   defaultDraft,
   defaultImageDuration,
+  defaultTextOverlay,
   deleteBlob,
   getBlob,
+  isCustomTrackRef,
   loadDraft,
   newClipId,
+  newSoundId,
   putBlob,
   readVideoDuration,
   saveDraft,
+  soundBlobKey,
   toVoyajesProject,
+  transitionIntoClip,
   validatePersistedProject,
   type DraftClipMeta,
   type DraftState,
+  type DraftTextOverlay,
 } from "../lib/draftStore";
 import { ensureShareFromDraft } from "../lib/shareStore";
 import {
@@ -79,6 +91,8 @@ const ASPECTS: Aspect[] = ["9:16", "16:9", "1:1", "4:5"];
 const BEAT_SYNC_MODES: BeatSync[] = ["off", "soft", "medium", "hard"];
 const TRANSITIONS: TransitionKind[] = getTransitionKinds();
 const DURATION_TARGETS: DurationTarget[] = [15, 30, 60];
+const TEXT_POSITIONS: TextPosition[] = ["top", "center", "bottom", "lower-third"];
+const AUDIO_ACCEPT = "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/ogg,audio/aac,.mp3,.wav,.m4a,.ogg";
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
@@ -123,6 +137,14 @@ export function Create() {
     paramTemplate?.id,
   );
   const [transitionOverride, setTransitionOverride] = useState<TransitionKind | null>(null);
+  const [textOverlays, setTextOverlays] = useState<DraftTextOverlay[]>([]);
+  const [editingOverlayId, setEditingOverlayId] = useState<string | null>(null);
+  const [gapMenuIndex, setGapMenuIndex] = useState<number | null>(null);
+  const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
+  const [audioMixMode, setAudioMixMode] = useState<AudioMixMode>("replace");
+  const [customSoundUrls, setCustomSoundUrls] = useState<Record<string, string>>({});
+  const [soundUrlInput, setSoundUrlInput] = useState("");
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
   const [audioTrackRef, setAudioTrackRef] = useState(
     paramTemplate
       ? (getBeatById(paramTemplate.beatId)?.packRef ?? "audio.ocean-drift-084@1.0.0")
@@ -172,8 +194,14 @@ export function Create() {
     [themeId, themes],
   );
 
-  const activeTransition: TransitionKind =
+  const globalTransition: TransitionKind =
     transitionOverride ?? theme.transition;
+
+  const activeTransition: TransitionKind = transitionIntoClip(
+    clips,
+    activeIndex,
+    globalTransition,
+  );
 
   const selectedBeat: BeatCard =
     getBeatByRef(audioTrackRef) ?? beats[0] ?? {
@@ -253,7 +281,12 @@ export function Create() {
       setExportDestination(base.exportDestination);
       setShareId(base.shareId);
       setSharePassword(base.sharePassword === true);
-      if (paramTemplate) {
+      setTextOverlays(base.textOverlays ?? []);
+      setCustomSounds(base.customSounds ?? []);
+      setAudioMixMode(base.audioMixMode ?? "replace");
+      if (base.transitionOverride) {
+        setTransitionOverride(base.transitionOverride);
+      } else if (paramTemplate) {
         setTransitionOverride(paramTemplate.transition);
       }
       const live: LiveClip[] = [];
@@ -266,6 +299,19 @@ export function Create() {
         }
       }
       setClips(live);
+      const soundUrls: Record<string, string> = {};
+      for (const sound of base.customSounds ?? []) {
+        if (sound.source === "file") {
+          const blob = await getBlob(soundBlobKey(sound.id));
+          if (cancelled) return;
+          if (blob) {
+            soundUrls[sound.id] = trackUrl(URL.createObjectURL(blob));
+          }
+        } else if (sound.url) {
+          soundUrls[sound.id] = sound.url;
+        }
+      }
+      setCustomSoundUrls(soundUrls);
       setHydrated(true);
       setSchemaOk(validatePersistedProject().ok || live.length === 0);
     })();
@@ -290,23 +336,36 @@ export function Create() {
       audioTrackRef,
       beatSync,
       ducking,
+      audioMixMode,
+      customSounds,
       textStyle,
       textTransition,
       captionStyle,
       captionText,
+      textOverlays,
+      transitionOverride,
       watermark,
       durationTargetSec,
       exportDestination,
       shareId,
       sharePassword,
       clips: clips.map(
-        ({ id, fileName, mimeType, kind, durationSec, mute }): DraftClipMeta => ({
+        ({
           id,
           fileName,
           mimeType,
           kind,
           durationSec,
           mute,
+          transitionOut,
+        }): DraftClipMeta => ({
+          id,
+          fileName,
+          mimeType,
+          kind,
+          durationSec,
+          mute,
+          transitionOut: transitionOut ?? null,
         }),
       ),
       updatedAt: new Date().toISOString(),
@@ -323,10 +382,14 @@ export function Create() {
     audioTrackRef,
     beatSync,
     ducking,
+    audioMixMode,
+    customSounds,
     textStyle,
     textTransition,
     captionStyle,
     captionText,
+    textOverlays,
+    transitionOverride,
     watermark,
     durationTargetSec,
     exportDestination,
@@ -524,6 +587,190 @@ export function Create() {
     [previewingId, stopPreview],
   );
 
+  const setGapTransition = useCallback(
+    (afterIndex: number, kind: TransitionKind | null) => {
+      setClips((prev) =>
+        prev.map((c, i) =>
+          i === afterIndex
+            ? {
+                ...c,
+                transitionOut: kind,
+              }
+            : c,
+        ),
+      );
+      setGapMenuIndex(null);
+      setTransitionKey((k) => k + 1);
+      setStatus(
+        kind
+          ? `Gap after clip ${afterIndex + 1} · ${transitionLabel(kind)}`
+          : `Gap after clip ${afterIndex + 1} · theme default`,
+      );
+    },
+    [],
+  );
+
+  const gapTransitionKind = useCallback(
+    (afterIndex: number): TransitionKind => {
+      const c = clips[afterIndex];
+      return c?.transitionOut ?? globalTransition;
+    },
+    [clips, globalTransition],
+  );
+
+  const addTextOverlay = useCallback(() => {
+    const at = trackElapsed;
+    const overlay = defaultTextOverlay(at, Math.min(totalDuration || at + 3, at + 3), "New text");
+    setTextOverlays((prev) => [...prev, overlay]);
+    setEditingOverlayId(overlay.id);
+    setStatus("Added text overlay on timeline");
+  }, [trackElapsed, totalDuration]);
+
+  const updateTextOverlay = useCallback(
+    (id: string, patch: Partial<DraftTextOverlay>) => {
+      setTextOverlays((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, ...patch } : o)),
+      );
+    },
+    [],
+  );
+
+  const removeTextOverlay = useCallback((id: string) => {
+    setTextOverlays((prev) => prev.filter((o) => o.id !== id));
+    setEditingOverlayId((cur) => (cur === id ? null : cur));
+  }, []);
+
+  const importAudioFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const list = Array.from(files);
+      const added: CustomSound[] = [];
+      for (const file of list) {
+        if (!audioKindFromMime(file.type, file.name)) {
+          setStatus(`Skipped non-audio: ${file.name}`);
+          continue;
+        }
+        const id = newSoundId();
+        await putBlob(soundBlobKey(id), file);
+        const objectUrl = trackUrl(URL.createObjectURL(file));
+        const sound: CustomSound = {
+          id,
+          name: file.name.replace(/\.[^.]+$/, "") || file.name,
+          mimeType: file.type || "audio/mpeg",
+          source: "file",
+          path: `local:sound:${id}/${file.name}`,
+        };
+        added.push(sound);
+        setCustomSoundUrls((prev) => ({ ...prev, [id]: objectUrl }));
+      }
+      if (added.length) {
+        setCustomSounds((prev) => [...prev, ...added]);
+        const last = added[added.length - 1];
+        setAudioTrackRef(`custom:${last.id}`);
+        setStatus(`Imported sound · ${last.name}`);
+      }
+    },
+    [trackUrl],
+  );
+
+  const importAudioUrl = useCallback(() => {
+    const url = soundUrlInput.trim();
+    if (!url) return;
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      setStatus("Invalid audio URL");
+      return;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      setStatus("Audio URL must be http(s)");
+      return;
+    }
+    const id = newSoundId();
+    const name =
+      decodeURIComponent(parsed.pathname.split("/").pop() || "Remote sound")
+        .replace(/\.[^.]+$/, "") || "Remote sound";
+    const sound: CustomSound = {
+      id,
+      name,
+      source: "url",
+      url,
+      mimeType: "audio/mpeg",
+    };
+    setCustomSounds((prev) => [...prev, sound]);
+    setCustomSoundUrls((prev) => ({ ...prev, [id]: url }));
+    setAudioTrackRef(`custom:${id}`);
+    setSoundUrlInput("");
+    setStatus(
+      `Added remote sound · ${name} (CORS may block preview/export from other sites)`,
+    );
+  }, [soundUrlInput]);
+
+  const selectCustomSound = useCallback(
+    (sound: CustomSound) => {
+      setAudioTrackRef(`custom:${sound.id}`);
+      setStatus(`Custom sound · ${sound.name}`);
+    },
+    [],
+  );
+
+  const previewCustomSound = useCallback(
+    (sound: CustomSound) => {
+      const url = customSoundUrls[sound.id] || sound.url;
+      if (previewingId === sound.id) {
+        stopPreview();
+        return;
+      }
+      stopPreview();
+      if (!url) {
+        setStatus("No audio URL for this sound");
+        return;
+      }
+      previewHandle.current = startBeatPreview({
+        previewUrl: url,
+        bpm: selectedBeat.bpm,
+        mood: ["custom"],
+        onMode: (m) => setPreviewMode(m),
+        onError: (msg) =>
+          setStatus(
+            `${msg} · remote audio often needs CORS; try uploading the file instead`,
+          ),
+      });
+      setPreviewingId(sound.id);
+    },
+    [customSoundUrls, previewingId, selectedBeat.bpm, stopPreview],
+  );
+
+  const removeCustomSound = useCallback(
+    async (id: string) => {
+      await deleteBlob(soundBlobKey(id));
+      setCustomSounds((prev) => prev.filter((s) => s.id !== id));
+      setCustomSoundUrls((prev) => {
+        const next = { ...prev };
+        const url = next[id];
+        if (url && url.startsWith("blob:")) revokeUrl(url);
+        delete next[id];
+        return next;
+      });
+      if (customIdFromTrackRef(audioTrackRef) === id) {
+        setAudioTrackRef(beats[0]?.packRef ?? "audio.ocean-drift-084@1.0.0");
+      }
+      setStatus("Removed custom sound");
+    },
+    [audioTrackRef, beats, revokeUrl],
+  );
+
+  const activeOverlays = useMemo(
+    () =>
+      textOverlays.filter(
+        (o) =>
+          o.value.trim() &&
+          trackElapsed >= o.at &&
+          trackElapsed < o.end,
+      ),
+    [textOverlays, trackElapsed],
+  );
+
   const setBeatSyncMode = useCallback(
     (mode: BeatSync) => {
       setBeatSync(mode);
@@ -652,6 +899,13 @@ export function Create() {
     setExportDestination("custom");
     setShareId(undefined);
     setSharePassword(false);
+    setTextOverlays([]);
+    setEditingOverlayId(null);
+    setCustomSounds([]);
+    setCustomSoundUrls({});
+    setAudioMixMode("replace");
+    setTransitionOverride(null);
+    setGapMenuIndex(null);
     stopPreview();
     setClips([]);
     setActiveIndex(0);
@@ -683,6 +937,37 @@ export function Create() {
 
     try {
       const preset = getExportPreset(exportDestination);
+      const customId = customIdFromTrackRef(audioTrackRef);
+      const customUrl = customId ? customSoundUrls[customId] : undefined;
+      const catalogUrl = selectedBeat.previewUrl;
+      let audioOpts:
+        | {
+            previewUrl?: string;
+            mixUrl?: string;
+            beatName?: string;
+            ducking?: boolean;
+          }
+        | undefined;
+      if (customUrl && audioMixMode === "mix" && catalogUrl) {
+        audioOpts = {
+          previewUrl: customUrl,
+          mixUrl: catalogUrl,
+          beatName: customSounds.find((x) => x.id === customId)?.name ?? "Custom + beat",
+          ducking,
+        };
+      } else if (customUrl) {
+        audioOpts = {
+          previewUrl: customUrl,
+          beatName: customSounds.find((x) => x.id === customId)?.name ?? "Custom sound",
+          ducking,
+        };
+      } else if (catalogUrl) {
+        audioOpts = {
+          previewUrl: catalogUrl,
+          beatName: selectedBeat.name,
+          ducking,
+        };
+      }
       const result = await exportSlideshowWebm({
         clips: clips.map((c) => ({
           id: c.id,
@@ -690,21 +975,19 @@ export function Create() {
           objectUrl: c.objectUrl,
           fileName: c.fileName,
           durationSec: c.durationSec,
+          transitionOut: c.transitionOut,
         })),
         theme,
         title,
         aspect,
-        transition: activeTransition,
+        transition: globalTransition,
+        textOverlays,
+        captionText,
+        captionStyle,
+        textStyle,
         shortEdge: preset.shortEdge,
         watermark,
-        audio: selectedBeat.previewUrl
-          ? {
-              previewUrl: selectedBeat.previewUrl,
-              beatName: selectedBeat.name,
-              // Ducking stays mostly metadata; export applies a mild gain trim only
-              ducking,
-            }
-          : undefined,
+        audio: audioOpts,
         onProgress: (p) => {
           setExportProgress(p);
           setStatus(p.message);
@@ -761,14 +1044,19 @@ export function Create() {
       exportDestination,
       shareId,
       sharePassword,
-      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
+      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
         id,
         fileName,
         mimeType,
         kind,
         durationSec,
         mute,
+        transitionOut: transitionOut ?? null,
       })),
+      textOverlays,
+      customSounds,
+      audioMixMode,
+      transitionOverride,
       updatedAt: new Date().toISOString(),
     };
     const project = toVoyajesProject(draft);
@@ -808,14 +1096,19 @@ export function Create() {
       exportDestination,
       shareId,
       sharePassword,
-      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
+      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
         id,
         fileName,
         mimeType,
         kind,
         durationSec,
         mute,
+        transitionOut: transitionOut ?? null,
       })),
+      textOverlays,
+      customSounds,
+      audioMixMode,
+      transitionOverride,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -1211,19 +1504,30 @@ export function Create() {
               }}
             />
 
-            <div
-              className={`preview-title text-style-${textStyle} text-tx-${textTransition}`}
-              style={{ color: theme.palette.text }}
-            >
-              {title}
-              <div className={`preview-sub text-style-${captionStyle}`}>
-                {captionText.trim()
-                  ? captionText
-                  : `${activeTransition} · ${theme.motion} · ${textStyleLabel(textStyle)}${
-                      active ? ` · ${activeIndex + 1}/${clips.length}` : ""
-                    }${durationTargetSec ? ` · target ${durationTargetSec}s` : ""}`}
+            {!activeOverlays.some((o) => o.role === "title") && (
+              <div
+                className={`preview-title text-style-${textStyle} text-tx-${textTransition}`}
+                style={{ color: theme.palette.text }}
+              >
+                {title}
+                <div className={`preview-sub text-style-${captionStyle}`}>
+                  {captionText.trim()
+                    ? captionText
+                    : `${activeTransition} · ${theme.motion} · ${textStyleLabel(textStyle)}${
+                        active ? ` · ${activeIndex + 1}/${clips.length}` : ""
+                      }${durationTargetSec ? ` · target ${durationTargetSec}s` : ""}`}
+                </div>
               </div>
-            </div>
+            )}
+            {activeOverlays.map((o) => (
+              <div
+                key={o.id}
+                className={`preview-overlay text-style-${o.style} text-tx-${o.animationIn} overlay-pos-${o.position}`}
+                style={{ color: o.color || theme.palette.text }}
+              >
+                {o.value}
+              </div>
+            ))}
             {watermark && (
               <div className="preview-watermark" aria-hidden>
                 Voyajes
@@ -1277,7 +1581,8 @@ export function Create() {
 
           <div className="filmstrip" aria-label="Clip filmstrip">
             {clips.map((c, i) => (
-              <div key={c.id} className="film-clip-wrap">
+              <Fragment key={c.id}>
+              <div className="film-clip-wrap">
                 <button
                   type="button"
                   className={`film-clip${i === activeIndex ? " active" : ""}`}
@@ -1327,6 +1632,47 @@ export function Create() {
                   </button>
                 </div>
               </div>
+                {i < clips.length - 1 && (
+                  <div className="film-gap" key={`gap-${c.id}`}>
+                    <button
+                      type="button"
+                      className={`film-gap-btn${gapMenuIndex === i ? " open" : ""}${c.transitionOut ? " custom" : ""}`}
+                      title={`Transition after clip ${i + 1}: ${transitionLabel(gapTransitionKind(i))}`}
+                      onClick={() =>
+                        setGapMenuIndex((cur) => (cur === i ? null : i))
+                      }
+                    >
+                      ✦
+                      <span className="film-gap-label">
+                        {transitionLabel(gapTransitionKind(i))}
+                      </span>
+                    </button>
+                    {gapMenuIndex === i && (
+                      <div className="film-gap-menu" role="menu">
+                        <button
+                          type="button"
+                          className={!c.transitionOut ? "active" : ""}
+                          onClick={() => setGapTransition(i, null)}
+                        >
+                          Theme default ({transitionLabel(globalTransition)})
+                        </button>
+                        {TRANSITIONS.map((kind) => (
+                          <button
+                            key={kind}
+                            type="button"
+                            className={
+                              c.transitionOut === kind ? "active" : ""
+                            }
+                            onClick={() => setGapTransition(i, kind)}
+                          >
+                            {transitionLabel(kind)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Fragment>
             ))}
             <button
               type="button"
@@ -1337,6 +1683,9 @@ export function Create() {
               +
             </button>
           </div>
+          <p className="muted" style={{ fontSize: "0.75rem", textAlign: "center", marginTop: 6 }}>
+            Tap ✦ between clips to set a per-gap transition (preview + WebM + CLI).
+          </p>
           <p className="muted" style={{ fontSize: "0.8rem", textAlign: "center" }}>
             Draft saves to localStorage (+ media in IndexedDB). Export records browser
             WebM with beat mux when supported. Use Export… for YouTube / TikTok / IG
@@ -1432,11 +1781,14 @@ export function Create() {
               {packRef(theme.id, theme.version)}
             </code>
             <div className="muted" style={{ marginTop: 12 }}>
-              Transition
+              Default transition
             </div>
+            <p className="muted" style={{ fontSize: "0.7rem", margin: "0 0 6px" }}>
+              Used for gaps without a per-clip pick on the filmstrip.
+            </p>
             <div className="chip-row" style={{ marginTop: 6, flexWrap: "wrap" }}>
               {TRANSITIONS.filter((k) => k !== "cut").map((kind) => {
-                const selected = activeTransition === kind;
+                const selected = globalTransition === kind;
                 const isDefault = theme.transition === kind;
                 return (
                   <button
@@ -1467,7 +1819,7 @@ export function Create() {
               })}
             </div>
             <div className="muted" style={{ fontSize: "0.75rem", marginTop: 6 }}>
-              {activeTransition} · {theme.transitionDurationMs}ms
+              Default {globalTransition} · enter uses {activeTransition} · {theme.transitionDurationMs}ms
               {transitionOverride && transitionOverride !== theme.transition
                 ? " · override"
                 : " · theme default"}
@@ -1631,6 +1983,204 @@ export function Create() {
                 ),
               )}
             </div>
+
+            <div className="muted" style={{ fontSize: "0.8rem", margin: "16px 0 6px" }}>
+              Timeline text overlays
+            </div>
+            <p className="muted" style={{ fontSize: "0.75rem", marginTop: 0 }}>
+              Bound to time ranges — place on a clip or span clips. Preview + export draw them.
+            </p>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: "6px 12px", fontSize: "0.8rem", marginBottom: 8 }}
+              onClick={addTextOverlay}
+            >
+              + Add text at {formatTime(trackElapsed)}
+            </button>
+            <div className="overlay-list">
+              {textOverlays.map((o) => {
+                const open = editingOverlayId === o.id;
+                return (
+                  <div key={o.id} className={`overlay-row${open ? " open" : ""}`}>
+                    <button
+                      type="button"
+                      className="overlay-row-head"
+                      onClick={() =>
+                        setEditingOverlayId((cur) => (cur === o.id ? null : o.id))
+                      }
+                    >
+                      <span>{o.value.trim() || "(empty)"}</span>
+                      <span className="muted" style={{ fontSize: "0.7rem" }}>
+                        {formatTime(o.at)}–{formatTime(o.end)} · {o.position}
+                      </span>
+                    </button>
+                    {open && (
+                      <div className="overlay-editor">
+                        <label>
+                          Text
+                          <div className="comment-compose-row">
+                            <input
+                              value={o.value}
+                              onChange={(e) =>
+                                updateTextOverlay(o.id, { value: e.target.value })
+                              }
+                            />
+                            <EmojiPicker
+                              onSelect={(emoji) =>
+                                updateTextOverlay(o.id, {
+                                  value: o.value + emoji,
+                                })
+                              }
+                            />
+                          </div>
+                        </label>
+                        <div className="overlay-time-row">
+                          <label>
+                            Start
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              value={o.at}
+                              onChange={(e) =>
+                                updateTextOverlay(o.id, {
+                                  at: Math.max(0, Number(e.target.value) || 0),
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            End
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              value={o.end}
+                              onChange={(e) =>
+                                updateTextOverlay(o.id, {
+                                  end: Math.max(
+                                    o.at,
+                                    Number(e.target.value) || o.at,
+                                  ),
+                                })
+                              }
+                            />
+                          </label>
+                        </div>
+                        <div className="muted" style={{ fontSize: "0.75rem" }}>
+                          Role
+                        </div>
+                        <div className="chip-row" style={{ flexWrap: "wrap" }}>
+                          {(["title", "subtitle", "caption"] as const).map((role) => (
+                            <button
+                              key={role}
+                              type="button"
+                              className={`chip${o.role === role ? " chip-active" : ""}`}
+                              onClick={() => updateTextOverlay(o.id, { role })}
+                            >
+                              {role}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>
+                          Position
+                        </div>
+                        <div className="chip-row" style={{ flexWrap: "wrap" }}>
+                          {TEXT_POSITIONS.map((pos) => (
+                            <button
+                              key={pos}
+                              type="button"
+                              className={`chip${o.position === pos ? " chip-active" : ""}`}
+                              onClick={() =>
+                                updateTextOverlay(o.id, { position: pos })
+                              }
+                            >
+                              {pos}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>
+                          Style
+                        </div>
+                        <div className="chip-row" style={{ flexWrap: "wrap" }}>
+                          {TEXT_STYLE_KINDS.map((st) => (
+                            <button
+                              key={st}
+                              type="button"
+                              className={`chip${o.style === st ? " chip-active" : ""}`}
+                              onClick={() =>
+                                updateTextOverlay(o.id, { style: st })
+                              }
+                            >
+                              {textStyleLabel(st)}
+                            </button>
+                          ))}
+                        </div>
+                        <label style={{ display: "block", marginTop: 8, fontSize: "0.8rem" }}>
+                          Color
+                          <input
+                            type="color"
+                            value={/^#[0-9a-fA-F]{6}$/.test(o.color) ? o.color : "#ffffff"}
+                            onChange={(e) =>
+                              updateTextOverlay(o.id, { color: e.target.value })
+                            }
+                            style={{ marginLeft: 8, verticalAlign: "middle" }}
+                          />
+                        </label>
+                        <div className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>
+                          Animation in
+                        </div>
+                        <div className="chip-row" style={{ flexWrap: "wrap" }}>
+                          {TEXT_TRANSITION_KINDS.map((tx) => (
+                            <button
+                              key={tx}
+                              type="button"
+                              className={`chip${o.animationIn === tx ? " chip-active" : ""}`}
+                              onClick={() =>
+                                updateTextOverlay(o.id, { animationIn: tx })
+                              }
+                            >
+                              {textTransitionLabel(tx)}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>
+                          Animation out
+                        </div>
+                        <div className="chip-row" style={{ flexWrap: "wrap" }}>
+                          {TEXT_TRANSITION_KINDS.map((tx) => (
+                            <button
+                              key={tx}
+                              type="button"
+                              className={`chip${o.animationOut === tx ? " chip-active" : ""}`}
+                              onClick={() =>
+                                updateTextOverlay(o.id, { animationOut: tx })
+                              }
+                            >
+                              {textTransitionLabel(tx)}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          style={{ marginTop: 10, padding: "4px 10px", fontSize: "0.75rem" }}
+                          onClick={() => removeTextOverlay(o.id)}
+                        >
+                          Remove overlay
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {textOverlays.length === 0 && (
+                <p className="muted" style={{ fontSize: "0.75rem" }}>
+                  No overlays yet — add one to style titles/captions on a time range.
+                </p>
+              )}
+            </div>
           </section>
 
           <hr
@@ -1644,9 +2194,137 @@ export function Create() {
           <section ref={audioPanelRef} className="audio-panel" aria-label="Audio">
             <h3 style={{ marginBottom: 4 }}>Audio panel</h3>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
-              Catalog beats · preview · beat-sync · ducking (mild gain on export; true dialogue duck TODO).
+              Catalog beats or import your own · mix or replace · beat-sync · ducking.
             </p>
 
+            <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+              Custom sounds
+            </div>
+            <input
+              ref={audioFileInputRef}
+              type="file"
+              accept={AUDIO_ACCEPT}
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files) void importAudioFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                onClick={() => audioFileInputRef.current?.click()}
+              >
+                Upload mp3 / wav / m4a / ogg
+              </button>
+            </div>
+            <div className="comment-compose-row" style={{ marginBottom: 8 }}>
+              <input
+                value={soundUrlInput}
+                onChange={(e) => setSoundUrlInput(e.target.value)}
+                placeholder="Paste audio URL…"
+                aria-label="Audio URL"
+                style={{
+                  flex: 1,
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: 8,
+                  color: "var(--text-primary)",
+                  padding: "8px 10px",
+                  fontSize: "0.8rem",
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                onClick={importAudioUrl}
+              >
+                Add URL
+              </button>
+            </div>
+            <p className="muted" style={{ fontSize: "0.7rem", marginTop: 0 }}>
+              Remote URLs often block browser fetch (CORS). Upload the file if preview/export fails.
+            </p>
+            {customSounds.length > 0 && (
+              <div className="beat-list" style={{ marginBottom: 12 }}>
+                {customSounds.map((sound) => {
+                  const selected = audioTrackRef === `custom:${sound.id}`;
+                  const playing = previewingId === sound.id;
+                  return (
+                    <div
+                      key={sound.id}
+                      className={`beat-row${selected ? " selected" : ""}`}
+                      style={
+                        selected
+                          ? {
+                              borderColor: theme.palette.accent,
+                              background: `linear-gradient(90deg, ${theme.palette.accent}18, transparent)`,
+                            }
+                          : undefined
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="beat-select"
+                        onClick={() => selectCustomSound(sound)}
+                      >
+                        <span className="beat-name">{sound.name}</span>
+                        <span className="muted beat-meta">
+                          {sound.source === "url" ? "URL" : "File"} · custom
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-ghost beat-play${playing ? " is-playing" : ""}`}
+                        aria-label={playing ? `Stop ${sound.name}` : `Preview ${sound.name}`}
+                        onClick={() => previewCustomSound(sound)}
+                      >
+                        {playing ? "Stop" : "▶"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                        aria-label={`Remove ${sound.name}`}
+                        onClick={() => void removeCustomSound(sound.id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+              Mix mode
+            </div>
+            <div className="chip-row" style={{ marginBottom: 12 }}>
+              {(["replace", "mix"] as AudioMixMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`chip${audioMixMode === mode ? " chip-active" : ""}`}
+                  onClick={() => {
+                    setAudioMixMode(mode);
+                    setStatus(
+                      mode === "mix"
+                        ? "Mix · custom over catalog beat on export"
+                        : "Replace · custom or catalog alone",
+                    );
+                  }}
+                >
+                  {mode === "mix" ? "Mix with catalog" : "Replace catalog"}
+                </button>
+              ))}
+            </div>
+
+            <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+              Catalog beats
+            </div>
             <div className="beat-list">
               {beats.map((beat) => {
                 const selected = selectedBeat.id === beat.id;

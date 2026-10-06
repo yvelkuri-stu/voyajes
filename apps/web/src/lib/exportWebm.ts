@@ -6,7 +6,13 @@
  * Cloud / FFmpeg / Remotion encode remains a future path.
  */
 
-import type { Aspect, TransitionKind } from "@voyajes/core";
+import type {
+  Aspect,
+  TextPosition,
+  TextStyle,
+  TextTransition,
+  TransitionKind,
+} from "@voyajes/core";
 import type { ThemeCard } from "../data/themes";
 
 export type ExportClip = {
@@ -15,6 +21,21 @@ export type ExportClip = {
   objectUrl: string;
   fileName: string;
   durationSec: number;
+  /** Transition used when leaving this clip into the next */
+  transitionOut?: TransitionKind | null;
+};
+
+export type ExportTextOverlay = {
+  id?: string;
+  at: number;
+  end: number;
+  role: "title" | "subtitle" | "caption";
+  value: string;
+  style?: TextStyle;
+  color?: string;
+  position?: TextPosition;
+  animationIn?: TextTransition;
+  animationOut?: TextTransition;
 };
 
 export type ExportProgress = {
@@ -27,8 +48,10 @@ export type ExportProgress = {
 };
 
 export type ExportAudioOptions = {
-  /** Catalog beat preview URL (same-origin MP3). Required to attempt mux. */
+  /** Catalog beat preview URL (same-origin MP3) and/or custom sound URL. */
   previewUrl?: string;
+  /** Optional second URL mixed under the primary (mixMode=mix). */
+  mixUrl?: string;
   /** Soft label for status messages */
   beatName?: string;
   /**
@@ -41,6 +64,10 @@ export type ExportAudioOptions = {
    * When true and we do mux, apply a mild gain trim only (no true ducking).
    */
   ducking?: boolean;
+  /** Gain for primary track (default 0.85 / 0.72 with ducking). */
+  primaryGain?: number;
+  /** Gain for mix underlay (default 0.45). */
+  mixGain?: number;
 };
 
 export type ExportWebmOptions = {
@@ -48,14 +75,20 @@ export type ExportWebmOptions = {
   theme: ThemeCard;
   title: string;
   aspect: Aspect;
-  /** Override theme.transition for this export */
+  /** Global default transition when a clip has no transitionOut */
   transition?: TransitionKind;
+  /** Timed text overlays drawn during export */
+  textOverlays?: ExportTextOverlay[];
+  /** Legacy caption under title when no overlays cover it */
+  captionText?: string;
+  captionStyle?: TextStyle;
+  textStyle?: TextStyle;
   /** Target short-edge ~1080; long edge follows aspect */
   shortEdge?: number;
   fps?: number;
   /** Soft Voyajes watermark stub (bottom-right) */
   watermark?: boolean;
-  /** Optional catalog beat to mux into the recording */
+  /** Optional catalog / custom beat to mux into the recording */
   audio?: ExportAudioOptions;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
@@ -117,12 +150,19 @@ type CapturedBeatAudio = {
 };
 
 /**
- * Decode a catalog preview MP3 and expose it as a MediaStream track via
+ * Decode preview / custom audio URL(s) and expose as a MediaStream track via
  * AudioContext + MediaStreamAudioDestinationNode. Loops for the export length.
+ * Optional mixUrl is mixed under the primary (custom + catalog, etc.).
  */
 async function captureBeatAudioStream(
   previewUrl: string,
-  opts: { ducking?: boolean; signal?: AbortSignal },
+  opts: {
+    ducking?: boolean;
+    signal?: AbortSignal;
+    mixUrl?: string;
+    primaryGain?: number;
+    mixGain?: number;
+  },
 ): Promise<CapturedBeatAudio> {
   assertNotAborted(opts.signal);
   const AC =
@@ -133,12 +173,15 @@ async function captureBeatAudioStream(
     throw new Error("Web Audio API is not available");
   }
 
-  const res = await fetch(previewUrl, { signal: opts.signal });
-  if (!res.ok) {
-    throw new Error(`Beat preview fetch failed (${res.status})`);
-  }
-  const raw = await res.arrayBuffer();
-  assertNotAborted(opts.signal);
+  const decodeUrl = async (url: string): Promise<AudioBuffer> => {
+    const res = await fetch(url, { signal: opts.signal });
+    if (!res.ok) {
+      throw new Error(`Audio fetch failed (${res.status})`);
+    }
+    const raw = await res.arrayBuffer();
+    assertNotAborted(opts.signal);
+    return ctx.decodeAudioData(raw.slice(0));
+  };
 
   const ctx = new AC();
   try {
@@ -147,9 +190,9 @@ async function captureBeatAudioStream(
     /* some browsers resume on gesture only — export is already user-gestured */
   }
 
-  let audioBuffer: AudioBuffer;
+  let primary: AudioBuffer;
   try {
-    audioBuffer = await ctx.decodeAudioData(raw.slice(0));
+    primary = await decodeUrl(previewUrl);
   } catch (err) {
     await ctx.close().catch(() => undefined);
     throw err instanceof Error
@@ -157,21 +200,45 @@ async function captureBeatAudioStream(
       : new Error("Could not decode beat preview audio");
   }
 
+  let mix: AudioBuffer | null = null;
+  if (opts.mixUrl) {
+    try {
+      mix = await decodeUrl(opts.mixUrl);
+    } catch {
+      mix = null;
+    }
+  }
+
   const dest = ctx.createMediaStreamDestination();
-  const source = ctx.createBufferSource();
-  source.buffer = audioBuffer;
-  source.loop = true;
-  const gain = ctx.createGain();
-  // Mild trim when ducking metadata is on; true dialogue ducking is still TODO
-  gain.gain.value = opts.ducking ? 0.55 : 0.85;
-  source.connect(gain);
-  gain.connect(dest);
-  // Do not connect to ctx.destination — keep export silent in speakers
-  source.start(0);
+  const sources: AudioBufferSourceNode[] = [];
+  const startSource = (buf: AudioBuffer, gainValue: number) => {
+    const source = ctx.createBufferSource();
+    source.buffer = buf;
+    source.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.value = gainValue;
+    source.connect(gain);
+    gain.connect(dest);
+    source.start(0);
+    sources.push(source);
+  };
+
+  const primaryGain =
+    opts.primaryGain ?? (opts.ducking ? 0.55 : 0.85);
+  startSource(primary, primaryGain);
+  if (mix) {
+    startSource(mix, opts.mixGain ?? 0.4);
+  }
 
   const audioTracks = dest.stream.getAudioTracks();
   if (audioTracks.length === 0) {
-    source.stop();
+    for (const src of sources) {
+      try {
+        src.stop();
+      } catch {
+        /* ignore */
+      }
+    }
     await ctx.close().catch(() => undefined);
     throw new Error("No audio track from MediaStreamDestination");
   }
@@ -182,10 +249,12 @@ async function captureBeatAudioStream(
     stop: () => {
       if (stopped) return;
       stopped = true;
-      try {
-        source.stop();
-      } catch {
-        /* already stopped */
+      for (const source of sources) {
+        try {
+          source.stop();
+        } catch {
+          /* already stopped */
+        }
       }
       for (const t of dest.stream.getAudioTracks()) {
         try {
@@ -372,6 +441,127 @@ function fillVignette(
   ctx.restore();
 }
 
+function fontForStyle(style: TextStyle | undefined, size: number): string {
+  switch (style) {
+    case "bold-impact":
+      return `800 ${size}px Sora, system-ui, sans-serif`;
+    case "soft-serif":
+      return `600 ${size}px Georgia, "Times New Roman", serif`;
+    case "script-soft":
+      return `500 ${size}px "Segoe Script", "Apple Chancery", cursive`;
+    case "mono-tech":
+      return `700 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    case "vintage-poster":
+      return `800 ${size}px Sora, system-ui, sans-serif`;
+    case "kinetic-outline":
+      return `800 ${size}px Sora, system-ui, sans-serif`;
+    case "caption-pill":
+    case "clean-sans":
+    default:
+      return `600 ${size}px Inter, system-ui, sans-serif`;
+  }
+}
+
+function positionY(
+  position: TextPosition | undefined,
+  h: number,
+  pad: number,
+): { y: number; baseline: CanvasTextBaseline } {
+  switch (position) {
+    case "top":
+      return { y: pad + 8, baseline: "top" };
+    case "center":
+      return { y: h / 2, baseline: "middle" };
+    case "lower-third":
+      return { y: h * 0.72, baseline: "top" };
+    case "bottom":
+    default:
+      return { y: h - pad, baseline: "bottom" };
+  }
+}
+
+function animAlpha(
+  localT: number,
+  durationSec: number,
+  animationIn?: TextTransition,
+  animationOut?: TextTransition,
+): number {
+  const inDur = 0.35;
+  const outDur = 0.3;
+  let a = 1;
+  if (animationIn && localT < inDur) {
+    a = Math.min(a, localT / inDur);
+  }
+  if (animationOut && durationSec - localT < outDur) {
+    a = Math.min(a, Math.max(0, (durationSec - localT) / outDur));
+  }
+  return Math.max(0, Math.min(1, a));
+}
+
+function drawStyledText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  theme: ThemeCard,
+  w: number,
+  h: number,
+  opts: {
+    style?: TextStyle;
+    color?: string;
+    position?: TextPosition;
+    role?: "title" | "subtitle" | "caption";
+    alpha?: number;
+  },
+) {
+  const pad = Math.round(w * 0.06);
+  const isTitle = opts.role === "title";
+  const size = Math.max(
+    isTitle ? 22 : 14,
+    Math.round(w * (isTitle ? 0.055 : 0.038)),
+  );
+  const { y, baseline } = positionY(opts.position, h, pad);
+  ctx.save();
+  ctx.globalAlpha = opts.alpha ?? 1;
+  ctx.fillStyle = opts.color || theme.palette.text;
+  ctx.textAlign = opts.position === "center" ? "center" : "left";
+  ctx.textBaseline = baseline;
+  ctx.font = fontForStyle(opts.style, size);
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 12;
+  const x = opts.position === "center" ? w / 2 : pad;
+  const maxW = w - pad * 2;
+  if (opts.style === "caption-pill") {
+    const metrics = ctx.measureText(text.slice(0, 64));
+    const tw = Math.min(metrics.width, maxW) + 20;
+    const th = size * 1.4;
+    const bx = opts.position === "center" ? x - tw / 2 : x - 10;
+    const by =
+      baseline === "bottom"
+        ? y - th
+        : baseline === "middle"
+          ? y - th / 2
+          : y - 4;
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath();
+    const r = th / 2;
+    ctx.moveTo(bx + r, by);
+    ctx.arcTo(bx + tw, by, bx + tw, by + th, r);
+    ctx.arcTo(bx + tw, by + th, bx, by + th, r);
+    ctx.arcTo(bx, by + th, bx, by, r);
+    ctx.arcTo(bx, by, bx + tw, by, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = opts.color || theme.palette.text;
+  }
+  if (opts.style === "kinetic-outline") {
+    ctx.strokeStyle = opts.color || theme.palette.text;
+    ctx.lineWidth = Math.max(2, size * 0.06);
+    ctx.strokeText(text.slice(0, 64), x, y, maxW);
+    ctx.fillStyle = "transparent";
+  }
+  ctx.fillText(text.slice(0, 64), x, y, maxW);
+  ctx.restore();
+}
+
 function drawTitle(
   ctx: CanvasRenderingContext2D,
   title: string,
@@ -379,21 +569,52 @@ function drawTitle(
   w: number,
   h: number,
   subtitle: string,
+  style?: TextStyle,
 ) {
-  ctx.save();
-  ctx.fillStyle = theme.palette.text;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "bottom";
-  const pad = Math.round(w * 0.06);
-  const titleSize = Math.max(22, Math.round(w * 0.055));
-  ctx.font = `600 ${titleSize}px Sora, system-ui, sans-serif`;
-  ctx.shadowColor = "rgba(0,0,0,0.55)";
-  ctx.shadowBlur = 12;
-  ctx.fillText(title.slice(0, 48), pad, h - pad - titleSize * 0.7, w - pad * 2);
-  ctx.font = `400 ${Math.max(14, Math.round(titleSize * 0.45))}px Inter, system-ui, sans-serif`;
-  ctx.globalAlpha = 0.85;
-  ctx.fillText(subtitle, pad, h - pad, w - pad * 2);
-  ctx.restore();
+  drawStyledText(ctx, title, theme, w, h, {
+    style: style ?? "clean-sans",
+    position: "bottom",
+    role: "title",
+    color: theme.palette.text,
+  });
+  if (subtitle) {
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    const pad = Math.round(w * 0.06);
+    const titleSize = Math.max(22, Math.round(w * 0.055));
+    ctx.fillStyle = theme.palette.text;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.font = `400 ${Math.max(14, Math.round(titleSize * 0.45))}px Inter, system-ui, sans-serif`;
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 8;
+    ctx.fillText(subtitle, pad, h - pad, w - pad * 2);
+    ctx.restore();
+  }
+}
+
+function drawTextOverlays(
+  ctx: CanvasRenderingContext2D,
+  overlays: ExportTextOverlay[],
+  theme: ThemeCard,
+  w: number,
+  h: number,
+  timeSec: number,
+) {
+  for (const o of overlays) {
+    if (!o.value?.trim()) continue;
+    if (timeSec < o.at || timeSec >= o.end) continue;
+    const dur = Math.max(0.01, o.end - o.at);
+    const localT = timeSec - o.at;
+    const alpha = animAlpha(localT, dur, o.animationIn, o.animationOut);
+    drawStyledText(ctx, o.value.trim(), theme, w, h, {
+      style: o.style,
+      color: o.color,
+      position: o.position ?? (o.role === "title" ? "bottom" : "center"),
+      role: o.role,
+      alpha,
+    });
+  }
 }
 
 function drawWatermark(
@@ -564,6 +785,10 @@ export async function exportSlideshowWebm(
     title,
     aspect,
     transition: transitionOverride,
+    textOverlays = [],
+    captionText = "",
+    captionStyle,
+    textStyle,
     shortEdge = 1080,
     fps = 30,
     watermark = false,
@@ -571,7 +796,25 @@ export async function exportSlideshowWebm(
     onProgress,
     signal,
   } = options;
-  const activeTransition = transitionOverride ?? theme.transition;
+  const defaultTransition = transitionOverride ?? theme.transition;
+  const totalDurForText = clips.reduce((sum, c) => sum + c.durationSec, 0);
+  const timedOverlays: ExportTextOverlay[] = [
+    ...textOverlays,
+    ...(captionText.trim()
+      ? [
+          {
+            at: 0.4,
+            end: Math.max(3, totalDurForText),
+            role: "caption" as const,
+            value: captionText.trim(),
+            style: captionStyle ?? "caption-pill",
+            position: "lower-third" as const,
+            animationIn: "fade" as const,
+            animationOut: "fade" as const,
+          },
+        ]
+      : []),
+  ];
 
   if (clips.length === 0) {
     throw new Error("Add at least one clip before exporting video");
@@ -608,6 +851,9 @@ export async function exportSlideshowWebm(
       beatAudio = await captureBeatAudioStream(audio.previewUrl, {
         ducking: audio.ducking,
         signal,
+        mixUrl: audio.mixUrl,
+        primaryGain: audio.primaryGain,
+        mixGain: audio.mixGain,
       });
       audioMuxed = true;
     } catch (err) {
@@ -747,6 +993,10 @@ export async function exportSlideshowWebm(
 
       const holdMs = Math.max(400, clip.durationSec * 1000);
       const start = performance.now();
+      const clipTransition: TransitionKind =
+        i === 0
+          ? "cut"
+          : clips[i - 1]?.transitionOut ?? defaultTransition;
 
       let image: HTMLImageElement | null = null;
       let video: HTMLVideoElement | null = null;
@@ -779,7 +1029,7 @@ export async function exportSlideshowWebm(
         assertNotAborted(signal);
         const localT = (performance.now() - start) / holdMs;
         const enterT = Math.min(1, (performance.now() - start) / txMs);
-        const tx = transitionOpacity(activeTransition, enterT);
+        const tx = transitionOpacity(clipTransition, enterT);
         const ken =
           clip.kind === "image"
             ? kenBurnsAt(theme.photoMotion, localT)
@@ -842,13 +1092,32 @@ export async function exportSlideshowWebm(
 
         fillThemeGrade(ctx, theme, width, height, 0.45);
         fillVignette(ctx, theme, width, height, 0.7);
-        drawTitle(
+        const nowSec = elapsedTotal + (performance.now() - start) / 1000;
+        const hasTimedTitle = timedOverlays.some(
+          (o) =>
+            o.role === "title" &&
+            nowSec >= o.at &&
+            nowSec < o.end &&
+            o.value.trim(),
+        );
+        if (!hasTimedTitle) {
+          drawTitle(
+            ctx,
+            title,
+            theme,
+            width,
+            height,
+            `${clipTransition} · ${theme.motion} · ${i + 1}/${clips.length}`,
+            textStyle,
+          );
+        }
+        drawTextOverlays(
           ctx,
-          title,
+          timedOverlays,
           theme,
           width,
           height,
-          `${activeTransition} · ${theme.motion} · ${i + 1}/${clips.length}`,
+          nowSec,
         );
         if (watermark) {
           drawWatermark(ctx, theme, width, height);

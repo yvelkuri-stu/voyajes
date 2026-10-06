@@ -53,6 +53,8 @@ export type ExportWebmOptions = {
   /** Target short-edge ~1080; long edge follows aspect */
   shortEdge?: number;
   fps?: number;
+  /** Soft Voyajes watermark stub (bottom-right) */
+  watermark?: boolean;
   /** Optional catalog beat to mux into the recording */
   audio?: ExportAudioOptions;
   onProgress?: (p: ExportProgress) => void;
@@ -394,6 +396,26 @@ function drawTitle(
   ctx.restore();
 }
 
+function drawWatermark(
+  ctx: CanvasRenderingContext2D,
+  theme: ThemeCard,
+  w: number,
+  h: number,
+) {
+  ctx.save();
+  const pad = Math.round(w * 0.04);
+  const size = Math.max(12, Math.round(w * 0.028));
+  ctx.font = `600 ${size}px Sora, system-ui, sans-serif`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = theme.palette.text;
+  ctx.shadowColor = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur = 8;
+  ctx.fillText("Voyajes", w - pad, h - pad);
+  ctx.restore();
+}
+
 function kenBurnsAt(
   photoMotion: ThemeCard["photoMotion"],
   t: number,
@@ -544,6 +566,7 @@ export async function exportSlideshowWebm(
     transition: transitionOverride,
     shortEdge = 1080,
     fps = 30,
+    watermark = false,
     audio,
     onProgress,
     signal,
@@ -827,6 +850,9 @@ export async function exportSlideshowWebm(
           height,
           `${activeTransition} · ${theme.motion} · ${i + 1}/${clips.length}`,
         );
+        if (watermark) {
+          drawWatermark(ctx, theme, width, height);
+        }
         ctx.restore();
 
         const nowElapsed = elapsedTotal + (performance.now() - start) / 1000;

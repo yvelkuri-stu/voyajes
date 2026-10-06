@@ -1,4 +1,12 @@
-import type { Aspect, BeatSync, VoyajesProject } from "@voyajes/core";
+import type {
+  Aspect,
+  BeatSync,
+  DurationTarget,
+  ExportDestination,
+  TextStyle,
+  TextTransition,
+  VoyajesProject,
+} from "@voyajes/core";
 import { packRef, safeParseProject } from "@voyajes/core";
 
 const LS_DRAFT = "voyajes.draft.v1";
@@ -23,9 +31,17 @@ export type DraftState = {
   aspect: Aspect;
   themeId: string;
   themeVersion: string;
+  templateId?: string;
+  templateVersion?: string;
   audioTrackRef: string;
   beatSync: BeatSync;
   ducking: boolean;
+  textStyle: TextStyle;
+  textTransition: TextTransition;
+  captionStyle: TextStyle;
+  watermark: boolean;
+  durationTargetSec?: DurationTarget;
+  exportDestination: ExportDestination;
   clips: DraftClipMeta[];
   /** Stable public share id (local stub until cloud). */
   shareId?: string;
@@ -34,20 +50,67 @@ export type DraftState = {
   updatedAt: string;
 };
 
+const TEXT_STYLES: TextStyle[] = [
+  "bold-impact",
+  "soft-serif",
+  "clean-sans",
+  "script-soft",
+  "mono-tech",
+  "vintage-poster",
+  "caption-pill",
+  "kinetic-outline",
+];
+
+const TEXT_TX: TextTransition[] = [
+  "fade",
+  "pop",
+  "slide-up",
+  "typewriter",
+  "whip-in",
+  "scale-bounce",
+  "dissolve",
+  "flash-in",
+];
+
+const DESTINATIONS: ExportDestination[] = [
+  "youtube",
+  "tiktok",
+  "instagram-reels",
+  "instagram-feed",
+  "instagram-portrait",
+  "custom",
+];
+
 export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
   return {
     title: "Untitled voyage",
     aspect: "9:16",
     themeId,
     themeVersion: "1.0.0",
+    templateId: undefined,
+    templateVersion: undefined,
     audioTrackRef: "audio.ocean-drift-084@1.0.0",
     beatSync: "medium",
     ducking: true,
+    textStyle: "clean-sans",
+    textTransition: "fade",
+    captionStyle: "caption-pill",
+    watermark: false,
+    durationTargetSec: undefined,
+    exportDestination: "custom",
     clips: [],
     shareId: undefined,
     sharePassword: false,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function asTextStyle(v: unknown, fallback: TextStyle): TextStyle {
+  return TEXT_STYLES.includes(v as TextStyle) ? (v as TextStyle) : fallback;
+}
+
+function asTextTx(v: unknown, fallback: TextTransition): TextTransition {
+  return TEXT_TX.includes(v as TextTransition) ? (v as TextTransition) : fallback;
 }
 
 function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] }): DraftState | null {
@@ -59,14 +122,34 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
   )
     ? (parsed.beatSync as BeatSync)
     : "medium";
+  const durationTargetSec =
+    parsed.durationTargetSec === 15 ||
+    parsed.durationTargetSec === 30 ||
+    parsed.durationTargetSec === 60
+      ? parsed.durationTargetSec
+      : undefined;
+  const exportDestination = DESTINATIONS.includes(
+    parsed.exportDestination as ExportDestination,
+  )
+    ? (parsed.exportDestination as ExportDestination)
+    : "custom";
   return {
     title: parsed.title,
     aspect: (parsed.aspect as Aspect) ?? "9:16",
     themeId: parsed.themeId ?? "theme.ocean-pop",
     themeVersion: parsed.themeVersion ?? "1.0.0",
+    templateId: typeof parsed.templateId === "string" ? parsed.templateId : undefined,
+    templateVersion:
+      typeof parsed.templateVersion === "string" ? parsed.templateVersion : undefined,
     audioTrackRef: parsed.audioTrackRef ?? "audio.ocean-drift-084@1.0.0",
     beatSync,
     ducking: parsed.ducking !== false,
+    textStyle: asTextStyle(parsed.textStyle, "clean-sans"),
+    textTransition: asTextTx(parsed.textTransition, "fade"),
+    captionStyle: asTextStyle(parsed.captionStyle, "caption-pill"),
+    watermark: parsed.watermark === true,
+    durationTargetSec,
+    exportDestination,
     clips: parsed.clips,
     shareId: typeof parsed.shareId === "string" ? parsed.shareId : undefined,
     sharePassword: parsed.sharePassword === true,
@@ -101,6 +184,10 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
     title: draft.title.trim() || "Untitled voyage",
     aspect: draft.aspect,
     theme: packRef(draft.themeId, draft.themeVersion),
+    template:
+      draft.templateId && draft.templateVersion
+        ? packRef(draft.templateId, draft.templateVersion)
+        : undefined,
     media: draft.clips.map((c) => ({
       path: `local:${c.id}/${c.fileName}`,
       mute: c.mute,
@@ -118,11 +205,19 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
         value: draft.title.trim() || "Untitled voyage",
       },
     ],
+    textStyle: draft.textStyle,
+    textTransition: draft.textTransition,
+    captionStyle: draft.captionStyle,
     share: {
       title: draft.title.trim() || "Untitled voyage",
       public: draft.sharePassword !== true,
       password: draft.sharePassword === true,
       id: draft.shareId,
+    },
+    export: {
+      destination: draft.exportDestination,
+      watermark: draft.watermark,
+      durationTargetSec: draft.durationTargetSec,
     },
   };
   return project;

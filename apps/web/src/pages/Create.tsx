@@ -11,13 +11,22 @@ import {
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   packRef,
+  textStyleLabel,
+  textTransitionLabel,
+  TEXT_STYLE_KINDS,
+  TEXT_TRANSITION_KINDS,
   type Aspect,
   type BeatSync,
+  type DurationTarget,
+  type ExportDestination,
+  type TextStyle,
+  type TextTransition,
   type TransitionKind,
 } from "@voyajes/core";
 import {
   getBeats,
   getBeatByRef,
+  getBeatById,
   licenseHint,
   licenseLabel,
   type BeatCard,
@@ -29,6 +38,13 @@ import {
   transitionLabel,
   type ThemeCard,
 } from "../data/themes";
+import { getTemplateById, getTemplates, type TemplateCard } from "../data/templates";
+import {
+  EXPORT_PRESETS,
+  exportFilename,
+  getExportPreset,
+  cliFlagsForPreset,
+} from "../data/exportPresets";
 import { startBeatPreview, type PreviewHandle } from "../lib/beatPreview";
 import { describeBeatSync, snapDurationToBeat } from "../lib/beatSync";
 import {
@@ -53,7 +69,6 @@ import { ensureShareFromDraft } from "../lib/shareStore";
 import {
   downloadBlob,
   exportSlideshowWebm,
-  filenameFromTitle,
   type ExportProgress,
 } from "../lib/exportWebm";
 
@@ -62,6 +77,7 @@ type LiveClip = DraftClipMeta & { objectUrl: string };
 const ASPECTS: Aspect[] = ["9:16", "16:9", "1:1", "4:5"];
 const BEAT_SYNC_MODES: BeatSync[] = ["off", "soft", "medium", "hard"];
 const TRANSITIONS: TransitionKind[] = getTransitionKinds();
+const DURATION_TARGETS: DurationTarget[] = [15, 30, 60];
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
@@ -86,11 +102,14 @@ export function Create() {
   const advanceTimer = useRef<number | null>(null);
   const objectUrlsRef = useRef<Set<string>>(new Set());
 
+  const paramTemplate = getTemplateById(params.get("template") ?? "");
   const paramTheme =
     getThemeById(params.get("theme") ?? "") ??
+    (paramTemplate ? getThemeById(paramTemplate.themeId) : undefined) ??
     themes.find((t) => t.id === "theme.ocean-pop") ??
     themes[0];
 
+  const templates = useMemo(() => getTemplates(), []);
   const beats = useMemo(() => getBeats(), []);
   const previewHandle = useRef<PreviewHandle | null>(null);
   const audioPanelRef = useRef<HTMLElement>(null);
@@ -99,12 +118,33 @@ export function Create() {
   const [title, setTitle] = useState("Untitled voyage");
   const [aspect, setAspect] = useState<Aspect>("9:16");
   const [themeId, setThemeId] = useState(paramTheme.id);
+  const [templateId, setTemplateId] = useState<string | undefined>(
+    paramTemplate?.id,
+  );
   const [transitionOverride, setTransitionOverride] = useState<TransitionKind | null>(null);
   const [audioTrackRef, setAudioTrackRef] = useState(
-    "audio.ocean-drift-084@1.0.0",
+    paramTemplate
+      ? (getBeatById(paramTemplate.beatId)?.packRef ?? "audio.ocean-drift-084@1.0.0")
+      : "audio.ocean-drift-084@1.0.0",
   );
-  const [beatSync, setBeatSync] = useState<BeatSync>("medium");
+  const [beatSync, setBeatSync] = useState<BeatSync>(
+    paramTemplate?.beatSync ?? "medium",
+  );
   const [ducking, setDucking] = useState(true);
+  const [textStyle, setTextStyle] = useState<TextStyle>(
+    paramTemplate?.textStyle ?? "clean-sans",
+  );
+  const [textTransition, setTextTransition] = useState<TextTransition>(
+    paramTemplate?.textTransition ?? "fade",
+  );
+  const [captionStyle, setCaptionStyle] = useState<TextStyle>("caption-pill");
+  const [watermark, setWatermark] = useState(false);
+  const [durationTargetSec, setDurationTargetSec] = useState<
+    DurationTarget | undefined
+  >(paramTemplate?.durationTargetSec);
+  const [exportDestination, setExportDestination] =
+    useState<ExportDestination>("custom");
+  const [exportPanelOpen, setExportPanelOpen] = useState(false);
   const [shareId, setShareId] = useState<string | undefined>(undefined);
   const [sharePassword, setSharePassword] = useState(false);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
@@ -179,15 +219,40 @@ export function Create() {
         base.themeId = paramTheme.id;
         base.themeVersion = paramTheme.version;
       }
+      if (params.get("template") && paramTemplate) {
+        base.themeId = paramTemplate.themeId;
+        base.themeVersion = getThemeById(paramTemplate.themeId)?.version ?? "1.0.0";
+        base.templateId = paramTemplate.id;
+        base.templateVersion = paramTemplate.version;
+        base.audioTrackRef =
+          getBeatById(paramTemplate.beatId)?.packRef ?? base.audioTrackRef;
+        base.beatSync = paramTemplate.beatSync;
+        base.textStyle = paramTemplate.textStyle;
+        base.textTransition = paramTemplate.textTransition;
+        if (paramTemplate.aspect) base.aspect = paramTemplate.aspect;
+        if (paramTemplate.durationTargetSec) {
+          base.durationTargetSec = paramTemplate.durationTargetSec;
+        }
+      }
       if (cancelled) return;
       setTitle(base.title);
       setAspect(base.aspect);
       setThemeId(base.themeId);
+      setTemplateId(base.templateId);
       setAudioTrackRef(base.audioTrackRef);
       setBeatSync(base.beatSync);
       setDucking(base.ducking);
+      setTextStyle(base.textStyle);
+      setTextTransition(base.textTransition);
+      setCaptionStyle(base.captionStyle);
+      setWatermark(base.watermark);
+      setDurationTargetSec(base.durationTargetSec);
+      setExportDestination(base.exportDestination);
       setShareId(base.shareId);
       setSharePassword(base.sharePassword === true);
+      if (paramTemplate) {
+        setTransitionOverride(paramTemplate.transition);
+      }
       const live: LiveClip[] = [];
       for (const meta of base.clips) {
         const blob = await getBlob(meta.id);
@@ -215,9 +280,19 @@ export function Create() {
       aspect,
       themeId,
       themeVersion: theme.version,
+      templateId,
+      templateVersion: templateId
+        ? getTemplateById(templateId)?.version
+        : undefined,
       audioTrackRef,
       beatSync,
       ducking,
+      textStyle,
+      textTransition,
+      captionStyle,
+      watermark,
+      durationTargetSec,
+      exportDestination,
       shareId,
       sharePassword,
       clips: clips.map(
@@ -240,9 +315,16 @@ export function Create() {
     aspect,
     themeId,
     theme.version,
+    templateId,
     audioTrackRef,
     beatSync,
     ducking,
+    textStyle,
+    textTransition,
+    captionStyle,
+    watermark,
+    durationTargetSec,
+    exportDestination,
     shareId,
     sharePassword,
     clips,
@@ -450,6 +532,46 @@ export function Create() {
     [applyBeatSnap, selectedBeat.bpm],
   );
 
+  const applyTemplate = useCallback(
+    (tpl: TemplateCard) => {
+      const th = getThemeById(tpl.themeId);
+      const beat = getBeatById(tpl.beatId);
+      setTemplateId(tpl.id);
+      if (th) setThemeId(th.id);
+      setTransitionOverride(tpl.transition);
+      if (beat) {
+        setAudioTrackRef(beat.packRef);
+        if (tpl.beatSync !== "off") {
+          applyBeatSnap(tpl.beatSync, beat.bpm, true);
+        }
+      }
+      setBeatSync(tpl.beatSync);
+      setTextStyle(tpl.textStyle);
+      setTextTransition(tpl.textTransition);
+      if (tpl.aspect) setAspect(tpl.aspect);
+      if (tpl.durationTargetSec) setDurationTargetSec(tpl.durationTargetSec);
+      setTransitionKey((k) => k + 1);
+      setStatus(`Template · ${tpl.name} applied`);
+    },
+    [applyBeatSnap],
+  );
+
+  const applyExportDestination = useCallback((dest: ExportDestination) => {
+    setExportDestination(dest);
+    if (dest === "custom") {
+      setStatus("Export · custom aspect");
+      return;
+    }
+    const preset = getExportPreset(dest);
+    setAspect(preset.aspect);
+    if (preset.durationTargets.length === 1) {
+      setDurationTargetSec(preset.durationTargets[0]);
+    }
+    setStatus(
+      `Export · ${preset.label} → ${preset.aspect} · ${preset.filenameSuffix || "custom"}`,
+    );
+  }, []);
+
   const onDrop = useCallback(
     (e: DragEvent) => {
       e.preventDefault();
@@ -511,9 +633,17 @@ export function Create() {
     const d = defaultDraft(themeId);
     setTitle(d.title);
     setAspect(d.aspect);
+    setTemplateId(undefined);
+    setTransitionOverride(null);
     setAudioTrackRef(d.audioTrackRef);
     setBeatSync(d.beatSync);
     setDucking(d.ducking);
+    setTextStyle(d.textStyle);
+    setTextTransition(d.textTransition);
+    setCaptionStyle(d.captionStyle);
+    setWatermark(false);
+    setDurationTargetSec(undefined);
+    setExportDestination("custom");
     setShareId(undefined);
     setSharePassword(false);
     stopPreview();
@@ -546,6 +676,7 @@ export function Create() {
     setStatus("Exporting video…");
 
     try {
+      const preset = getExportPreset(exportDestination);
       const result = await exportSlideshowWebm({
         clips: clips.map((c) => ({
           id: c.id,
@@ -558,6 +689,8 @@ export function Create() {
         title,
         aspect,
         transition: activeTransition,
+        shortEdge: preset.shortEdge,
+        watermark,
         audio: selectedBeat.previewUrl
           ? {
               previewUrl: selectedBeat.previewUrl,
@@ -572,7 +705,7 @@ export function Create() {
         },
         signal: ac.signal,
       });
-      const name = filenameFromTitle(title, result.extension);
+      const name = exportFilename(title, preset, result.extension);
       downloadBlob(result.blob, name);
       const skipNote =
         result.skippedVideos.length > 0
@@ -606,9 +739,19 @@ export function Create() {
       aspect,
       themeId,
       themeVersion: theme.version,
+      templateId,
+      templateVersion: templateId
+        ? getTemplateById(templateId)?.version
+        : undefined,
       audioTrackRef,
       beatSync,
       ducking,
+      textStyle,
+      textTransition,
+      captionStyle,
+      watermark,
+      durationTargetSec,
+      exportDestination,
       shareId,
       sharePassword,
       clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
@@ -642,9 +785,19 @@ export function Create() {
       aspect,
       themeId,
       themeVersion: theme.version,
+      templateId,
+      templateVersion: templateId
+        ? getTemplateById(templateId)?.version
+        : undefined,
       audioTrackRef,
       beatSync,
       ducking,
+      textStyle,
+      textTransition,
+      captionStyle,
+      watermark,
+      durationTargetSec,
+      exportDestination,
       shareId,
       sharePassword,
       clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
@@ -723,22 +876,14 @@ export function Create() {
           <button
             type="button"
             className="btn btn-ghost"
-            disabled={clips.length === 0 || exporting}
-            title={
-              clips.length === 0
-                ? "Import at least one clip"
-                : exporting
-                  ? "Export in progress"
-                  : selectedBeat.previewUrl
-                    ? `Record WebM with beat audio (${selectedBeat.name}) when the browser allows`
-                    : "Record slideshow to WebM in the browser (canvas + MediaRecorder)"
-            }
-            onClick={() => void exportVideo()}
+            disabled={exporting}
+            title="Choose YouTube / TikTok / Instagram presets, then export WebM"
+            onClick={() => setExportPanelOpen((o) => !o)}
             aria-busy={exporting}
           >
             {exporting
               ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
-              : "Export video"}
+              : "Export…"}
           </button>
           {exporting && (
             <button
@@ -768,6 +913,15 @@ export function Create() {
         <Link to="/themes" className="chip" title="Browse themes">
           <span className="swatch" style={{ background: theme.palette.accent }} />
           Theme {theme.name}
+        </Link>
+        <Link
+          to="/themes?tab=templates"
+          className="chip"
+          title="Browse templates"
+        >
+          {templateId
+            ? `Template · ${getTemplateById(templateId)?.name ?? "pack"}`
+            : "Templates"}
         </Link>
         <button
           type="button"
@@ -807,6 +961,141 @@ export function Create() {
           </span>
         )}
       </div>
+
+      {exportPanelOpen && (
+        <div className="panel export-panel" style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <h3 style={{ margin: 0 }}>Export for social</h3>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ padding: "6px 10px" }}
+              onClick={() => setExportPanelOpen(false)}
+            >
+              Close
+            </button>
+          </div>
+          <p className="muted" style={{ fontSize: "0.85rem", marginTop: 6 }}>
+            Pick a destination to set aspect + suggested filename. Browser records
+            WebM (VP9/Opus when supported). CLI:{" "}
+            <code style={{ fontSize: "0.75rem" }}>
+              {cliFlagsForPreset(getExportPreset(exportDestination))}
+            </code>
+          </p>
+          <div className="chip-row" style={{ flexWrap: "wrap", marginTop: 10 }}>
+            {EXPORT_PRESETS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`chip${exportDestination === p.id ? " chip-active" : ""}`}
+                title={p.hint}
+                onClick={() => applyExportDestination(p.id)}
+              >
+                {p.label}
+                <span className="muted" style={{ marginLeft: 6, fontSize: "0.72rem" }}>
+                  {p.aspect}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 16,
+              marginTop: 14,
+              alignItems: "flex-start",
+            }}
+          >
+            <div>
+              <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+                Duration target
+              </div>
+              <div className="chip-row">
+                <button
+                  type="button"
+                  className={`chip${!durationTargetSec ? " chip-active" : ""}`}
+                  onClick={() => setDurationTargetSec(undefined)}
+                >
+                  Off
+                </button>
+                {DURATION_TARGETS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`chip${durationTargetSec === d ? " chip-active" : ""}`}
+                    onClick={() => {
+                      setDurationTargetSec(d);
+                      setStatus(
+                        totalDuration > d
+                          ? `Target ${d}s · timeline is ${totalDuration.toFixed(1)}s (trim holds)`
+                          : `Target ${d}s · timeline ${totalDuration.toFixed(1)}s`,
+                      );
+                    }}
+                  >
+                    {d}s
+                  </button>
+                ))}
+              </div>
+              {durationTargetSec && (
+                <p className="muted" style={{ fontSize: "0.75rem", marginTop: 6 }}>
+                  Timeline {totalDuration.toFixed(1)}s
+                  {totalDuration > durationTargetSec
+                    ? " · over target"
+                    : totalDuration > 0
+                      ? " · within target"
+                      : ""}
+                </p>
+              )}
+            </div>
+            <label className="toggle-row" style={{ marginTop: 4 }}>
+              <input
+                type="checkbox"
+                checked={watermark}
+                onChange={(e) => {
+                  setWatermark(e.target.checked);
+                  setStatus(
+                    e.target.checked
+                      ? "Watermark on · Voyajes mark on export (stub)"
+                      : "Watermark off",
+                  );
+                }}
+              />
+              <span>
+                Watermark
+                <span className="muted" style={{ display: "block", fontSize: "0.75rem" }}>
+                  Soft Voyajes mark · stub for Pro branding later
+                </span>
+              </span>
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={clips.length === 0 || exporting}
+              onClick={() => void exportVideo()}
+            >
+              {exporting
+                ? `Recording ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
+                : `Export WebM · ${getExportPreset(exportDestination).label}`}
+            </button>
+            {exporting && (
+              <button type="button" className="btn btn-ghost" onClick={cancelExport}>
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="compose-layout">
         <div>
@@ -910,13 +1199,22 @@ export function Create() {
               }}
             />
 
-            <div className="preview-title" style={{ color: theme.palette.text }}>
+            <div
+              className={`preview-title text-style-${textStyle} text-tx-${textTransition}`}
+              style={{ color: theme.palette.text }}
+            >
               {title}
-              <div className="preview-sub">
-                {activeTransition} · {theme.motion}
+              <div className={`preview-sub text-style-${captionStyle}`}>
+                {activeTransition} · {theme.motion} · {textStyleLabel(textStyle)}
                 {active ? ` · ${activeIndex + 1}/${clips.length}` : ""}
+                {durationTargetSec ? ` · target ${durationTargetSec}s` : ""}
               </div>
             </div>
+            {watermark && (
+              <div className="preview-watermark" aria-hidden>
+                Voyajes
+              </div>
+            )}
           </div>
 
           <div
@@ -1026,9 +1324,9 @@ export function Create() {
             </button>
           </div>
           <p className="muted" style={{ fontSize: "0.8rem", textAlign: "center" }}>
-            Draft saves to localStorage (+ media in IndexedDB). Export video records a
-            browser WebM from the slideshow (no audio mux yet). Cloud/FFmpeg encode is
-            still TODO — Export JSON for the CLI.
+            Draft saves to localStorage (+ media in IndexedDB). Export records browser
+            WebM with beat mux when supported. Use Export… for YouTube / TikTok / IG
+            presets. Cloud encode still TODO — Export JSON for the CLI.
           </p>
           <div style={{ textAlign: "center", marginTop: 8 }}>
             <button type="button" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => void resetProject()}>
@@ -1071,6 +1369,42 @@ export function Create() {
               </button>
             ))}
           </div>
+
+          <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6 }}>
+            Templates
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflow: "auto" }}>
+            {templates.slice(0, 14).map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                className="chip"
+                style={{
+                  justifyContent: "flex-start",
+                  width: "100%",
+                  borderColor:
+                    templateId === tpl.id
+                      ? tpl.theme?.palette.accent ?? "var(--accent-brand)"
+                      : "var(--border-subtle)",
+                }}
+                onClick={() => applyTemplate(tpl)}
+                title={tpl.description}
+              >
+                {tpl.name}
+                <span className="muted" style={{ marginLeft: "auto", fontSize: "0.7rem" }}>
+                  {tpl.motion}
+                </span>
+              </button>
+            ))}
+          </div>
+          <Link
+            to="/themes?tab=templates"
+            className="muted"
+            style={{ fontSize: "0.75rem", display: "inline-block", marginTop: 6 }}
+          >
+            Browse all templates →
+          </Link>
+
           <hr
             style={{
               border: "none",
@@ -1193,6 +1527,77 @@ export function Create() {
               </>
             )}
           </div>
+
+          <hr
+            style={{
+              border: "none",
+              borderTop: "1px solid var(--border-subtle)",
+              margin: "20px 0 16px",
+            }}
+          />
+
+          <section aria-label="Text & captions">
+            <h3 style={{ marginBottom: 4 }}>Text &amp; captions</h3>
+            <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
+              Title style, entrance, and caption preset (original Voyajes packs).
+            </p>
+            <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+              Title style
+            </div>
+            <div className="chip-row" style={{ flexWrap: "wrap" }}>
+              {TEXT_STYLE_KINDS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`chip${textStyle === s ? " chip-active" : ""}`}
+                  onClick={() => {
+                    setTextStyle(s);
+                    setStatus(`Text style · ${textStyleLabel(s)}`);
+                  }}
+                >
+                  {textStyleLabel(s)}
+                </button>
+              ))}
+            </div>
+            <div className="muted" style={{ fontSize: "0.8rem", margin: "12px 0 6px" }}>
+              Text transition
+            </div>
+            <div className="chip-row" style={{ flexWrap: "wrap" }}>
+              {TEXT_TRANSITION_KINDS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`chip${textTransition === s ? " chip-active" : ""}`}
+                  onClick={() => {
+                    setTextTransition(s);
+                    setStatus(`Text transition · ${textTransitionLabel(s)}`);
+                  }}
+                >
+                  {textTransitionLabel(s)}
+                </button>
+              ))}
+            </div>
+            <div className="muted" style={{ fontSize: "0.8rem", margin: "12px 0 6px" }}>
+              Caption style
+            </div>
+            <div className="chip-row" style={{ flexWrap: "wrap" }}>
+              {(["caption-pill", "clean-sans", "bold-impact", "kinetic-outline"] as TextStyle[]).map(
+                (s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`chip${captionStyle === s ? " chip-active" : ""}`}
+                    onClick={() => {
+                      setCaptionStyle(s);
+                      setStatus(`Caption · ${textStyleLabel(s)}`);
+                    }}
+                  >
+                    {textStyleLabel(s)}
+                  </button>
+                ),
+              )}
+            </div>
+          </section>
 
           <hr
             style={{

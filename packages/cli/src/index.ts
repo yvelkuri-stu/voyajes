@@ -15,6 +15,7 @@ import {
   type VoyajesProject,
   type CatalogManifest,
   type BeatSync,
+  type Aspect,
   parsePackRef,
 } from "@voyajes/core";
 import {
@@ -82,6 +83,50 @@ function parseBeatSync(value: string): BeatSync {
   if ((BEAT_SYNC_VALUES as string[]).includes(value)) return value as BeatSync;
   console.error(`Invalid --beat-sync: ${value} (use off|soft|medium|hard)`);
   process.exit(1);
+}
+
+
+const EXPORT_PRESETS: Record<
+  string,
+  { aspect: Aspect; label: string }
+> = {
+  youtube: { aspect: "16:9", label: "YouTube 16:9" },
+  tiktok: { aspect: "9:16", label: "TikTok 9:16" },
+  "instagram-reels": { aspect: "9:16", label: "IG Reels 9:16" },
+  "instagram-feed": { aspect: "1:1", label: "IG Feed 1:1" },
+  "instagram-portrait": { aspect: "4:5", label: "IG Feed 4:5" },
+};
+
+function applyExportPreset(
+  project: VoyajesProject,
+  presetId?: string,
+  aspectOverride?: string,
+): VoyajesProject {
+  let next = { ...project };
+  if (presetId && EXPORT_PRESETS[presetId]) {
+    const p = EXPORT_PRESETS[presetId];
+    next = {
+      ...next,
+      aspect: p.aspect,
+      export: {
+        watermark: next.export?.watermark ?? false,
+        durationTargetSec: next.export?.durationTargetSec,
+        destination: presetId as
+          | "youtube"
+          | "tiktok"
+          | "instagram-reels"
+          | "instagram-feed"
+          | "instagram-portrait"
+          | "custom",
+      },
+    };
+    console.error(`  preset:   ${p.label} → aspect ${p.aspect}`);
+  }
+  if (aspectOverride && ["9:16", "16:9", "1:1", "4:5"].includes(aspectOverride)) {
+    next = { ...next, aspect: aspectOverride as Aspect };
+    console.error(`  aspect:   ${aspectOverride}`);
+  }
+  return next;
 }
 
 const program = new Command();
@@ -285,7 +330,7 @@ program
   .description("Browse official packs")
   .argument("[action]", "list | show", "list")
   .argument("[id]", "Pack id for show")
-  .option("--kind <kind>", "Filter by kind: theme, audio-beat, motion")
+  .option("--kind <kind>", "Filter by kind: theme, template, audio-beat, motion")
   .option("--json", "Machine-readable stdout")
   .action(
     (
@@ -334,6 +379,14 @@ program
   .option("-o, --out <file>", "Output path (.webm or .mp4)", "out.webm")
   .option("--quality <q>", "720p | 1080p | 4k", "1080p")
   .option(
+    "--preset <name>",
+    "Social export preset: youtube | tiktok | instagram-reels | instagram-feed | instagram-portrait",
+  )
+  .option(
+    "-a, --aspect <ratio>",
+    "Override aspect: 9:16 | 16:9 | 1:1 | 4:5",
+  )
+  .option(
     "-t, --theme <ref>",
     "Override theme pack id (e.g. theme.neon-night)",
   )
@@ -355,6 +408,8 @@ program
       opts: {
         out: string;
         quality: string;
+        preset?: string;
+        aspect?: string;
         theme?: string;
         beatSync?: string;
         title?: string;
@@ -365,7 +420,8 @@ program
     ) => {
       const abs = resolve(projectPath);
       // Always Zod-validate first (even if ffmpeg is missing)
-      const project = loadProject(abs);
+      let project = loadProject(abs);
+      project = applyExportPreset(project, opts.preset, opts.aspect);
       const manifest = loadManifest();
 
       const quality = (["720p", "1080p", "4k"] as RenderQuality[]).includes(

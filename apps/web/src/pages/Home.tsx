@@ -63,6 +63,9 @@ export function Home() {
             <Link to="/themes" className="btn btn-ghost">
               Browse themes
             </Link>
+            <Link to="/themes?tab=templates" className="btn btn-ghost">
+              14 templates
+            </Link>
           </div>
         </div>
         <div

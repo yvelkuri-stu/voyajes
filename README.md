@@ -36,17 +36,19 @@ voyajes/
   SETUP_AUTH.md      Google / Apple / Microsoft / Meta / GitHub OAuth setup
 ```
 
-**Screens:** Home · Create/Compose · Themes (10 looks: Neon Night, Soft Film, Ocean Pop, Golden Hour, Retro VHS, Minimal White, Cyber Lime, Rose Quartz, Documentary Grain, Party Strobe) · Share · Sign-in (OAuth shell)
+**Screens:** Home · Create/Compose · Themes & **14 Templates** · Share · Sign-in (OAuth shell) · Notification bell (catalog updates)
 
 ### Create / import / preview / export
 
 - Drag-drop **images** + **video**; phone-frame preview with theme grades, Ken Burns, transitions
 - Filmstrip reorder, hold timing, play/pause
 - Draft in `localStorage` + media blobs in IndexedDB
-- **Export JSON** for the CLI · **Export video** → browser WebM (VP9/VP8 + Opus beat mux when the browser cooperates)
+- **Templates:** apply a full pack (theme + motion + clip transition + beat + text style defaults)
+- **Export…** social presets → YouTube 16:9 · TikTok / IG Reels 9:16 · IG Feed 1:1 / 4:5 (+ duration targets 15/30/60s, watermark stub)
+- **Export JSON** for the CLI · **Export WebM** (VP9/VP8 + Opus beat mux when the browser cooperates)
 - Audio panel: 9 catalog beats (Kevin MacLeod CC BY previews), beat-sync, ducking metadata, license badges
-- Transition picker on Create (dissolve, push, whip, light-leak, fade-black, zoom-through, slide-up, flash) — themes set defaults
-- Attribution: [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md)
+- Transition + text style / caption presets on Create
+- Attribution: [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md) · catalog shipping: [`catalog/CATALOG.md`](./catalog/CATALOG.md)
 
 **Honest limits:** export ≈ real-time length; Safari often skips WebM+Opus; clip camera audio isn’t captured; transitions approximate CSS; CLI ffmpeg render is best-effort parity, not pixel-identical. Cloud encode / HLS / billing = later.
 
@@ -58,10 +60,12 @@ Buttons for **Google, Apple, Microsoft, Meta, GitHub**. No client IDs → button
 
 ## Catalog richness
 
-- **Themes (10):** Neon Night, Soft Film, Ocean Pop, Golden Hour, Retro VHS, Minimal White, Cyber Lime, Rose Quartz, Documentary Grain, Party Strobe — each with palette, motion, default transition, suggested beat ids
-- **Beats (9):** Warm Acoustic, Neon Pulse, Ocean Drift, Funk Loop, Hyperfun, Hot Swing, Lobby Time, Spy Glass, Carefree — short MP3 previews + beatmaps under `catalog/previews/` and `catalog/beats/`
-- **Transitions:** cut, dissolve, push, whip, light-leak, fade-black, zoom-through, slide-up, flash (web CSS preview + canvas export + CLI ffmpeg `xfade`)
-- **Licenses / credit:** see [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md) (Kevin MacLeod / CC BY 3.0)
+- **Themes (10):** Neon Night, Soft Film, Ocean Pop, Golden Hour, Retro VHS, Minimal White, Cyber Lime, Rose Quartz, Documentary Grain, Party Strobe
+- **Templates (14):** Midnight Metro, Sunlit Drift, Coastal Bounce, Golden Recap, VHS Party, Gallery Quiet, Acid Drop, Blush Story, Field Notes, Strobe Night, Swing Retro, Mint Travel, Lounge Edit, Pulse Reels — each a unique motion × transition × beat × text-style × text-transition combo
+- **Beats (9):** Warm Acoustic, Neon Pulse, Ocean Drift, Funk Loop, Hyperfun, Hot Swing, Lobby Time, Spy Glass, Carefree
+- **Transitions:** cut, dissolve, push, whip, light-leak, fade-black, zoom-through, slide-up, flash
+- **Licenses / credit:** [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md) · **how to ship packs:** [`catalog/CATALOG.md`](./catalog/CATALOG.md)
+- **Notifications:** browser Notification API + in-app toast/bell when `catalogVersion` changes
 
 ## Stack
 
@@ -120,6 +124,11 @@ pnpm voyajes doctor ./my-voyage/voyajes.project.json
 pnpm voyajes render ./my-voyage/voyajes.project.json -o ./my-voyage/out.webm
 pnpm voyajes render ./my-voyage/voyajes.project.json -o ./my-voyage/out.mp4 \
   --theme theme.neon-night --beat-sync hard --title "Neon voyage" --quality 1080p
+
+# Social presets set aspect (YouTube 16:9, TikTok/Reels 9:16, IG 1:1 / 4:5)
+pnpm voyajes render ./my-voyage/voyajes.project.json -o out-tt.webm \
+  --preset tiktok --quality 1080p
+pnpm voyajes catalog list --kind template
 ```
 
 | Concept | Web Create | CLI |
@@ -198,9 +207,10 @@ Optional Actions workflow: `.github/workflows/deploy-pages.yml` (needs `workflow
 2. ~~Browser WebM export~~  
 3. ~~CLI ffmpeg render~~  
 4. ~~Sign-in UI + OAuth setup docs~~ (stub session; real token API next)  
-5. Catalog CDN sync + signed stems  
-6. Backend OAuth exchange + durable share / HLS  
-7. Cloud / Remotion encode + Spark/Pro billing  
+5. ~~14 templates + catalog notify + social export presets~~  
+6. Catalog CDN sync + signed stems  
+7. Backend OAuth exchange + durable share / HLS  
+8. Cloud / Remotion encode + Spark/Pro billing  
 
 ---
 

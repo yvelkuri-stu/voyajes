@@ -2,6 +2,7 @@ import { NavLink, Outlet, Link } from "react-router-dom";
 import { Logo } from "./Logo";
 import { brand } from "@voyajes/core";
 import { useAuthSession } from "../hooks/useAuthSession";
+import { NotificationBell } from "./NotificationBell";
 
 const links = [
   { to: "/", label: "Home", end: true },
@@ -33,6 +34,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <NotificationBell />
         <span className="usage-chip" title="Free plan stub">
           Free · 2 GB
         </span>
@@ -68,7 +70,7 @@ export function Layout() {
           background: "rgba(232,74,255,0.06)",
         }}
       >
-        {brand.tagline} · Browser WebM export + beat mux · cloud encode still TODO
+        {brand.tagline} · 14 templates · social export presets · browser WebM
       </p>
       <main className="main">
         <Outlet />

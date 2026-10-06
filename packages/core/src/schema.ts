@@ -21,6 +21,47 @@ export const PackRefSchema = z
     "Pack ref must look like id@version (e.g. theme.ocean-pop@1.0.0)",
   );
 
+export const TextStyleSchema = z.enum([
+  "bold-impact",
+  "soft-serif",
+  "clean-sans",
+  "script-soft",
+  "mono-tech",
+  "vintage-poster",
+  "caption-pill",
+  "kinetic-outline",
+]);
+export type TextStyle = z.infer<typeof TextStyleSchema>;
+
+export const TextTransitionSchema = z.enum([
+  "fade",
+  "pop",
+  "slide-up",
+  "typewriter",
+  "whip-in",
+  "scale-bounce",
+  "dissolve",
+  "flash-in",
+]);
+export type TextTransition = z.infer<typeof TextTransitionSchema>;
+
+export const DurationTargetSchema = z.union([
+  z.literal(15),
+  z.literal(30),
+  z.literal(60),
+]);
+export type DurationTarget = z.infer<typeof DurationTargetSchema>;
+
+export const ExportDestinationSchema = z.enum([
+  "youtube",
+  "tiktok",
+  "instagram-reels",
+  "instagram-feed",
+  "instagram-portrait",
+  "custom",
+]);
+export type ExportDestination = z.infer<typeof ExportDestinationSchema>;
+
 export const MediaClipSchema = z.object({
   path: z.string().min(1),
   mute: z.boolean().optional().default(false),
@@ -46,17 +87,29 @@ export const ShareMetaSchema = z.object({
   id: z.string().min(4).optional(),
 });
 
+export const ExportMetaSchema = z.object({
+  destination: ExportDestinationSchema.optional(),
+  watermark: z.boolean().optional().default(false),
+  durationTargetSec: DurationTargetSchema.optional(),
+});
+
 /** Voyajes project file — shared by GUI and CLI */
 export const VoyajesProjectSchema = z.object({
   schema: z.literal(1),
   title: z.string().min(1),
   aspect: AspectSchema.default("9:16"),
   theme: PackRefSchema,
+  /** Optional full template pack (theme + beat + text defaults) */
+  template: PackRefSchema.optional(),
   motion: PackRefSchema.optional(),
   media: z.array(MediaClipSchema).default([]),
   audio: AudioTrackSchema.optional(),
   text: z.array(TextCardSchema).optional(),
+  textStyle: TextStyleSchema.optional(),
+  textTransition: TextTransitionSchema.optional(),
+  captionStyle: TextStyleSchema.optional(),
   share: ShareMetaSchema.optional(),
+  export: ExportMetaSchema.optional(),
 });
 
 export type VoyajesProject = z.infer<typeof VoyajesProjectSchema>;

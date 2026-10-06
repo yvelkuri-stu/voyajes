@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "catalogVersion": "2026.10.06.1",
+  "etag": "W/\"vj-20261006-1\"",
+  "generatedAt": "2026-10-06T20:53:00Z",
+  "channels": {
+    "stable": { "minApp": "0.1.0" },
+    "beta": { "minApp": "0.1.0" }
+  },
+  "packs": [
+    {
+      "id": "theme.neon-night",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Neon Night",
+      "description": "Magenta glow, snappy cuts, city-after-dark energy.",
+      "tier": "free",
+      "tags": ["neon", "night", "bold", "9:16"],
+      "palette": {
+        "bg": "#0A0614",
+        "surface": "#1A0F2E",
+        "accent": "#E84AFF",
+        "text": "#F8F0FF",
+        "grade": "magenta-crush"
+      },
+      "motion": "snappy",
+      "transition": "whip",
+      "transitionDurationMs": 220,
+      "photoMotion": "bold",
+      "sizeBytes": 128000,
+      "hash": "sha256:neon-night-placeholder"
+    },
+    {
+      "id": "theme.soft-film",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Soft Film",
+      "description": "Warm grain, float easing, memory-reel calm.",
+      "tier": "free",
+      "tags": ["warm", "film", "memory", "9:16"],
+      "palette": {
+        "bg": "#1A1410",
+        "surface": "#2A221C",
+        "accent": "#F5C542",
+        "text": "#F4F1EC",
+        "grade": "warm-halation"
+      },
+      "motion": "float",
+      "transition": "dissolve",
+      "transitionDurationMs": 480,
+      "photoMotion": "gentle",
+      "sizeBytes": 132000,
+      "hash": "sha256:soft-film-placeholder"
+    },
+    {
+      "id": "theme.ocean-pop",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Ocean Pop",
+      "description": "Indigo → mint gradients, soft push transitions.",
+      "tier": "free",
+      "tags": ["ocean", "travel", "fresh", "9:16"],
+      "palette": {
+        "bg": "#06141C",
+        "surface": "#0E2430",
+        "accent": "#3DDC97",
+        "text": "#E8F7FF",
+        "grade": "teal-pop"
+      },
+      "motion": "soft",
+      "transition": "push",
+      "transitionDurationMs": 360,
+      "photoMotion": "gentle",
+      "sizeBytes": 140000,
+      "hash": "sha256:ocean-pop-placeholder"
+    },
+    {
+      "id": "theme.golden-hour",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Golden Hour",
+      "description": "Coral sun, cinematic ease, light-leak cuts.",
+      "tier": "free",
+      "tags": ["sunset", "travel", "cinematic", "16:9"],
+      "palette": {
+        "bg": "#1C1008",
+        "surface": "#2E1A0C",
+        "accent": "#FF6B4A",
+        "text": "#FFF5EB",
+        "grade": "golden-hour"
+      },
+      "motion": "cinematic",
+      "transition": "light-leak",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "sizeBytes": 145000,
+      "hash": "sha256:golden-hour-placeholder"
+    },
+    {
+      "id": "audio.warm-acoustic-092",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Warm Acoustic",
+      "bpm": 92,
+      "mood": ["warm", "acoustic"],
+      "license": "personal",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/warm-acoustic.m4a",
+      "beatmapUrl": "/catalog/beats/warm-acoustic.json",
+      "sizeBytes": 4200000
+    },
+    {
+      "id": "audio.neon-pulse-118",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Neon Pulse",
+      "bpm": 118,
+      "mood": ["neon", "energetic"],
+      "license": "creator",
+      "tier": "spark",
+      "previewUrl": "/catalog/previews/neon-pulse.m4a",
+      "beatmapUrl": "/catalog/beats/neon-pulse.json",
+      "sizeBytes": 5100000
+    },
+    {
+      "id": "audio.ocean-drift-084",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Ocean Drift",
+      "bpm": 84,
+      "mood": ["calm", "ocean"],
+      "license": "personal",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/ocean-drift.m4a",
+      "beatmapUrl": "/catalog/beats/ocean-drift.json",
+      "sizeBytes": 3900000
+    },
+    {
+      "id": "motion.float-soft",
+      "kind": "motion",
+      "version": "1.0.0",
+      "name": "Float Soft",
+      "tier": "free",
+      "tags": ["float", "soft"]
+    }
+  ],
+  "tombstones": []
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@voyajes/cli",
+  "version": "0.1.0",
+  "description": "Voyajes CLI — init, catalog, sync, render stubs for humans and robots",
+  "type": "module",
+  "bin": {
+    "voyajes": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node ./dist/index.js",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@voyajes/core": "workspace:*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "typescript": "^5.6.3"
+  },
+  "files": [
+    "dist"
+  ]
+}

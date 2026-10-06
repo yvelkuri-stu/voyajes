@@ -1,0 +1,70 @@
+/* Voyajes design tokens — dark-first chrome (from media-app-design.md, brand: Voyajes) */
+:root {
+  /* Brand accents — magenta / coral / mint / gold / indigo */
+  --vj-magenta: #E84AFF;
+  --vj-coral: #FF6B4A;
+  --vj-mint: #3DDC97;
+  --vj-gold: #F5C542;
+  --vj-indigo: #7C5CFF;
+
+  /* Dark (default) */
+  --bg-app: #0B0D12;
+  --bg-surface: #141822;
+  --bg-elevated: #1C2230;
+  --text-primary: #F4F1EC;
+  --text-secondary: #A8B0C0;
+  --accent-brand: var(--vj-indigo);
+  --accent-warm: var(--vj-coral);
+  --accent-magenta: var(--vj-magenta);
+  --state-success: var(--vj-mint);
+  --state-warning: var(--vj-gold);
+  --state-danger: #FF5C7A;
+  --border-subtle: #2A3344;
+
+  /* Motion */
+  --motion-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-snappy: cubic-bezier(0.2, 0, 0, 1);
+  --motion-float: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-soft: 280ms;
+  --duration-snappy: 160ms;
+  --duration-float: 420ms;
+
+  /* Radius & space */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Gradients */
+  --grad-brand: linear-gradient(135deg, #E84AFF 0%, #7C5CFF 45%, #3DDC97 100%);
+  --grad-sunset: linear-gradient(135deg, #FF6B4A 0%, #F5C542 50%, #E84AFF 100%);
+  --grad-ocean: linear-gradient(135deg, #0EA5E9 0%, #7C5CFF 50%, #3DDC97 100%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root.vj-auto-light {
+    --bg-app: #F7F5F2;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #FFFFFF;
+    --text-primary: #12141A;
+    --text-secondary: #5C6578;
+    --accent-brand: #5B3DF5;
+    --accent-warm: #E85A3C;
+    --border-subtle: #E6E1DA;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-soft: 0ms;
+    --duration-snappy: 0ms;
+    --duration-float: 0ms;
+  }
+}

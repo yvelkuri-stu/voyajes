@@ -541,6 +541,14 @@ export function Create() {
         theme,
         title,
         aspect,
+        audio: selectedBeat.previewUrl
+          ? {
+              previewUrl: selectedBeat.previewUrl,
+              beatName: selectedBeat.name,
+              // Ducking stays mostly metadata; export applies a mild gain trim only
+              ducking,
+            }
+          : undefined,
         onProgress: (p) => {
           setExportProgress(p);
           setStatus(p.message);
@@ -553,8 +561,13 @@ export function Create() {
         result.skippedVideos.length > 0
           ? ` · skipped ${result.skippedVideos.length} video clip(s)`
           : "";
+      const audioNote = result.audioMuxed
+        ? ` · beat audio (${selectedBeat.name})`
+        : result.audioWarning
+          ? ` · ${result.audioWarning}`
+          : "";
       setStatus(
-        `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB)${skipNote}`,
+        `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB)${skipNote}${audioNote}`,
       );
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -699,7 +712,9 @@ export function Create() {
                 ? "Import at least one clip"
                 : exporting
                   ? "Export in progress"
-                  : "Record slideshow to WebM in the browser (canvas + MediaRecorder)"
+                  : selectedBeat.previewUrl
+                    ? `Record WebM with beat audio (${selectedBeat.name}) when the browser allows`
+                    : "Record slideshow to WebM in the browser (canvas + MediaRecorder)"
             }
             onClick={() => void exportVideo()}
             aria-busy={exporting}
@@ -1112,7 +1127,7 @@ export function Create() {
           <section ref={audioPanelRef} className="audio-panel" aria-label="Audio">
             <h3 style={{ marginBottom: 4 }}>Audio panel</h3>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
-              Catalog beats · preview · beat-sync · ducking for export.
+              Catalog beats · preview · beat-sync · ducking (mild gain on export; true dialogue duck TODO).
             </p>
 
             <div className="beat-list">

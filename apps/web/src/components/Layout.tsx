@@ -48,7 +48,7 @@ export function Layout() {
           background: "rgba(232,74,255,0.06)",
         }}
       >
-        {brand.tagline} · Import & preview live — video encode still stubbed
+        {brand.tagline} · Browser WebM export + beat mux · cloud encode still TODO
       </p>
       <main className="main">
         <Outlet />

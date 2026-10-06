@@ -1,6 +1,8 @@
 /**
  * Browser-side slideshow → WebM (or MP4 if MediaRecorder allows) via canvas + MediaRecorder.
- * Best-effort theme grade, Ken Burns, and transitions. No audio mux yet.
+ * Best-effort theme grade, Ken Burns, and transitions.
+ * When a beat previewUrl is provided, muxes catalog audio via AudioContext +
+ * MediaStreamDestination into MediaRecorder. Falls back to video-only with a soft warning.
  * Cloud / FFmpeg / Remotion encode remains a future path.
  */
 
@@ -24,6 +26,23 @@ export type ExportProgress = {
   message: string;
 };
 
+export type ExportAudioOptions = {
+  /** Catalog beat preview URL (same-origin MP3). Required to attempt mux. */
+  previewUrl?: string;
+  /** Soft label for status messages */
+  beatName?: string;
+  /**
+   * When true, skip audio entirely (beat stays as project metadata).
+   * Per-clip mute is unrelated — clip camera audio is never captured.
+   */
+  mute?: boolean;
+  /**
+   * Ducking is project metadata for a future dialogue mix.
+   * When true and we do mux, apply a mild gain trim only (no true ducking).
+   */
+  ducking?: boolean;
+};
+
 export type ExportWebmOptions = {
   clips: ExportClip[];
   theme: ThemeCard;
@@ -32,6 +51,8 @@ export type ExportWebmOptions = {
   /** Target short-edge ~1080; long edge follows aspect */
   shortEdge?: number;
   fps?: number;
+  /** Optional catalog beat to mux into the recording */
+  audio?: ExportAudioOptions;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
 };
@@ -44,6 +65,10 @@ export type ExportWebmResult = {
   height: number;
   durationSec: number;
   skippedVideos: string[];
+  /** True when an audio track was successfully added to MediaRecorder */
+  audioMuxed: boolean;
+  /** Soft warning when audio was requested but video-only was exported */
+  audioWarning?: string;
 };
 
 function assertNotAborted(signal?: AbortSignal) {
@@ -53,13 +78,25 @@ function assertNotAborted(signal?: AbortSignal) {
   }
 }
 
-export function pickRecorderMime(): { mimeType: string; extension: "webm" | "mp4" } {
-  const candidates: Array<{ mimeType: string; extension: "webm" | "mp4" }> = [
+export function pickRecorderMime(withAudio = false): {
+  mimeType: string;
+  extension: "webm" | "mp4";
+} {
+  const videoOnly: Array<{ mimeType: string; extension: "webm" | "mp4" }> = [
     { mimeType: "video/webm;codecs=vp9", extension: "webm" },
     { mimeType: "video/webm;codecs=vp8", extension: "webm" },
     { mimeType: "video/webm", extension: "webm" },
     { mimeType: "video/mp4", extension: "mp4" },
   ];
+  const withOpus: Array<{ mimeType: string; extension: "webm" | "mp4" }> = [
+    { mimeType: "video/webm;codecs=vp9,opus", extension: "webm" },
+    { mimeType: "video/webm;codecs=vp8,opus", extension: "webm" },
+    { mimeType: "video/webm;codecs=vp9", extension: "webm" },
+    { mimeType: "video/webm;codecs=vp8", extension: "webm" },
+    { mimeType: "video/webm", extension: "webm" },
+    { mimeType: "video/mp4", extension: "mp4" },
+  ];
+  const candidates = withAudio ? withOpus : videoOnly;
   if (typeof MediaRecorder === "undefined") {
     throw new Error("MediaRecorder is not supported in this browser");
   }
@@ -68,6 +105,94 @@ export function pickRecorderMime(): { mimeType: string; extension: "webm" | "mp4
   }
   // Last resort — let the browser pick
   return { mimeType: "", extension: "webm" };
+}
+
+type CapturedBeatAudio = {
+  stream: MediaStream;
+  stop: () => void;
+};
+
+/**
+ * Decode a catalog preview MP3 and expose it as a MediaStream track via
+ * AudioContext + MediaStreamAudioDestinationNode. Loops for the export length.
+ */
+async function captureBeatAudioStream(
+  previewUrl: string,
+  opts: { ducking?: boolean; signal?: AbortSignal },
+): Promise<CapturedBeatAudio> {
+  assertNotAborted(opts.signal);
+  const AC =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
+  if (!AC) {
+    throw new Error("Web Audio API is not available");
+  }
+
+  const res = await fetch(previewUrl, { signal: opts.signal });
+  if (!res.ok) {
+    throw new Error(`Beat preview fetch failed (${res.status})`);
+  }
+  const raw = await res.arrayBuffer();
+  assertNotAborted(opts.signal);
+
+  const ctx = new AC();
+  try {
+    await ctx.resume();
+  } catch {
+    /* some browsers resume on gesture only — export is already user-gestured */
+  }
+
+  let audioBuffer: AudioBuffer;
+  try {
+    audioBuffer = await ctx.decodeAudioData(raw.slice(0));
+  } catch (err) {
+    await ctx.close().catch(() => undefined);
+    throw err instanceof Error
+      ? err
+      : new Error("Could not decode beat preview audio");
+  }
+
+  const dest = ctx.createMediaStreamDestination();
+  const source = ctx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.loop = true;
+  const gain = ctx.createGain();
+  // Mild trim when ducking metadata is on; true dialogue ducking is still TODO
+  gain.gain.value = opts.ducking ? 0.55 : 0.85;
+  source.connect(gain);
+  gain.connect(dest);
+  // Do not connect to ctx.destination — keep export silent in speakers
+  source.start(0);
+
+  const audioTracks = dest.stream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    source.stop();
+    await ctx.close().catch(() => undefined);
+    throw new Error("No audio track from MediaStreamDestination");
+  }
+
+  let stopped = false;
+  return {
+    stream: dest.stream,
+    stop: () => {
+      if (stopped) return;
+      stopped = true;
+      try {
+        source.stop();
+      } catch {
+        /* already stopped */
+      }
+      for (const t of dest.stream.getAudioTracks()) {
+        try {
+          t.stop();
+        } catch {
+          /* ignore */
+        }
+      }
+      void ctx.close().catch(() => undefined);
+    },
+  };
 }
 
 export function canvasSizeForAspect(
@@ -378,6 +503,7 @@ export async function exportSlideshowWebm(
     aspect,
     shortEdge = 1080,
     fps = 30,
+    audio,
     onProgress,
     signal,
   } = options;
@@ -388,9 +514,11 @@ export async function exportSlideshowWebm(
   assertNotAborted(signal);
 
   const { width, height } = canvasSizeForAspect(aspect, shortEdge);
-  const { mimeType, extension } = pickRecorderMime();
   const totalDuration = clips.reduce((s, c) => s + c.durationSec, 0);
   const skippedVideos: string[] = [];
+  let audioMuxed = false;
+  let audioWarning: string | undefined;
+  let beatAudio: CapturedBeatAudio | null = null;
 
   onProgress?.({
     phase: "prepare",
@@ -400,23 +528,89 @@ export async function exportSlideshowWebm(
     message: "Preparing export…",
   });
 
+  const wantAudio =
+    Boolean(audio?.previewUrl) && audio?.mute !== true;
+
+  if (wantAudio && audio?.previewUrl) {
+    onProgress?.({
+      phase: "prepare",
+      ratio: 0.02,
+      clipIndex: 0,
+      clipCount: clips.length,
+      message: `Loading beat audio${audio.beatName ? ` · ${audio.beatName}` : ""}…`,
+    });
+    try {
+      beatAudio = await captureBeatAudioStream(audio.previewUrl, {
+        ducking: audio.ducking,
+        signal,
+      });
+      audioMuxed = true;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      const detail = err instanceof Error ? err.message : "unknown error";
+      audioWarning = `Beat audio could not be muxed (${detail}) — exporting video only`;
+      beatAudio = null;
+      audioMuxed = false;
+    }
+  } else if (audio?.mute && audio?.previewUrl) {
+    audioWarning = "Beat muted for export — video only";
+  }
+
+  let mimeType = "";
+  let extension: "webm" | "mp4" = "webm";
+  ({ mimeType, extension } = pickRecorderMime(audioMuxed));
+
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d", { alpha: false });
-  if (!ctx) throw new Error("Could not get 2D canvas context");
+  if (!ctx) {
+    beatAudio?.stop();
+    throw new Error("Could not get 2D canvas context");
+  }
 
   // Warm first frame so the recorder has content immediately
   ctx.fillStyle = theme.palette.bg;
   ctx.fillRect(0, 0, width, height);
 
-  const stream = canvas.captureStream(fps);
-  const recorder = mimeType
-    ? new MediaRecorder(stream, {
-        mimeType,
-        videoBitsPerSecond: 6_000_000,
-      })
-    : new MediaRecorder(stream, { videoBitsPerSecond: 6_000_000 });
+  const canvasStream = canvas.captureStream(fps);
+
+  const buildRecorder = (useAudio: boolean): MediaRecorder => {
+    const picked = pickRecorderMime(useAudio);
+    mimeType = picked.mimeType;
+    extension = picked.extension;
+    const recordStream =
+      useAudio && beatAudio
+        ? new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...beatAudio.stream.getAudioTracks(),
+          ])
+        : canvasStream;
+    const opts: MediaRecorderOptions = {
+      videoBitsPerSecond: 6_000_000,
+    };
+    if (mimeType) opts.mimeType = mimeType;
+    if (useAudio) opts.audioBitsPerSecond = 128_000;
+    return new MediaRecorder(recordStream, opts);
+  };
+
+  let recorder: MediaRecorder;
+  try {
+    recorder = buildRecorder(audioMuxed);
+  } catch (err) {
+    if (audioMuxed && beatAudio) {
+      const detail =
+        err instanceof Error ? err.message : "MediaRecorder rejected audio";
+      audioWarning = `Beat audio could not be muxed (${detail}) — exporting video only`;
+      beatAudio.stop();
+      beatAudio = null;
+      audioMuxed = false;
+      recorder = buildRecorder(false);
+    } else {
+      beatAudio?.stop();
+      throw err;
+    }
+  }
 
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => {
@@ -425,8 +619,21 @@ export async function exportSlideshowWebm(
 
   const stopped = new Promise<void>((resolve, reject) => {
     recorder.onstop = () => resolve();
-    recorder.onerror = () => reject(new Error("MediaRecorder failed during export"));
+    recorder.onerror = () =>
+      reject(new Error("MediaRecorder failed during export"));
   });
+
+  const cleanupStreams = () => {
+    beatAudio?.stop();
+    beatAudio = null;
+    for (const t of canvasStream.getTracks()) {
+      try {
+        t.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+  };
 
   const onAbortRecording = () => {
     try {
@@ -434,9 +641,27 @@ export async function exportSlideshowWebm(
     } catch {
       /* ignore */
     }
-    for (const t of stream.getTracks()) t.stop();
+    cleanupStreams();
   };
   signal?.addEventListener("abort", onAbortRecording, { once: true });
+
+  if (audioMuxed) {
+    onProgress?.({
+      phase: "prepare",
+      ratio: 0.05,
+      clipIndex: 0,
+      clipCount: clips.length,
+      message: `Recording with beat${audio?.beatName ? ` · ${audio.beatName}` : ""}…`,
+    });
+  } else if (audioWarning) {
+    onProgress?.({
+      phase: "prepare",
+      ratio: 0.05,
+      clipIndex: 0,
+      clipCount: clips.length,
+      message: audioWarning,
+    });
+  }
 
   recorder.start(200);
 
@@ -596,12 +821,12 @@ export async function exportSlideshowWebm(
     } catch {
       /* ignore */
     }
-    for (const t of stream.getTracks()) t.stop();
+    cleanupStreams();
     signal?.removeEventListener("abort", onAbortRecording);
     throw err;
   }
 
-  for (const t of stream.getTracks()) t.stop();
+  cleanupStreams();
   signal?.removeEventListener("abort", onAbortRecording);
 
   const outType = recorder.mimeType || mimeType || "video/webm";
@@ -615,7 +840,11 @@ export async function exportSlideshowWebm(
     ratio: 1,
     clipIndex: clips.length,
     clipCount: clips.length,
-    message: "Done",
+    message: audioMuxed
+      ? "Done · video + beat audio"
+      : audioWarning
+        ? "Done · video only"
+        : "Done",
   });
 
   return {
@@ -626,5 +855,7 @@ export async function exportSlideshowWebm(
     height,
     durationSec: totalDuration,
     skippedVideos,
+    audioMuxed,
+    audioWarning,
   };
 }

@@ -1,6 +1,7 @@
 import type { AudioBeatPack } from "@voyajes/core";
 import { packRef } from "@voyajes/core";
 import manifest from "../../public/catalog-manifest.json";
+import { assetUrl } from "../lib/assetUrl";
 
 export type BeatCard = AudioBeatPack & {
   packRef: string;
@@ -12,6 +13,8 @@ export function getBeats(): BeatCard[] {
     .filter((p) => p.kind === "audio-beat")
     .map((p) => ({
       ...p,
+      previewUrl: assetUrl(p.previewUrl) ?? p.previewUrl,
+      beatmapUrl: assetUrl(p.beatmapUrl) ?? p.beatmapUrl,
       packRef: packRef(p.id, p.version),
     }));
 }

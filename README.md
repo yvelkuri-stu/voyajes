@@ -145,3 +145,19 @@ Source: `catalog/manifest.json` (copied to `apps/web/public/catalog-manifest.jso
 ## License
 
 Private / unpublished — all rights reserved by the Voyajes family project.
+
+
+## GitHub Pages
+
+Live (after Actions deploy): **https://yvelkuri-stu.github.io/voyajes/**
+
+The web app builds with `base: /voyajes/` when `GITHUB_PAGES=1`. Workflow: `.github/workflows/deploy-pages.yml` (push to `master` or manual `workflow_dispatch`).
+
+Enable once under **Settings → Pages → Source: GitHub Actions**, or via API:
+
+```bash
+gh api -X POST repos/yvelkuri-stu/voyajes/pages \
+  -f build_type=workflow \
+  -f source[branch]=master \
+  -f source[path]=/
+```

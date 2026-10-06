@@ -56,6 +56,12 @@ export function generateShareId(): string {
 }
 
 export function publicShareUrl(id: string): string {
+  // Prefer the live origin + Vite base so GitHub Pages (/voyajes/) works;
+  // fall back to the marketing host for SSR / non-browser contexts.
+  if (typeof window !== "undefined") {
+    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+    return `${window.location.origin}${base}/v/${id}`;
+  }
   return `https://${brand.shareHost}/v/${id}`;
 }
 

@@ -17,7 +17,24 @@ export type TransitionKind =
   | "dissolve"
   | "push"
   | "whip"
-  | "light-leak";
+  | "light-leak"
+  | "fade-black"
+  | "zoom-through"
+  | "slide-up"
+  | "flash";
+
+/** All transitions the preview / export / CLI understand */
+export const TRANSITION_KINDS: TransitionKind[] = [
+  "cut",
+  "dissolve",
+  "push",
+  "whip",
+  "light-leak",
+  "fade-black",
+  "zoom-through",
+  "slide-up",
+  "flash",
+];
 
 export interface ThemePalette {
   bg: string;
@@ -40,6 +57,8 @@ export interface ThemePack {
   transition: TransitionKind;
   transitionDurationMs: number;
   photoMotion: "gentle" | "bold" | "off";
+  /** Preferred catalog beat pack ids for this look */
+  suggestedBeatIds?: string[];
 }
 
 export interface AudioBeatPack {
@@ -53,6 +72,9 @@ export interface AudioBeatPack {
   tier: PackTier;
   previewUrl?: string;
   beatmapUrl?: string;
+  /** Free-track attribution / source note (shown in catalog docs) */
+  attribution?: string;
+  previewNote?: string;
 }
 
 export interface CatalogManifest {

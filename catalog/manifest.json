@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "catalogVersion": "2026.10.06.1",
-  "etag": "W/\"vj-20261006-1\"",
-  "generatedAt": "2026-10-06T20:53:00Z",
+  "catalogVersion": "2026.10.06.2",
+  "etag": "W/\"vj-20261006-2\"",
+  "generatedAt": "2026-10-06T21:36:04Z",
   "channels": {
     "stable": {
       "minApp": "0.1.0"
@@ -36,8 +36,12 @@
       "transition": "whip",
       "transitionDurationMs": 220,
       "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.neon-pulse-118",
+        "audio.hyperfun-128"
+      ],
       "sizeBytes": 128000,
-      "hash": "sha256:neon-night-placeholder"
+      "hash": "sha256:neon-night-v2"
     },
     {
       "id": "theme.soft-film",
@@ -63,8 +67,12 @@
       "transition": "dissolve",
       "transitionDurationMs": 480,
       "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.warm-acoustic-092",
+        "audio.lobby-time-096"
+      ],
       "sizeBytes": 132000,
-      "hash": "sha256:soft-film-placeholder"
+      "hash": "sha256:soft-film-v2"
     },
     {
       "id": "theme.ocean-pop",
@@ -90,8 +98,12 @@
       "transition": "push",
       "transitionDurationMs": 360,
       "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.ocean-drift-084",
+        "audio.warm-acoustic-092"
+      ],
       "sizeBytes": 140000,
-      "hash": "sha256:ocean-pop-placeholder"
+      "hash": "sha256:ocean-pop-v2"
     },
     {
       "id": "theme.golden-hour",
@@ -117,30 +129,222 @@
       "transition": "light-leak",
       "transitionDurationMs": 520,
       "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.spy-glass-100",
+        "audio.warm-acoustic-092"
+      ],
       "sizeBytes": 145000,
-      "hash": "sha256:golden-hour-placeholder"
+      "hash": "sha256:golden-hour-v2"
+    },
+    {
+      "id": "theme.retro-vhs",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Retro VHS",
+      "description": "CRT magenta/teal, whip cuts, tracking-noise nostalgia.",
+      "tier": "free",
+      "tags": [
+        "vhs",
+        "retro",
+        "80s",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#12081A",
+        "surface": "#1E1030",
+        "accent": "#FF2D95",
+        "text": "#E8FFF6",
+        "grade": "vhs-crush"
+      },
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 180,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.funk-loop-104",
+        "audio.neon-pulse-118"
+      ],
+      "sizeBytes": 136000,
+      "hash": "sha256:retro-vhs-v1"
+    },
+    {
+      "id": "theme.minimal-white",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Minimal White",
+      "description": "Gallery white, soft fades to black, quiet product polish.",
+      "tier": "free",
+      "tags": [
+        "minimal",
+        "clean",
+        "product",
+        "1:1"
+      ],
+      "palette": {
+        "bg": "#F4F2EE",
+        "surface": "#FFFFFF",
+        "accent": "#2A2A2A",
+        "text": "#121212",
+        "grade": "clean-lift"
+      },
+      "motion": "soft",
+      "transition": "fade-black",
+      "transitionDurationMs": 420,
+      "photoMotion": "off",
+      "suggestedBeatIds": [
+        "audio.lobby-time-096",
+        "audio.ocean-drift-084"
+      ],
+      "sizeBytes": 118000,
+      "hash": "sha256:minimal-white-v1"
+    },
+    {
+      "id": "theme.cyber-lime",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Cyber Lime",
+      "description": "Acid lime on void black, zoom-through punches.",
+      "tier": "spark",
+      "tags": [
+        "cyber",
+        "lime",
+        "tech",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#050A04",
+        "surface": "#0E1A0C",
+        "accent": "#B8FF3D",
+        "text": "#F5FFE8",
+        "grade": "lime-crush"
+      },
+      "motion": "snappy",
+      "transition": "zoom-through",
+      "transitionDurationMs": 260,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.hyperfun-128",
+        "audio.neon-pulse-118"
+      ],
+      "sizeBytes": 134000,
+      "hash": "sha256:cyber-lime-v1"
+    },
+    {
+      "id": "theme.rose-quartz",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Rose Quartz",
+      "description": "Blush pink haze, float easing, soft slide-up reveals.",
+      "tier": "free",
+      "tags": [
+        "rose",
+        "soft",
+        "lifestyle",
+        "4:5"
+      ],
+      "palette": {
+        "bg": "#1A1014",
+        "surface": "#2A1820",
+        "accent": "#F2A7C3",
+        "text": "#FFF0F5",
+        "grade": "rose-mist"
+      },
+      "motion": "float",
+      "transition": "slide-up",
+      "transitionDurationMs": 440,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.warm-acoustic-092",
+        "audio.lobby-time-096"
+      ],
+      "sizeBytes": 130000,
+      "hash": "sha256:rose-quartz-v1"
+    },
+    {
+      "id": "theme.documentary-grain",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Documentary Grain",
+      "description": "Muted earth tones, fade-black, observational calm.",
+      "tier": "free",
+      "tags": [
+        "doc",
+        "grain",
+        "story",
+        "16:9"
+      ],
+      "palette": {
+        "bg": "#141210",
+        "surface": "#221E1A",
+        "accent": "#C4A574",
+        "text": "#EDE6DC",
+        "grade": "doc-grain"
+      },
+      "motion": "cinematic",
+      "transition": "fade-black",
+      "transitionDurationMs": 560,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.spy-glass-100",
+        "audio.ocean-drift-084"
+      ],
+      "sizeBytes": 142000,
+      "hash": "sha256:documentary-grain-v1"
+    },
+    {
+      "id": "theme.party-strobe",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Party Strobe",
+      "description": "Hot coral + violet strobes, flash cuts, dance-floor punch.",
+      "tier": "spark",
+      "tags": [
+        "party",
+        "strobe",
+        "dance",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#0C0418",
+        "surface": "#1A0830",
+        "accent": "#FF3D81",
+        "text": "#FFF5FF",
+        "grade": "strobe-pop"
+      },
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 140,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.carefree-140",
+        "audio.hyperfun-128",
+        "audio.funk-loop-104"
+      ],
+      "sizeBytes": 138000,
+      "hash": "sha256:party-strobe-v1"
     },
     {
       "id": "audio.warm-acoustic-092",
       "kind": "audio-beat",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Warm Acoustic",
       "bpm": 92,
       "mood": [
         "warm",
         "acoustic"
       ],
-      "license": "personal",
+      "license": "creator",
       "tier": "free",
       "previewUrl": "/catalog/previews/warm-acoustic.mp3",
       "beatmapUrl": "/catalog/beats/warm-acoustic.json",
-      "sizeBytes": 64617,
-      "previewNote": "demo-tone-stub"
+      "sizeBytes": 193569,
+      "attribution": "Kevin MacLeod \u2014 Easy Lemon (CC BY 3.0)",
+      "previewNote": "12s loop from Easy Lemon"
     },
     {
       "id": "audio.neon-pulse-118",
       "kind": "audio-beat",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Neon Pulse",
       "bpm": 118,
       "mood": [
@@ -151,25 +355,141 @@
       "tier": "spark",
       "previewUrl": "/catalog/previews/neon-pulse.mp3",
       "beatmapUrl": "/catalog/beats/neon-pulse.json",
-      "sizeBytes": 64617,
-      "previewNote": "demo-tone-stub"
+      "sizeBytes": 193573,
+      "attribution": "Kevin MacLeod \u2014 Electrodoodle (CC BY 3.0)",
+      "previewNote": "12s loop from Electrodoodle"
     },
     {
       "id": "audio.ocean-drift-084",
       "kind": "audio-beat",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Ocean Drift",
       "bpm": 84,
       "mood": [
         "calm",
         "ocean"
       ],
-      "license": "personal",
+      "license": "creator",
       "tier": "free",
       "previewUrl": "/catalog/previews/ocean-drift.mp3",
       "beatmapUrl": "/catalog/beats/ocean-drift.json",
-      "sizeBytes": 64617,
-      "previewNote": "demo-tone-stub"
+      "sizeBytes": 225367,
+      "attribution": "Kevin MacLeod \u2014 Floating Cities (CC BY 3.0)",
+      "previewNote": "14s loop from Floating Cities"
+    },
+    {
+      "id": "audio.funk-loop-104",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Funk Loop",
+      "bpm": 104,
+      "mood": [
+        "funk",
+        "groove",
+        "retro"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/funk-loop.mp3",
+      "beatmapUrl": "/catalog/beats/funk-loop.json",
+      "sizeBytes": 193590,
+      "attribution": "Kevin MacLeod \u2014 Funk Game Loop (CC BY 3.0)",
+      "previewNote": "12s loop from Funk Game Loop"
+    },
+    {
+      "id": "audio.hyperfun-128",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Hyperfun",
+      "bpm": 128,
+      "mood": [
+        "party",
+        "upbeat",
+        "playful"
+      ],
+      "license": "creator",
+      "tier": "spark",
+      "previewUrl": "/catalog/previews/hyperfun.mp3",
+      "beatmapUrl": "/catalog/beats/hyperfun.json",
+      "sizeBytes": 193568,
+      "attribution": "Kevin MacLeod \u2014 Hyperfun (CC BY 3.0)",
+      "previewNote": "12s loop from Hyperfun"
+    },
+    {
+      "id": "audio.hot-swing-180",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Hot Swing",
+      "bpm": 180,
+      "mood": [
+        "jazz",
+        "swing",
+        "vintage"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/hot-swing.mp3",
+      "beatmapUrl": "/catalog/beats/hot-swing.json",
+      "sizeBytes": 193580,
+      "attribution": "Kevin MacLeod \u2014 Hot Swing (CC BY 3.0)",
+      "previewNote": "12s loop from Hot Swing"
+    },
+    {
+      "id": "audio.lobby-time-096",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Lobby Time",
+      "bpm": 96,
+      "mood": [
+        "lounge",
+        "chill",
+        "soft"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/lobby-time.mp3",
+      "beatmapUrl": "/catalog/beats/lobby-time.json",
+      "sizeBytes": 193621,
+      "attribution": "Kevin MacLeod \u2014 Lobby Time (CC BY 3.0)",
+      "previewNote": "12s loop from Lobby Time"
+    },
+    {
+      "id": "audio.spy-glass-100",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Spy Glass",
+      "bpm": 100,
+      "mood": [
+        "cinematic",
+        "documentary",
+        "tense"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/spy-glass.mp3",
+      "beatmapUrl": "/catalog/beats/spy-glass.json",
+      "sizeBytes": 193619,
+      "attribution": "Kevin MacLeod \u2014 Spy Glass (CC BY 3.0)",
+      "previewNote": "12s loop from Spy Glass"
+    },
+    {
+      "id": "audio.carefree-140",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Carefree",
+      "bpm": 140,
+      "mood": [
+        "party",
+        "bright",
+        "dance"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/carefree.mp3",
+      "beatmapUrl": "/catalog/beats/carefree.json",
+      "sizeBytes": 193623,
+      "attribution": "Kevin MacLeod \u2014 Carefree (CC BY 3.0)",
+      "previewNote": "12s loop from Carefree"
     },
     {
       "id": "motion.float-soft",

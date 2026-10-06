@@ -471,6 +471,22 @@ button {
   animation: vj-leak var(--tx-ms, 520ms) var(--tx-ease, var(--motion-float)) both;
 }
 
+.tx-fade-black {
+  animation: vj-fade-black var(--tx-ms, 420ms) var(--tx-ease, var(--motion-soft)) both;
+}
+
+.tx-zoom-through {
+  animation: vj-zoom-through var(--tx-ms, 260ms) var(--tx-ease, var(--motion-snappy)) both;
+}
+
+.tx-slide-up {
+  animation: vj-slide-up var(--tx-ms, 440ms) var(--tx-ease, var(--motion-float)) both;
+}
+
+.tx-flash {
+  animation: vj-flash var(--tx-ms, 160ms) var(--tx-ease, var(--motion-snappy)) both;
+}
+
 @keyframes vj-dissolve {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -490,6 +506,28 @@ button {
   0% { opacity: 0; filter: brightness(2.2) saturate(1.4); }
   35% { opacity: 1; filter: brightness(1.35) saturate(1.2); }
   100% { opacity: 1; filter: brightness(1) saturate(1); }
+}
+
+@keyframes vj-fade-black {
+  0% { opacity: 0; filter: brightness(0); }
+  45% { opacity: 0.35; filter: brightness(0.35); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+
+@keyframes vj-zoom-through {
+  from { transform: scale(1.35); opacity: 0.15; filter: blur(3px); }
+  to { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes vj-slide-up {
+  from { transform: translateY(32%); opacity: 0.25; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes vj-flash {
+  0% { opacity: 0; filter: brightness(3) contrast(1.2); }
+  25% { opacity: 1; filter: brightness(1.8) contrast(1.1); }
+  100% { opacity: 1; filter: brightness(1) contrast(1); }
 }
 
 /* Ken Burns on stills */
@@ -516,6 +554,10 @@ button {
   .tx-push,
   .tx-whip,
   .tx-light-leak,
+  .tx-fade-black,
+  .tx-zoom-through,
+  .tx-slide-up,
+  .tx-flash,
   .ken-gentle img,
   .ken-bold img {
     animation: none !important;

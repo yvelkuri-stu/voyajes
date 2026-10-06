@@ -220,6 +220,14 @@ function xfadeName(kind: TransitionKind): string {
       return "wipeleft";
     case "light-leak":
       return "fadewhite";
+    case "fade-black":
+      return "fadeblack";
+    case "zoom-through":
+      return "distance";
+    case "slide-up":
+      return "slidedown"; // incoming slides up from below (xfade naming)
+    case "flash":
+      return "fadewhite";
     case "cut":
     default:
       return "fade";
@@ -237,6 +245,18 @@ function gradeFilter(grade?: string): string {
       return "eq=saturation=1.15:contrast=1.04,colorbalance=rs=-0.04:rm=-0.03:gs=0.05:gm=0.06:bs=0.08:bm=0.06";
     case "golden-hour":
       return "eq=saturation=1.12:contrast=1.03,colorbalance=rs=0.12:rm=0.1:gs=0.05:gm=0.04:bs=-0.1:bm=-0.08";
+    case "vhs-crush":
+      return "eq=saturation=1.35:contrast=1.08,colorbalance=rs=0.08:rm=0.12:gs=-0.04:gm=-0.02:bs=0.06:bm=0.08";
+    case "clean-lift":
+      return "eq=saturation=0.95:contrast=1.02:brightness=0.03";
+    case "lime-crush":
+      return "eq=saturation=1.3:contrast=1.1,colorbalance=rs=-0.06:rm=-0.05:gs=0.12:gm=0.14:bs=-0.08:bm=-0.06";
+    case "rose-mist":
+      return "eq=saturation=1.08:contrast=0.98,colorbalance=rs=0.08:rm=0.1:gs=-0.02:gm=0.02:bs=0.04:bm=0.05";
+    case "doc-grain":
+      return "eq=saturation=0.85:contrast=1.06:gamma=1.05,colorbalance=rs=0.04:rm=0.03:gs=0.02:gm=0.02:bs=-0.04:bm=-0.03";
+    case "strobe-pop":
+      return "eq=saturation=1.4:contrast=1.12,colorbalance=rs=0.1:rm=0.14:gs=-0.05:gm=-0.04:bs=0.08:bm=0.1";
     default:
       return "eq=saturation=1.05";
   }

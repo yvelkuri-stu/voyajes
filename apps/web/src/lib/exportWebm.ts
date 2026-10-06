@@ -48,6 +48,8 @@ export type ExportWebmOptions = {
   theme: ThemeCard;
   title: string;
   aspect: Aspect;
+  /** Override theme.transition for this export */
+  transition?: TransitionKind;
   /** Target short-edge ~1080; long edge follows aspect */
   shortEdge?: number;
   fps?: number;
@@ -416,39 +418,77 @@ function transitionOpacity(
   kind: TransitionKind,
   /** 0 at clip start → 1 after transitionDuration */
   enterT: number,
-): { opacity: number; blur: number; brightness: number; skewX: number; translateX: number } {
+): {
+  opacity: number;
+  blur: number;
+  brightness: number;
+  skewX: number;
+  translateX: number;
+  translateY: number;
+  scale: number;
+} {
   const t = Math.min(1, Math.max(0, enterT));
+  const base = {
+    opacity: 1,
+    blur: 0,
+    brightness: 1,
+    skewX: 0,
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+  };
   switch (kind) {
     case "cut":
-      return { opacity: 1, blur: 0, brightness: 1, skewX: 0, translateX: 0 };
+      return base;
     case "dissolve":
-      return { opacity: t, blur: 0, brightness: 1, skewX: 0, translateX: 0 };
+      return { ...base, opacity: t };
     case "push":
       return {
+        ...base,
         opacity: 0.4 + 0.6 * t,
-        blur: 0,
-        brightness: 1,
-        skewX: 0,
         translateX: (1 - t) * 0.28,
       };
     case "whip":
       return {
+        ...base,
         opacity: 0.2 + 0.8 * t,
         blur: (1 - t) * 2,
-        brightness: 1,
         skewX: (1 - t) * -6,
         translateX: (1 - t) * 0.6,
       };
     case "light-leak":
       return {
+        ...base,
         opacity: Math.min(1, t * 1.4),
-        blur: 0,
         brightness: 1 + (1 - t) * 1.2,
-        skewX: 0,
-        translateX: 0,
+      };
+    case "fade-black":
+      return {
+        ...base,
+        opacity: Math.min(1, t * 1.15),
+        brightness: Math.max(0.05, t),
+      };
+    case "zoom-through":
+      return {
+        ...base,
+        opacity: 0.15 + 0.85 * t,
+        blur: (1 - t) * 3,
+        scale: 1 + (1 - t) * 0.35,
+      };
+    case "slide-up":
+      return {
+        ...base,
+        opacity: 0.25 + 0.75 * t,
+        translateY: (1 - t) * 0.32,
+      };
+    case "flash":
+      return {
+        ...base,
+        opacity: Math.min(1, t * 2),
+        brightness: 1 + (1 - t) * 2,
       };
     default:
-      return { opacity: 1, blur: 0, brightness: 1, skewX: 0, translateX: 0 };
+      return base;
   }
 }
 
@@ -501,12 +541,14 @@ export async function exportSlideshowWebm(
     theme,
     title,
     aspect,
+    transition: transitionOverride,
     shortEdge = 1080,
     fps = 30,
     audio,
     onProgress,
     signal,
   } = options;
+  const activeTransition = transitionOverride ?? theme.transition;
 
   if (clips.length === 0) {
     throw new Error("Add at least one clip before exporting video");
@@ -714,7 +756,7 @@ export async function exportSlideshowWebm(
         assertNotAborted(signal);
         const localT = (performance.now() - start) / holdMs;
         const enterT = Math.min(1, (performance.now() - start) / txMs);
-        const tx = transitionOpacity(theme.transition, enterT);
+        const tx = transitionOpacity(activeTransition, enterT);
         const ken =
           clip.kind === "image"
             ? kenBurnsAt(theme.photoMotion, localT)
@@ -726,9 +768,17 @@ export async function exportSlideshowWebm(
 
         ctx.save();
         ctx.globalAlpha = tx.opacity;
-        if (tx.translateX || tx.skewX) {
-          ctx.translate(tx.translateX * width, 0);
-          ctx.transform(1, 0, Math.tan((tx.skewX * Math.PI) / 180), 1, 0, 0);
+        if (tx.translateX || tx.translateY || tx.skewX || tx.scale !== 1) {
+          ctx.translate(
+            tx.translateX * width + (width * (1 - tx.scale)) / 2,
+            tx.translateY * height + (height * (1 - tx.scale)) / 2,
+          );
+          if (tx.scale !== 1) {
+            ctx.scale(tx.scale, tx.scale);
+          }
+          if (tx.skewX) {
+            ctx.transform(1, 0, Math.tan((tx.skewX * Math.PI) / 180), 1, 0, 0);
+          }
         }
         if (tx.brightness !== 1) {
           ctx.filter = `brightness(${tx.brightness})${tx.blur ? ` blur(${tx.blur}px)` : ""}`;
@@ -775,7 +825,7 @@ export async function exportSlideshowWebm(
           theme,
           width,
           height,
-          `${theme.transition} · ${theme.motion} · ${i + 1}/${clips.length}`,
+          `${activeTransition} · ${theme.motion} · ${i + 1}/${clips.length}`,
         );
         ctx.restore();
 

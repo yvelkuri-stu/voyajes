@@ -36,7 +36,7 @@ voyajes/
   SETUP_AUTH.md      Google / Apple / Microsoft / Meta / GitHub OAuth setup
 ```
 
-**Screens:** Home · Create/Compose · Themes (Neon Night, Soft Film, Ocean Pop, Golden Hour) · Share · Sign-in (OAuth shell)
+**Screens:** Home · Create/Compose · Themes (10 looks: Neon Night, Soft Film, Ocean Pop, Golden Hour, Retro VHS, Minimal White, Cyber Lime, Rose Quartz, Documentary Grain, Party Strobe) · Share · Sign-in (OAuth shell)
 
 ### Create / import / preview / export
 
@@ -44,7 +44,9 @@ voyajes/
 - Filmstrip reorder, hold timing, play/pause
 - Draft in `localStorage` + media blobs in IndexedDB
 - **Export JSON** for the CLI · **Export video** → browser WebM (VP9/VP8 + Opus beat mux when the browser cooperates)
-- Audio panel: Warm Acoustic / Neon Pulse / Ocean Drift, beat-sync, ducking metadata, license badges
+- Audio panel: 9 catalog beats (Kevin MacLeod CC BY previews), beat-sync, ducking metadata, license badges
+- Transition picker on Create (dissolve, push, whip, light-leak, fade-black, zoom-through, slide-up, flash) — themes set defaults
+- Attribution: [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md)
 
 **Honest limits:** export ≈ real-time length; Safari often skips WebM+Opus; clip camera audio isn’t captured; transitions approximate CSS; CLI ffmpeg render is best-effort parity, not pixel-identical. Cloud encode / HLS / billing = later.
 
@@ -53,6 +55,13 @@ voyajes/
 Buttons for **Google, Apple, Microsoft, Meta, GitHub**. No client IDs → buttons locked with “Add credentials in .env”. IDs present → OAuth redirect; callback saves a **stub session** (no secret token exchange in the SPA). Full paste-where guide: **[SETUP_AUTH.md](./SETUP_AUTH.md)**.
 
 ---
+
+## Catalog richness
+
+- **Themes (10):** Neon Night, Soft Film, Ocean Pop, Golden Hour, Retro VHS, Minimal White, Cyber Lime, Rose Quartz, Documentary Grain, Party Strobe — each with palette, motion, default transition, suggested beat ids
+- **Beats (9):** Warm Acoustic, Neon Pulse, Ocean Drift, Funk Loop, Hyperfun, Hot Swing, Lobby Time, Spy Glass, Carefree — short MP3 previews + beatmaps under `catalog/previews/` and `catalog/beats/`
+- **Transitions:** cut, dissolve, push, whip, light-leak, fade-black, zoom-through, slide-up, flash (web CSS preview + canvas export + CLI ffmpeg `xfade`)
+- **Licenses / credit:** see [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md) (Kevin MacLeod / CC BY 3.0)
 
 ## Stack
 

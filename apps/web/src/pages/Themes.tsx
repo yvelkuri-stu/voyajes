@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getThemes, type ThemeCard } from "../data/themes";
+import { getBeats } from "../data/beats";
+import { getThemes, transitionLabel, type ThemeCard } from "../data/themes";
 
 export function Themes() {
   const themes = getThemes();
@@ -94,7 +95,7 @@ export function Themes() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <dt className="muted">Transition</dt>
-                  <dd style={{ margin: 0 }}>{selected.transition}</dd>
+                  <dd style={{ margin: 0 }}>{transitionLabel(selected.transition)}</dd>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <dt className="muted">Duration</dt>
@@ -110,6 +111,16 @@ export function Themes() {
                     {selected.id}@{selected.version}
                   </dd>
                 </div>
+                {selected.suggestedBeatIds && selected.suggestedBeatIds.length > 0 && (
+                  <div>
+                    <dt className="muted" style={{ marginBottom: 6 }}>Suggested beats</dt>
+                    <dd style={{ margin: 0 }}>
+                      {selected.suggestedBeatIds
+                        .map((id) => getBeats().find((b) => b.id === id)?.name ?? id)
+                        .join(" · ")}
+                    </dd>
+                  </div>
+                )}
               </dl>
               <Link
                 to={`/create?theme=${encodeURIComponent(selected.id)}`}

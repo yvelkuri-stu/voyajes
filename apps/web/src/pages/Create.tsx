@@ -9,7 +9,12 @@ import {
   type DragEvent,
 } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { packRef, type Aspect, type BeatSync } from "@voyajes/core";
+import {
+  packRef,
+  type Aspect,
+  type BeatSync,
+  type TransitionKind,
+} from "@voyajes/core";
 import {
   getBeats,
   getBeatByRef,
@@ -17,7 +22,13 @@ import {
   licenseLabel,
   type BeatCard,
 } from "../data/beats";
-import { getThemes, getThemeById, type ThemeCard } from "../data/themes";
+import {
+  getThemes,
+  getThemeById,
+  getTransitionKinds,
+  transitionLabel,
+  type ThemeCard,
+} from "../data/themes";
 import { startBeatPreview, type PreviewHandle } from "../lib/beatPreview";
 import { describeBeatSync, snapDurationToBeat } from "../lib/beatSync";
 import {
@@ -50,6 +61,7 @@ type LiveClip = DraftClipMeta & { objectUrl: string };
 
 const ASPECTS: Aspect[] = ["9:16", "16:9", "1:1", "4:5"];
 const BEAT_SYNC_MODES: BeatSync[] = ["off", "soft", "medium", "hard"];
+const TRANSITIONS: TransitionKind[] = getTransitionKinds();
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
@@ -87,6 +99,7 @@ export function Create() {
   const [title, setTitle] = useState("Untitled voyage");
   const [aspect, setAspect] = useState<Aspect>("9:16");
   const [themeId, setThemeId] = useState(paramTheme.id);
+  const [transitionOverride, setTransitionOverride] = useState<TransitionKind | null>(null);
   const [audioTrackRef, setAudioTrackRef] = useState(
     "audio.ocean-drift-084@1.0.0",
   );
@@ -116,6 +129,9 @@ export function Create() {
     () => getThemeById(themeId) ?? themes[0],
     [themeId, themes],
   );
+
+  const activeTransition: TransitionKind =
+    transitionOverride ?? theme.transition;
 
   const selectedBeat: BeatCard =
     getBeatByRef(audioTrackRef) ?? beats[0] ?? {
@@ -541,6 +557,7 @@ export function Create() {
         theme,
         title,
         aspect,
+        transition: activeTransition,
         audio: selectedBeat.previewUrl
           ? {
               previewUrl: selectedBeat.previewUrl,
@@ -654,7 +671,7 @@ export function Create() {
   };
 
   const active = clips[activeIndex];
-  const transitionClass = `tx-${theme.transition}`;
+  const transitionClass = `tx-${activeTransition}`;
   const kenBurns =
     active?.kind === "image" && theme.photoMotion !== "off"
       ? theme.photoMotion === "bold"
@@ -896,7 +913,7 @@ export function Create() {
             <div className="preview-title" style={{ color: theme.palette.text }}>
               {title}
               <div className="preview-sub">
-                {theme.transition} · {theme.motion}
+                {activeTransition} · {theme.motion}
                 {active ? ` · ${activeIndex + 1}/${clips.length}` : ""}
               </div>
             </div>
@@ -1030,7 +1047,10 @@ export function Create() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setThemeId(t.id)}
+                onClick={() => {
+                  setThemeId(t.id);
+                  setTransitionOverride(null);
+                }}
                 className="chip"
                 style={{
                   justifyContent: "flex-start",
@@ -1066,9 +1086,67 @@ export function Create() {
             <div className="muted" style={{ marginTop: 12 }}>
               Transition
             </div>
-            <div>
-              {theme.transition} · {theme.transitionDurationMs}ms
+            <div className="chip-row" style={{ marginTop: 6, flexWrap: "wrap" }}>
+              {TRANSITIONS.filter((k) => k !== "cut").map((kind) => {
+                const selected = activeTransition === kind;
+                const isDefault = theme.transition === kind;
+                return (
+                  <button
+                    key={kind}
+                    type="button"
+                    className={`chip${selected ? " chip-active" : ""}`}
+                    title={
+                      isDefault
+                        ? `${transitionLabel(kind)} (theme default)`
+                        : transitionLabel(kind)
+                    }
+                    onClick={() => {
+                      setTransitionOverride(
+                        kind === theme.transition ? null : kind,
+                      );
+                      setTransitionKey((k) => k + 1);
+                      setStatus(
+                        kind === theme.transition
+                          ? `Transition · ${transitionLabel(kind)} (theme default)`
+                          : `Transition · ${transitionLabel(kind)}`,
+                      );
+                    }}
+                  >
+                    {transitionLabel(kind)}
+                    {isDefault ? " ★" : ""}
+                  </button>
+                );
+              })}
             </div>
+            <div className="muted" style={{ fontSize: "0.75rem", marginTop: 6 }}>
+              {activeTransition} · {theme.transitionDurationMs}ms
+              {transitionOverride && transitionOverride !== theme.transition
+                ? " · override"
+                : " · theme default"}
+            </div>
+            {theme.suggestedBeatIds && theme.suggestedBeatIds.length > 0 && (
+              <>
+                <div className="muted" style={{ marginTop: 12 }}>
+                  Suggested beats
+                </div>
+                <div className="chip-row" style={{ marginTop: 6, flexWrap: "wrap" }}>
+                  {theme.suggestedBeatIds.map((id) => {
+                    const beat = beats.find((b) => b.id === id);
+                    if (!beat) return null;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`chip${selectedBeat.id === id ? " chip-active" : ""}`}
+                        onClick={() => selectBeat(beat)}
+                      >
+                        {beat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
             {active && (
               <>
                 <div className="muted" style={{ marginTop: 12 }}>

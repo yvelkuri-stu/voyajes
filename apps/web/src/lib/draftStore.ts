@@ -5,6 +5,7 @@ import type {
   CustomSound,
   DurationTarget,
   ExportDestination,
+  ProjectMode,
   TextCard,
   TextPosition,
   TextStyle,
@@ -53,6 +54,8 @@ export type DraftCustomSound = CustomSound & {
 
 export type DraftState = {
   title: string;
+  /** voyage (story) vs invitation (guest playback share) */
+  mode: ProjectMode;
   aspect: Aspect;
   themeId: string;
   themeVersion: string;
@@ -129,6 +132,7 @@ const TRANSITIONS: TransitionKind[] = [
 export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
   return {
     title: "Untitled voyage",
+    mode: "voyage",
     aspect: "9:16",
     themeId,
     themeVersion: "1.0.0",
@@ -266,8 +270,11 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
         .map((s) => normalizeCustomSound(s as Partial<CustomSound>))
         .filter((s): s is CustomSound => Boolean(s))
     : [];
+  const mode: ProjectMode =
+    parsed.mode === "invitation" ? "invitation" : "voyage";
   return {
     title: parsed.title,
+    mode,
     aspect: (parsed.aspect as Aspect) ?? "9:16",
     themeId: parsed.themeId ?? "theme.ocean-pop",
     themeVersion: parsed.themeVersion ?? "1.0.0",
@@ -397,6 +404,7 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       public: draft.sharePassword !== true,
       password: draft.sharePassword === true,
       id: draft.shareId,
+      mode: draft.mode,
     },
     export: {
       destination: draft.exportDestination,

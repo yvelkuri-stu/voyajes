@@ -134,6 +134,8 @@ export interface TemplatePack {
   aspect?: "9:16" | "16:9" | "1:1" | "4:5";
   /** Soft target length for social cuts */
   durationTargetSec?: DurationTargetSec;
+  /** voyage (default) vs invitation (guest playback, no edit) */
+  mode?: "voyage" | "invitation";
 }
 
 export interface AudioBeatPack {

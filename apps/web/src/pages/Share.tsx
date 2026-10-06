@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { brand } from "@voyajes/core";
 import { CommentThread } from "../components/CommentThread";
 import { EmojiPicker, QuickReactionBar } from "../components/EmojiPicker";
+import { InvitePlayer } from "../components/InvitePlayer";
 import { Logo } from "../components/Logo";
 import { getBeatByRef } from "../data/beats";
 import { getThemeById } from "../data/themes";
+import { assetUrl } from "../lib/assetUrl";
 import {
   getShareReactions,
   toggleShareReaction,
@@ -52,6 +54,9 @@ function unlockKey(id: string) {
 export function Share() {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const hostView = searchParams.get("host") === "1";
+  const [guestPlaying, setGuestPlaying] = useState(false);
   const [record, setRecord] = useState<ShareRecord | null>(null);
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -249,6 +254,48 @@ export function Share() {
     setStatus("Title updated (emoji OK)");
   }, [record, titleEdit]);
 
+
+  // Open Graph–style document meta for invitation / voyage shares
+  useEffect(() => {
+    if (!record) return;
+    const prevTitle = document.title;
+    const isInvite = record.mode === "invitation";
+    document.title = isInvite
+      ? `${record.title} · Invitation · Voyajes`
+      : `${record.title} · Voyajes`;
+
+    const upsert = (attr: "name" | "property", key: string, content: string) => {
+      let el = document.head.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    const desc = isInvite
+      ? `You're invited — ${record.themeName} · ${record.audioName} · animated with Voyajes`
+      : `${brand.tagline} · ${record.themeName} · ${record.audioName}`;
+    upsert("name", "description", desc);
+    upsert("property", "og:title", record.title);
+    upsert("property", "og:description", desc);
+    upsert("property", "og:type", isInvite ? "website" : "video.other");
+    upsert("property", "og:url", publicShareUrl(record.id));
+    upsert("property", "og:site_name", brand.name);
+    upsert("name", "twitter:card", "summary_large_image");
+    upsert("name", "twitter:title", record.title);
+    upsert("name", "twitter:description", desc);
+    const icon = assetUrl("/brand/logo-app.png");
+    if (icon) {
+      upsert("property", "og:image", icon.startsWith("http") ? icon : `${window.location.origin}${icon}`);
+    }
+
+    return () => {
+      document.title = prevTitle;
+    };
+  }, [record]);
+
   if (!ready) {
     return (
       <div className="share-page">
@@ -279,6 +326,152 @@ export function Share() {
   }
 
   const locked = passwordOn && !unlocked;
+  const isInvitation = record.mode === "invitation";
+  const showGuestInvite = isInvitation && !hostView && !locked;
+
+  if (showGuestInvite) {
+    return (
+      <div className="share-page invite-page">
+        <div className="invite-hero-label">
+          <span aria-hidden>✉️</span> Invitation
+        </div>
+        <div className="share-header-row" style={{ marginBottom: 12 }}>
+          <div>
+            <h1 className="display share-title" style={{ margin: 0 }}>
+              {record.title}
+            </h1>
+            <p className="muted share-subtitle" style={{ margin: "4px 0 0" }}>
+              {formatDuration(record.durationSec)} · {record.themeName} · ♪ {record.audioName}
+            </p>
+          </div>
+          <Logo size={32} />
+        </div>
+
+        {!guestPlaying ? (
+          <div
+            className="share-poster"
+            style={{
+              background: posterUrl
+                ? undefined
+                : record.themeGradient || "var(--grad-ocean)",
+              maxWidth: 420,
+              margin: "0 auto",
+              borderRadius: 20,
+              overflow: "hidden",
+              position: "relative",
+              aspectRatio: "9 / 16",
+              maxHeight: "70vh",
+            }}
+          >
+            {posterUrl && !isVideoPoster && (
+              <img src={posterUrl} alt="" className="share-poster-media" />
+            )}
+            {posterUrl && isVideoPoster && (
+              <video
+                src={posterUrl}
+                className="share-poster-media"
+                muted
+                playsInline
+                autoPlay
+                loop
+              />
+            )}
+            <div
+              className="share-poster-grade"
+              style={{
+                background: record.themeGradient,
+                mixBlendMode: "soft-light",
+                opacity: posterUrl ? 0.4 : 0.85,
+              }}
+            />
+            <button
+              type="button"
+              className="share-play"
+              aria-label="Play invitation"
+              onClick={() => setGuestPlaying(true)}
+            >
+              ▶
+            </button>
+            <div className="share-poster-caption">
+              <div className="share-poster-title">{record.title}</div>
+              <div className="share-poster-meta">
+                Tap play · fullscreen animated invite
+              </div>
+            </div>
+          </div>
+        ) : (
+          <InvitePlayer record={record} autoPlay />
+        )}
+
+        <div className="og-card invite-og" aria-label="Link preview">
+          <div
+            className="og-card-thumb"
+            style={{
+              backgroundImage:
+                posterUrl && !isVideoPoster
+                  ? `url(${posterUrl})`
+                  : record.themeGradient,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+          <div className="og-card-body">
+            <div className="og-card-host">{brand.shareHost}</div>
+            <div className="og-card-title">{record.title}</div>
+            <div className="og-card-desc muted">
+              Invitation · {record.themeName} · {record.audioName} · matches host design
+            </div>
+          </div>
+        </div>
+
+        <div className="share-link-box" title={shareUrl} style={{ marginTop: 12 }}>
+          {shareUrl}
+        </div>
+        <div className="share-actions" style={{ justifyContent: "center" }}>
+          <button type="button" className="btn btn-primary" onClick={() => void copy()}>
+            {copied ? "Copied!" : "Copy invite link"}
+          </button>
+          {!guestPlaying && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setGuestPlaying(true)}
+            >
+              Play invite
+            </button>
+          )}
+        </div>
+
+        <section className="share-react-section" aria-label="Reactions" style={{ marginTop: 20 }}>
+          <div className="share-react-head">
+            <h3 style={{ margin: "0 0 4px", fontSize: "1rem" }}>React</h3>
+            <EmojiPicker onSelect={onShareReact} label="😀＋" />
+          </div>
+          <QuickReactionBar onSelect={onShareReact} active={myReacts} />
+        </section>
+
+        <CommentThread shareId={record.id} />
+
+        <p className="muted invite-guest-note">
+          Playback uses the host’s theme, transitions, audio &amp; text.
+          Media loads from this browser’s draft store until cloud sync ships.
+        </p>
+        <p style={{ textAlign: "center", marginTop: 16 }}>
+          <Link
+            to={`/v/${record.id}?host=1`}
+            className="muted"
+            style={{ fontSize: "0.85rem" }}
+          >
+            Host controls →
+          </Link>
+          {" · "}
+          <Link to="/create?mode=invitation" className="muted" style={{ fontSize: "0.85rem" }}>
+            Create your own invite
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="share-page">
@@ -349,7 +542,12 @@ export function Share() {
                   opacity: posterUrl ? 0.4 : 0.85,
                 }}
               />
-              <button type="button" className="share-play" aria-label="Play (preview stub)">
+              <button
+                type="button"
+                className="share-play"
+                aria-label={isInvitation ? "Play invitation" : "Play preview"}
+                onClick={() => setGuestPlaying(true)}
+              >
                 ▶
               </button>
               <div className="share-poster-caption">
@@ -362,16 +560,28 @@ export function Share() {
             </div>
           )}
 
+          {guestPlaying && isInvitation && !locked && (
+            <div style={{ padding: "12px 16px 0" }}>
+              <InvitePlayer record={record} autoPlay />
+            </div>
+          )}
+
           <div className="share-body">
             <div className="share-header-row">
               <div>
                 <h1 className="display share-title">{record.title}</h1>
                 <p className="muted share-subtitle">
-                  {formatDuration(record.durationSec)} · Made with Voyajes
+                  {formatDuration(record.durationSec)} ·{" "}
+                  {isInvitation ? "Invitation · " : ""}Made with Voyajes
                 </p>
               </div>
               <Logo size={28} />
             </div>
+            {isInvitation && (
+              <div className="invite-hero-label" style={{ marginBottom: 12 }}>
+                <span aria-hidden>✉️</span> Invitation mode · host view
+              </div>
+            )}
 
             <div className="share-chips">
               <span
@@ -421,7 +631,8 @@ export function Share() {
                 <div className="og-card-host">{brand.shareHost}</div>
                 <div className="og-card-title">{record.title}</div>
                 <div className="og-card-desc muted">
-                  {brand.tagline} · {record.themeName} · {record.audioName}
+                  {isInvitation ? "Invitation" : brand.tagline} · {record.themeName} ·{" "}
+                  {record.audioName}
                 </div>
               </div>
             </div>
@@ -560,6 +771,8 @@ export function Share() {
             <dd>{record.clipCount}</dd>
             <dt>Duration</dt>
             <dd>{formatDuration(record.durationSec)}</dd>
+            <dt>Mode</dt>
+            <dd>{isInvitation ? "Invitation" : "Voyage"}</dd>
             <dt>Visibility</dt>
             <dd>{passwordOn ? "Password" : "Public link"}</dd>
           </dl>

@@ -43,7 +43,15 @@ import {
   transitionLabel,
   type ThemeCard,
 } from "../data/themes";
-import { getKidsSafeTemplates, getTemplateById, getTemplates, type TemplateCard } from "../data/templates";
+import {
+  getInvitationTemplates,
+  getKidsSafeTemplates,
+  getTemplateById,
+  getVoyageTemplates,
+  isInvitationTemplate,
+  type TemplateCard,
+} from "../data/templates";
+import type { ProjectMode } from "@voyajes/core";
 import { usePrefs } from "../hooks/usePrefs";
 import { useAiActivity } from "../hooks/useAiActivity";
 import {
@@ -142,10 +150,28 @@ export function Create() {
     themes.find((t) => t.id === "theme.ocean-pop") ??
     themes[0];
 
-  const templates = useMemo(
-    () => (kidsMode ? getKidsSafeTemplates() : getTemplates()),
-    [kidsMode],
+  const [projectMode, setProjectMode] = useState<ProjectMode>(
+    params.get("mode") === "invitation" || paramTemplate?.mode === "invitation"
+      ? "invitation"
+      : "voyage",
   );
+
+  const templates = useMemo(() => {
+    if (projectMode === "invitation") {
+      const invites = getInvitationTemplates();
+      if (kidsMode) {
+        return invites.filter((tpl) =>
+          getKidsSafeTemplates().some((k) => k.id === tpl.id),
+        ).length
+          ? invites.filter((tpl) =>
+              getKidsSafeTemplates().some((k) => k.id === tpl.id),
+            )
+          : invites;
+      }
+      return invites;
+    }
+    return kidsMode ? getKidsSafeTemplates() : getVoyageTemplates();
+  }, [kidsMode, projectMode]);
   const beats = useMemo(() => getBeats(), []);
   const previewHandle = useRef<PreviewHandle | null>(null);
   const audioPanelRef = useRef<HTMLElement>(null);
@@ -288,8 +314,18 @@ export function Create() {
         if (paramTemplate.durationTargetSec) {
           base.durationTargetSec = paramTemplate.durationTargetSec;
         }
+        if (paramTemplate.mode === "invitation" || (paramTemplate.tags ?? []).includes("invitation")) {
+          base.mode = "invitation";
+        }
+      }
+      if (params.get("mode") === "invitation") {
+        base.mode = "invitation";
+        if (!draft && (!base.title || base.title === "Untitled voyage")) {
+          base.title = "You're invited!";
+        }
       }
       if (cancelled) return;
+      setProjectMode(base.mode === "invitation" ? "invitation" : "voyage");
       setTitle(base.title);
       setAspect(base.aspect);
       setThemeId(base.themeId);
@@ -351,6 +387,7 @@ export function Create() {
     if (!hydrated) return;
     const draft: DraftState = {
       title,
+      mode: projectMode,
       aspect,
       themeId,
       themeVersion: theme.version,
@@ -400,6 +437,7 @@ export function Create() {
   }, [
     hydrated,
     title,
+    projectMode,
     aspect,
     themeId,
     theme.version,
@@ -827,8 +865,18 @@ export function Create() {
       setTextTransition(tpl.textTransition);
       if (tpl.aspect) setAspect(tpl.aspect);
       if (tpl.durationTargetSec) setDurationTargetSec(tpl.durationTargetSec);
+      if (isInvitationTemplate(tpl)) {
+        setProjectMode("invitation");
+        setTitle((prev) =>
+          !prev || prev === "Untitled voyage" ? "You're invited!" : prev,
+        );
+      }
       setTransitionKey((k) => k + 1);
-      setStatus(`Template · ${tpl.name} applied`);
+      setStatus(
+        isInvitationTemplate(tpl)
+          ? `Invitation · ${tpl.name} applied`
+          : `Template · ${tpl.name} applied`,
+      );
       ai.pulse("template", 1200);
     },
     [applyBeatSnap, ai],
@@ -1053,6 +1101,7 @@ export function Create() {
   const downloadProjectJson = () => {
     const draft: DraftState = {
       title,
+      mode: projectMode,
       aspect,
       themeId,
       themeVersion: theme.version,
@@ -1105,6 +1154,7 @@ export function Create() {
   const openShare = () => {
     const draft: DraftState = {
       title,
+      mode: projectMode,
       aspect,
       themeId,
       themeVersion: theme.version,
@@ -1211,17 +1261,46 @@ export function Create() {
       >
         <div>
           <h1 className="display" style={{ margin: 0, fontSize: "1.35rem" }}>
-            Compose · Auto
+            {projectMode === "invitation" ? "Compose · Invitation" : "Compose · Auto"}
           </h1>
           <p className="muted" style={{ margin: "4px 0 0", fontSize: "0.85rem" }}>
-            Every voyage, in motion — drop photos or clips, pick a theme, play.
+            {projectMode === "invitation"
+              ? "Design an animated invite — guests open the link for fullscreen playback (same theme, transitions, audio & text)."
+              : "Every voyage, in motion — drop photos or clips, pick a theme, play."}
           </p>
+          <div className="mode-toggle" style={{ marginTop: 10 }} role="group" aria-label="Project mode">
+            <button
+              type="button"
+              className={projectMode === "voyage" ? "is-active" : undefined}
+              onClick={() => {
+                setProjectMode("voyage");
+                setStatus("Mode · Voyage story");
+              }}
+            >
+              Voyage
+            </button>
+            <button
+              type="button"
+              className={projectMode === "invitation" ? "is-active" : undefined}
+              onClick={() => {
+                setProjectMode("invitation");
+                setTitle((prev) =>
+                  !prev || prev === "Untitled voyage" ? "You're invited!" : prev,
+                );
+                const first = getInvitationTemplates()[0];
+                if (first && !templateId) applyTemplate(first);
+                setStatus("Mode · Invitation (guest playback share)");
+              }}
+            >
+              Invitation
+            </button>
+          </div>
           <div className="title-emoji-row" style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, maxWidth: 360 }}>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               aria-label="Project title"
-              placeholder="Untitled voyage ✨"
+              placeholder={projectMode === "invitation" ? "You're invited! 🎉" : "Untitled voyage ✨"}
               style={{
                 background: "transparent",
                 border: "none",
@@ -1897,10 +1976,10 @@ export function Create() {
           </div>
 
           <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6 }}>
-            Templates
+            {projectMode === "invitation" ? "Invitation templates" : "Templates"}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflow: "auto" }}>
-            {templates.slice(0, 14).map((tpl) => (
+            {templates.slice(0, projectMode === "invitation" ? 8 : 14).map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"

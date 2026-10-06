@@ -1,44 +1,66 @@
-type Props = { size?: number; withWordmark?: boolean };
+import { assetUrl } from "../lib/assetUrl";
 
-export function Logo({ size = 28, withWordmark = true }: Props) {
+type Props = {
+  size?: number;
+  withWordmark?: boolean;
+  /** Prefer app V mark (default) or alt spark circle. */
+  variant?: "app" | "alt";
+};
+
+/** Brand wordmark with the intentional J highlighted. */
+export function Wordmark({ fontSize }: { fontSize: number }) {
+  return (
+    <span className="vj-wordmark" style={{ fontSize }}>
+      Voya
+      <span className="vj-wordmark-j" aria-label="j">
+        j
+        <span className="vj-wordmark-j-spark" aria-hidden />
+      </span>
+      es
+    </span>
+  );
+}
+
+export function Logo({
+  size = 28,
+  withWordmark = true,
+  variant = "app",
+}: Props) {
+  const src =
+    assetUrl(
+      variant === "alt" ? "/brand/logo-alt.png" : "/brand/logo-app.png",
+    ) ?? "/brand/logo-app.png";
+
   return (
     <span
+      className="vj-logo"
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 10,
         fontFamily: "Sora, sans-serif",
         fontWeight: 700,
-        fontSize: size * 0.55,
         letterSpacing: "-0.03em",
       }}
     >
-      <svg
+      <img
+        src={src}
         width={size}
         height={size}
-        viewBox="0 0 40 40"
-        fill="none"
+        alt=""
         aria-hidden
-      >
-        <defs>
-          <linearGradient id="vj-g" x1="0" y1="0" x2="40" y2="40">
-            <stop stopColor="#E84AFF" />
-            <stop offset="0.5" stopColor="#7C5CFF" />
-            <stop offset="1" stopColor="#3DDC97" />
-          </linearGradient>
-        </defs>
-        <rect width="40" height="40" rx="12" fill="url(#vj-g)" />
-        <path
-          d="M8 26c4-10 8-14 12-14s8 4 12 14"
-          stroke="#fff"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.95"
-        />
-        <circle cx="20" cy="14" r="2.5" fill="#F5C542" />
-      </svg>
-      {withWordmark && <span>Voyajes</span>}
+        className="vj-logo-mark"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: Math.max(6, Math.round(size * 0.28)),
+          objectFit: "cover",
+          flexShrink: 0,
+          display: "block",
+        }}
+        draggable={false}
+      />
+      {withWordmark && <Wordmark fontSize={size * 0.55} />}
     </span>
   );
 }

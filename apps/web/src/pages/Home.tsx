@@ -55,11 +55,14 @@ export function Home() {
             <Link to="/create" className="btn btn-primary">
               New story
             </Link>
+            <Link to="/create?mode=invitation" className="btn btn-ghost">
+              New invitation
+            </Link>
             <Link to="/themes" className="btn btn-ghost">
               Browse themes
             </Link>
             <Link to="/themes?tab=templates" className="btn btn-ghost">
-              {prefs.kidsMode ? "Kids templates" : "14 templates"}
+              {prefs.kidsMode ? "Kids templates" : "Templates"}
             </Link>
             {!session && (
               <Link to="/signin?next=/create" className="btn btn-ghost">

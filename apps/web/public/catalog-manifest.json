@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "catalogVersion": "2026.10.06.3",
-  "etag": "W/\"vj-20261006-3\"",
-  "generatedAt": "2026-10-06T21:46:17Z",
+  "catalogVersion": "2026.10.06.4",
+  "etag": "W/\"vj-20261006-4\"",
+  "generatedAt": "2026-10-06T22:51:36Z",
   "channels": {
     "stable": {
       "minApp": "0.1.0"
@@ -700,6 +700,90 @@
       "durationTargetSec": 15,
       "sizeBytes": 48000,
       "hash": "sha256:tpl-pulse-reels-v1"
+    },
+    {
+      "id": "template.birthday-blast",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Birthday Blast",
+      "description": "Invitation pack: party strobe flashes, hyperfun beat, bold-impact RSVP titles.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "birthday",
+        "party",
+        "9:16"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.party-strobe",
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 160,
+      "photoMotion": "bold",
+      "beatId": "audio.hyperfun-128",
+      "beatSync": "hard",
+      "textStyle": "bold-impact",
+      "textTransition": "pop",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-birthday-blast-v1"
+    },
+    {
+      "id": "template.garden-soiree",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Garden Soir\u00e9e",
+      "description": "Invitation pack: rose float, slide-up reveals, warm acoustic \u2014 bridal & garden parties.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "wedding",
+        "garden",
+        "4:5"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.rose-quartz",
+      "motion": "float",
+      "transition": "slide-up",
+      "transitionDurationMs": 440,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "script-soft",
+      "textTransition": "slide-up",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-garden-soiree-v1"
+    },
+    {
+      "id": "template.candle-wish",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Candle Wish",
+      "description": "Invitation pack: golden-hour light-leaks, soft titles \u2014 intimate birthdays & dinners.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "birthday",
+        "intimate",
+        "1:1"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.golden-hour",
+      "motion": "cinematic",
+      "transition": "light-leak",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "beatId": "audio.lobby-time-096",
+      "beatSync": "medium",
+      "textStyle": "soft-serif",
+      "textTransition": "fade",
+      "aspect": "1:1",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-candle-wish-v1"
     },
     {
       "id": "audio.warm-acoustic-092",

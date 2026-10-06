@@ -8,6 +8,8 @@ Drop in a messy camera roll. Pick a color & motion theme. Hit play. Walk away wi
 
 > Theme before timeline. Beauty before spreadsheet energy.
 
+Brand marks live in `brand/icon-app.jpg` / `brand/icon-alt.jpg` and ship as `apps/web/public/brand/logo-*.png` (Logo component, favicon, PWA icons). The wordmark highlights the intentional **j**.
+
 **Live demo:** https://yvelkuri-stu.github.io/voyajes/  
 **Repo:** https://github.com/yvelkuri-stu/voyajes
 
@@ -36,7 +38,7 @@ voyajes/
   SETUP_AUTH.md      Google / Apple / Microsoft / Meta / GitHub OAuth setup
 ```
 
-**Screens:** Home · Create/Compose · Themes & **14 Templates** · Share · Continue (auth demos) · Kids Mode · Notification bell
+**Screens:** Home · Create/Compose · Themes & **Templates** (incl. **Invitation**) · Share · Continue (auth demos) · Kids Mode · Notification bell
 
 **Home testing:** [docs/WORKFLOW.md](./docs/WORKFLOW.md) · **Native later:** [docs/NATIVE_APPS.md](./docs/NATIVE_APPS.md) (**Flutter** locked)
 
@@ -64,11 +66,23 @@ Buttons for **Google, Apple, Microsoft, Meta, GitHub**. No client IDs → button
 ## Catalog richness
 
 - **Themes (10):** Neon Night, Soft Film, Ocean Pop, Golden Hour, Retro VHS, Minimal White, Cyber Lime, Rose Quartz, Documentary Grain, Party Strobe
-- **Templates (14):** Midnight Metro, Sunlit Drift, Coastal Bounce, Golden Recap, VHS Party, Gallery Quiet, Acid Drop, Blush Story, Field Notes, Strobe Night, Swing Retro, Mint Travel, Lounge Edit, Pulse Reels — each a unique motion × transition × beat × text-style × text-transition combo
+- **Templates (17):** 14 voyage packs + **3 Invitation packs** (Birthday Blast, Garden Soirée, Candle Wish) — each a unique motion × transition × beat × text-style × text-transition combo
 - **Beats (9):** Warm Acoustic, Neon Pulse, Ocean Drift, Funk Loop, Hyperfun, Hot Swing, Lobby Time, Spy Glass, Carefree
 - **Transitions:** cut, dissolve, push, whip, light-leak, fade-black, zoom-through, slide-up, flash
 - **Licenses / credit:** [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md) · **how to ship packs:** [`catalog/CATALOG.md`](./catalog/CATALOG.md)
 - **Notifications:** browser Notification API + in-app toast/bell when `catalogVersion` changes
+
+
+## Invitation mode
+
+Host an animated **birthday / event invite** instead of a regular voyage:
+
+1. **Compose → Invitation** (or Home → **New invitation**, or `/create?mode=invitation`).
+2. Pick an **Invitation** template (Birthday Blast, Garden Soirée, Candle Wish) — theme, transitions, beat, and text styles apply as usual.
+3. Add photos/clips + title/caption overlays; **Share** publishes a link.
+4. Guests open `/v/:id` for **high-quality animated playback** matching your design (same theme grades, transitions, catalog audio, and text). **Fullscreen** play + an **OG-style** preview card. No compose/edit chrome on the guest view (`?host=1` keeps host controls).
+
+Media still resolves from the host browser’s IndexedDB draft until cloud sync ships — share the link from the device that composed the invite for full playback.
 
 ## Stack
 

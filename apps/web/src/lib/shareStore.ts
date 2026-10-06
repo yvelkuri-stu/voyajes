@@ -1,12 +1,31 @@
 import { brand } from "@voyajes/core";
-import type { DraftState } from "./draftStore";
+import type { Aspect, ProjectMode, TextStyle, TextTransition, TransitionKind } from "@voyajes/core";
+import type { DraftClipMeta, DraftState, DraftTextOverlay } from "./draftStore";
 
 const LS_SHARES = "voyajes.shares.v1";
 const LS_ACTIVE = "voyajes.share.activeId";
 
+/** Snapshot of compose intent so guest playback matches the host design. */
+export type SharePlaybackSnapshot = {
+  aspect: Aspect;
+  themeId: string;
+  transitionOverride: TransitionKind | null;
+  textStyle: TextStyle;
+  textTransition: TextTransition;
+  captionStyle: TextStyle;
+  captionText: string;
+  textOverlays: DraftTextOverlay[];
+  audioTrackRef: string;
+  beatSync: DraftState["beatSync"];
+  ducking: boolean;
+  watermark: boolean;
+  clips: DraftClipMeta[];
+};
+
 export type ShareRecord = {
   id: string;
   title: string;
+  mode: ProjectMode;
   themeId: string;
   themeName: string;
   themeAccent: string;
@@ -20,6 +39,8 @@ export type ShareRecord = {
   posterClipId: string | null;
   posterMime: string | null;
   passwordProtected: boolean;
+  /** Full playback recipe (theme / transitions / text / clip meta). */
+  playback: SharePlaybackSnapshot | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -65,9 +86,33 @@ export function publicShareUrl(id: string): string {
   return `https://${brand.shareHost}/v/${id}`;
 }
 
+function normalizeRecord(raw: Partial<ShareRecord> & { id: string }): ShareRecord {
+  return {
+    id: raw.id,
+    title: typeof raw.title === "string" ? raw.title : "Untitled voyage",
+    mode: raw.mode === "invitation" ? "invitation" : "voyage",
+    themeId: raw.themeId ?? "theme.ocean-pop",
+    themeName: raw.themeName ?? "Theme",
+    themeAccent: raw.themeAccent ?? "#7C5CFF",
+    themeGradient: raw.themeGradient ?? "var(--grad-brand)",
+    clipCount: typeof raw.clipCount === "number" ? raw.clipCount : 0,
+    durationSec: typeof raw.durationSec === "number" ? raw.durationSec : 0,
+    audioTrackRef: raw.audioTrackRef ?? "",
+    audioName: raw.audioName ?? "Beat",
+    audioBpm: typeof raw.audioBpm === "number" ? raw.audioBpm : 0,
+    posterClipId: raw.posterClipId ?? null,
+    posterMime: raw.posterMime ?? null,
+    passwordProtected: raw.passwordProtected === true,
+    playback: raw.playback ?? null,
+    createdAt: raw.createdAt ?? new Date().toISOString(),
+    updatedAt: raw.updatedAt ?? new Date().toISOString(),
+  };
+}
+
 export function getShare(id: string): ShareRecord | null {
   const index = readIndex();
-  return index[id] ?? null;
+  const raw = index[id];
+  return raw ? normalizeRecord(raw) : null;
 }
 
 export function getActiveShareId(): string | null {
@@ -84,7 +129,7 @@ export function setActiveShareId(id: string): void {
 
 export function saveShare(record: ShareRecord): void {
   const index = readIndex();
-  index[record.id] = record;
+  index[record.id] = normalizeRecord(record);
   writeIndex(index);
   setActiveShareId(record.id);
 }
@@ -96,12 +141,12 @@ export function updateShare(
   const index = readIndex();
   const prev = index[id];
   if (!prev) return null;
-  const next: ShareRecord = {
+  const next = normalizeRecord({
     ...prev,
     ...patch,
     id: prev.id,
     updatedAt: new Date().toISOString(),
-  };
+  });
   index[id] = next;
   writeIndex(index);
   return next;
@@ -115,21 +160,38 @@ export type ShareDraftContext = {
   audioBpm: number;
 };
 
+export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
+  return {
+    aspect: draft.aspect,
+    themeId: draft.themeId,
+    transitionOverride: draft.transitionOverride,
+    textStyle: draft.textStyle,
+    textTransition: draft.textTransition,
+    captionStyle: draft.captionStyle,
+    captionText: draft.captionText,
+    textOverlays: draft.textOverlays,
+    audioTrackRef: draft.audioTrackRef,
+    beatSync: draft.beatSync,
+    ducking: draft.ducking,
+    watermark: draft.watermark,
+    clips: draft.clips.map((c) => ({ ...c })),
+  };
+}
+
 /** Create or refresh a share record from the current draft. */
 export function ensureShareFromDraft(
   draft: DraftState,
   ctx: ShareDraftContext,
 ): ShareRecord {
-  const existingId = draft.shareId ?? getActiveShareId();
-  const index = readIndex();
-  const prev = existingId ? index[existingId] : undefined;
-  const id = prev?.id ?? generateShareId();
   const now = new Date().toISOString();
-  const durationSec = draft.clips.reduce((s, c) => s + c.durationSec, 0);
+  const prev = draft.shareId ? getShare(draft.shareId) : null;
+  const id = prev?.id ?? draft.shareId ?? generateShareId();
   const first = draft.clips[0];
+  const durationSec = draft.clips.reduce((s, c) => s + c.durationSec, 0);
   const record: ShareRecord = {
     id,
-    title: draft.title.trim() || "Untitled voyage",
+    title: draft.title.trim() || (draft.mode === "invitation" ? "You're invited!" : "Untitled voyage"),
+    mode: draft.mode === "invitation" ? "invitation" : "voyage",
     themeId: draft.themeId,
     themeName: ctx.themeName,
     themeAccent: ctx.themeAccent,
@@ -142,6 +204,7 @@ export function ensureShareFromDraft(
     posterClipId: first?.id ?? null,
     posterMime: first?.mimeType ?? null,
     passwordProtected: draft.sharePassword === true,
+    playback: playbackFromDraft(draft),
     createdAt: prev?.createdAt ?? now,
     updatedAt: now,
   };
@@ -150,9 +213,9 @@ export function ensureShareFromDraft(
 }
 
 export function listShares(): ShareRecord[] {
-  return Object.values(readIndex()).sort((a, b) =>
-    b.updatedAt.localeCompare(a.updatedAt),
-  );
+  return Object.values(readIndex())
+    .map((r) => normalizeRecord(r))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export function clearShares(): void {

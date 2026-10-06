@@ -59,3 +59,16 @@ export function templateComboSummary(t: TemplateCard): string {
     textTransitionLabel(t.textTransition),
   ].join(" · ");
 }
+
+export function isInvitationTemplate(t: TemplateCard): boolean {
+  return t.mode === "invitation" || t.tags.includes("invitation");
+}
+
+export function getInvitationTemplates(): TemplateCard[] {
+  return getTemplates().filter(isInvitationTemplate);
+}
+
+export function getVoyageTemplates(): TemplateCard[] {
+  return getTemplates().filter((t) => !isInvitationTemplate(t));
+}
+

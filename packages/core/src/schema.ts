@@ -147,11 +147,16 @@ export const TextCardSchema = z.object({
 });
 export type TextCard = z.infer<typeof TextCardSchema>;
 
+export const ProjectModeSchema = z.enum(["voyage", "invitation"]);
+export type ProjectMode = z.infer<typeof ProjectModeSchema>;
+
 export const ShareMetaSchema = z.object({
   title: z.string().optional(),
   public: z.boolean().default(true),
   password: z.boolean().optional(),
   id: z.string().min(4).optional(),
+  /** invitation = guest animated playback, no compose UI */
+  mode: ProjectModeSchema.optional(),
 });
 
 export const ExportMetaSchema = z.object({

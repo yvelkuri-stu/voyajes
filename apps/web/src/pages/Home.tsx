@@ -31,16 +31,7 @@ export function Home() {
 
   return (
     <div>
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.2fr 1fr",
-          gap: 24,
-          alignItems: "center",
-          marginBottom: 40,
-        }}
-        className="hero-grid"
-      >
+      <section className="hero-grid">
         <div>
           <p
             className="muted"
@@ -48,7 +39,7 @@ export function Home() {
           >
             {brand.name.toUpperCase()}
           </p>
-          <h1 className="display" style={{ fontSize: "2.4rem", margin: "0 0 12px" }}>
+          <h1 className="display" style={{ margin: "0 0 12px" }}>
             {brand.tagline}
           </h1>
           <p className="muted" style={{ maxWidth: 440, marginBottom: 24 }}>
@@ -103,12 +94,6 @@ export function Home() {
           </p>
         </div>
       </section>
-
-      <style>{`
-        @media (max-width: 800px) {
-          .hero-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
 
       <section style={{ marginBottom: 36 }}>
         <div

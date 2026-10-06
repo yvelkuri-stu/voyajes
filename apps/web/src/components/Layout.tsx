@@ -3,6 +3,7 @@ import { Logo } from "./Logo";
 import { brand } from "@voyajes/core";
 import { useAuthSession } from "../hooks/useAuthSession";
 import { NotificationBell } from "./NotificationBell";
+import { InstallPrompt } from "./InstallPrompt";
 
 const links = [
   { to: "/", label: "Home", end: true },
@@ -75,6 +76,7 @@ export function Layout() {
       <main className="main">
         <Outlet />
       </main>
+      <InstallPrompt />
     </div>
   );
 }

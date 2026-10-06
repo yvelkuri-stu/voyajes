@@ -6,6 +6,7 @@ import {
   mkdirSync,
   existsSync,
   readdirSync,
+  copyFileSync,
 } from "node:fs";
 import { resolve, join, dirname, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,14 +17,24 @@ import {
   type CatalogManifest,
   type BeatSync,
   type Aspect,
+  type DurationTarget,
+  type TemplatePack,
+  type TransitionKind,
+  type TextStyle,
+  type TextTransition,
   parsePackRef,
+  TRANSITION_KINDS,
+  TEXT_STYLE_KINDS,
+  TEXT_TRANSITION_KINDS,
 } from "@voyajes/core";
 import {
   findFfmpeg,
   ffmpegInstallHint,
   findTheme,
+  findTemplate,
   findBeat,
   generateSampleImages,
+  parseTransitionKind,
   renderWithFfmpeg,
   type RenderQuality,
 } from "./render.js";
@@ -88,30 +99,58 @@ function parseBeatSync(value: string): BeatSync {
 
 const EXPORT_PRESETS: Record<
   string,
-  { aspect: Aspect; label: string }
+  { aspect: Aspect; label: string; durationTargets: DurationTarget[] }
 > = {
-  youtube: { aspect: "16:9", label: "YouTube 16:9" },
-  tiktok: { aspect: "9:16", label: "TikTok 9:16" },
-  "instagram-reels": { aspect: "9:16", label: "IG Reels 9:16" },
-  "instagram-feed": { aspect: "1:1", label: "IG Feed 1:1" },
-  "instagram-portrait": { aspect: "4:5", label: "IG Feed 4:5" },
+  youtube: { aspect: "16:9", label: "YouTube 16:9", durationTargets: [60] },
+  tiktok: { aspect: "9:16", label: "TikTok 9:16", durationTargets: [15, 30, 60] },
+  "instagram-reels": {
+    aspect: "9:16",
+    label: "IG Reels 9:16",
+    durationTargets: [15, 30, 60],
+  },
+  "instagram-feed": {
+    aspect: "1:1",
+    label: "IG Feed 1:1",
+    durationTargets: [30, 60],
+  },
+  "instagram-portrait": {
+    aspect: "4:5",
+    label: "IG Feed 4:5",
+    durationTargets: [30, 60],
+  },
 };
+
+function parseDurationTarget(value: string): DurationTarget {
+  const n = Number(value);
+  if (n === 15 || n === 30 || n === 60) return n;
+  console.error(`Invalid --duration-target: ${value} (use 15|30|60)`);
+  process.exit(1);
+}
 
 function applyExportPreset(
   project: VoyajesProject,
-  presetId?: string,
-  aspectOverride?: string,
+  opts: {
+    presetId?: string;
+    aspectOverride?: string;
+    durationTarget?: DurationTarget;
+    watermark?: boolean;
+  },
 ): VoyajesProject {
   let next = { ...project };
-  if (presetId && EXPORT_PRESETS[presetId]) {
-    const p = EXPORT_PRESETS[presetId];
+  if (opts.presetId && EXPORT_PRESETS[opts.presetId]) {
+    const p = EXPORT_PRESETS[opts.presetId];
+    const durationTargetSec =
+      opts.durationTarget ??
+      (p.durationTargets.length === 1
+        ? p.durationTargets[0]
+        : next.export?.durationTargetSec);
     next = {
       ...next,
       aspect: p.aspect,
       export: {
-        watermark: next.export?.watermark ?? false,
-        durationTargetSec: next.export?.durationTargetSec,
-        destination: presetId as
+        watermark: opts.watermark ?? next.export?.watermark ?? false,
+        durationTargetSec,
+        destination: opts.presetId as
           | "youtube"
           | "tiktok"
           | "instagram-reels"
@@ -120,13 +159,104 @@ function applyExportPreset(
           | "custom",
       },
     };
-    console.error(`  preset:   ${p.label} → aspect ${p.aspect}`);
+    console.error(
+      `  preset:   ${p.label} → aspect ${p.aspect}` +
+        (durationTargetSec ? ` · target ${durationTargetSec}s` : ""),
+    );
+  } else if (opts.durationTarget != null || opts.watermark != null) {
+    next = {
+      ...next,
+      export: {
+        watermark: opts.watermark ?? next.export?.watermark ?? false,
+        durationTargetSec:
+          opts.durationTarget ?? next.export?.durationTargetSec,
+        destination: next.export?.destination ?? "custom",
+      },
+    };
   }
-  if (aspectOverride && ["9:16", "16:9", "1:1", "4:5"].includes(aspectOverride)) {
-    next = { ...next, aspect: aspectOverride as Aspect };
-    console.error(`  aspect:   ${aspectOverride}`);
+  if (
+    opts.aspectOverride &&
+    ["9:16", "16:9", "1:1", "4:5"].includes(opts.aspectOverride)
+  ) {
+    next = { ...next, aspect: opts.aspectOverride as Aspect };
+    console.error(`  aspect:   ${opts.aspectOverride}`);
   }
   return next;
+}
+
+/** Apply a catalog template pack onto a project (theme/beat/transition/text defaults). */
+function applyTemplatePack(
+  project: VoyajesProject,
+  tpl: TemplatePack,
+  themeVersion: string,
+  beatVersion: string,
+): VoyajesProject {
+  return {
+    ...project,
+    theme: `${tpl.themeId}@${themeVersion}`,
+    template: `${tpl.id}@${tpl.version}`,
+    transition: tpl.transition,
+    aspect: tpl.aspect ?? project.aspect,
+    textStyle: tpl.textStyle,
+    textTransition: tpl.textTransition,
+    audio: {
+      track: `${tpl.beatId}@${beatVersion}`,
+      beatSync: tpl.beatSync,
+      ducking: project.audio?.ducking ?? true,
+      mixMode: project.audio?.mixMode ?? "replace",
+      customSounds: project.audio?.customSounds,
+    },
+    export: {
+      watermark: project.export?.watermark ?? false,
+      durationTargetSec:
+        tpl.durationTargetSec ?? project.export?.durationTargetSec,
+      destination: project.export?.destination,
+    },
+  };
+}
+
+function resolveCustomAudioIntoProject(
+  project: VoyajesProject,
+  projectDir: string,
+  audioPath: string,
+): VoyajesProject {
+  const abs = resolve(audioPath);
+  if (!existsSync(abs)) {
+    console.error(`Custom audio not found: ${abs}`);
+    process.exit(1);
+  }
+  const audioDir = join(projectDir, "audio");
+  mkdirSync(audioDir, { recursive: true });
+  const destName = basename(abs);
+  const dest = join(audioDir, destName);
+  if (resolve(abs) !== resolve(dest)) {
+    copyFileSync(abs, dest);
+  }
+  const rel = join("audio", destName).replace(/\\/g, "/");
+  const id = `import-${Date.now().toString(36)}`;
+  const custom = {
+    id,
+    name: destName.replace(/\.[^.]+$/, "") || "Imported sound",
+    source: "file" as const,
+    path: rel,
+    mimeType: destName.match(/\.mp3$/i)
+      ? "audio/mpeg"
+      : destName.match(/\.wav$/i)
+        ? "audio/wav"
+        : destName.match(/\.m4a$/i)
+          ? "audio/mp4"
+          : undefined,
+  };
+  return {
+    ...project,
+    audio: {
+      track: `custom:${id}`,
+      beatSync: project.audio?.beatSync ?? "medium",
+      ducking: project.audio?.ducking ?? true,
+      mixMode: "replace",
+      customSounds: [...(project.audio?.customSounds ?? []), custom],
+    },
+  };
 }
 
 const program = new Command();
@@ -147,6 +277,10 @@ program
     "Theme pack id (without @version)",
     "theme.ocean-pop",
   )
+  .option(
+    "--template <id>",
+    "Template pack id (applies theme + motion transition + beat + text style)",
+  )
   .option("-a, --aspect <ratio>", "Aspect ratio", "9:16")
   .option("-o, --out <file>", "Output project JSON (relative to folder)", "voyajes.project.json")
   .option("--title <title>", "Project title")
@@ -160,35 +294,145 @@ program
     "Audio beat pack id",
     "audio.warm-acoustic-092",
   )
+  .option(
+    "--transition <kind>",
+    `Global clip transition (${TRANSITION_KINDS.join("|")})`,
+  )
+  .option(
+    "--text-style <style>",
+    `Default text style (${TEXT_STYLE_KINDS.join("|")})`,
+  )
+  .option(
+    "--text-transition <kind>",
+    `Default text enter (${TEXT_TRANSITION_KINDS.join("|")})`,
+  )
+  .option(
+    "--audio <path>",
+    "Import a custom audio file into audio/ and set track to custom:<id>",
+  )
+  .option(
+    "--duration-target <sec>",
+    "Soft social duration target: 15 | 30 | 60",
+  )
   .option("--no-samples", "Do not generate sample PNGs when media/ is empty")
   .action(
     (
       mediaPath: string,
       opts: {
         theme: string;
+        template?: string;
         aspect: string;
         out: string;
         title?: string;
         beatSync: string;
         beat: string;
+        transition?: string;
+        textStyle?: string;
+        textTransition?: string;
+        audio?: string;
+        durationTarget?: string;
         samples: boolean;
       },
     ) => {
       const manifest = loadManifest();
-      const themePack = findTheme(manifest, opts.theme);
+
+      let themeId = opts.theme;
+      let beatId = opts.beat;
+      let beatSync = parseBeatSync(opts.beatSync);
+      let transition: TransitionKind | undefined;
+      let textStyle: TextStyle | undefined;
+      let textTransition: TextTransition | undefined;
+      let aspect = opts.aspect;
+      let templateRef: string | undefined;
+      let durationTarget: DurationTarget | undefined;
+      let tplPack: TemplatePack | undefined;
+
+      if (opts.template) {
+        tplPack = findTemplate(manifest, opts.template);
+        if (!tplPack) {
+          console.error(`Template not found: ${opts.template}`);
+          console.error("Try: voyajes catalog list --kind template");
+          process.exit(1);
+        }
+        themeId = tplPack.themeId;
+        beatId = tplPack.beatId;
+        beatSync = tplPack.beatSync;
+        transition = tplPack.transition;
+        textStyle = tplPack.textStyle;
+        textTransition = tplPack.textTransition;
+        if (tplPack.aspect) aspect = tplPack.aspect;
+        if (tplPack.durationTargetSec) durationTarget = tplPack.durationTargetSec;
+        templateRef = `${tplPack.id}@${tplPack.version}`;
+        console.error(`  template: ${tplPack.name} (${tplPack.id})`);
+      }
+
+      // Explicit flags override template defaults
+      if (opts.theme !== "theme.ocean-pop" || !opts.template) {
+        if (opts.theme) themeId = opts.theme;
+      }
+      if (opts.template && opts.theme !== "theme.ocean-pop") {
+        themeId = opts.theme;
+      }
+      if (opts.beat !== "audio.warm-acoustic-092" || !opts.template) {
+        if (!opts.template) beatId = opts.beat;
+      }
+      if (opts.template && opts.beat !== "audio.warm-acoustic-092") {
+        beatId = opts.beat;
+      }
+      if (opts.beatSync !== "medium" || !opts.template) {
+        if (!opts.template) beatSync = parseBeatSync(opts.beatSync);
+      }
+      if (opts.template && opts.beatSync !== "medium") {
+        beatSync = parseBeatSync(opts.beatSync);
+      }
+      if (opts.transition) {
+        const t = parseTransitionKind(opts.transition);
+        if (!t) {
+          console.error(
+            `Invalid --transition: ${opts.transition} (use ${TRANSITION_KINDS.join("|")})`,
+          );
+          process.exit(1);
+        }
+        transition = t;
+      }
+      if (opts.textStyle) {
+        if (!(TEXT_STYLE_KINDS as string[]).includes(opts.textStyle)) {
+          console.error(`Invalid --text-style: ${opts.textStyle}`);
+          process.exit(1);
+        }
+        textStyle = opts.textStyle as TextStyle;
+      }
+      if (opts.textTransition) {
+        if (!(TEXT_TRANSITION_KINDS as string[]).includes(opts.textTransition)) {
+          console.error(`Invalid --text-transition: ${opts.textTransition}`);
+          process.exit(1);
+        }
+        textTransition = opts.textTransition as TextTransition;
+      }
+      if (opts.durationTarget) {
+        durationTarget = parseDurationTarget(opts.durationTarget);
+      }
+      if (opts.aspect && opts.aspect !== "9:16") {
+        aspect = opts.aspect;
+      } else if (!opts.template) {
+        aspect = opts.aspect;
+      }
+
+      const themePack = findTheme(manifest, themeId);
       if (!themePack) {
-        console.error(`Theme not found: ${opts.theme}`);
+        console.error(`Theme not found: ${themeId}`);
         console.error("Try: voyajes catalog list --kind theme");
         process.exit(1);
       }
 
-      const beatSync = parseBeatSync(opts.beatSync);
-      const beatPack = findBeat(manifest, opts.beat);
+      const beatPack = findBeat(manifest, beatId);
       if (!beatPack) {
-        console.error(`Beat not found: ${opts.beat}`);
+        console.error(`Beat not found: ${beatId}`);
         console.error("Try: voyajes catalog list --kind audio-beat");
         process.exit(1);
       }
+
+      if (!transition) transition = themePack.transition;
 
       const abs = resolve(mediaPath);
       mkdirSync(abs, { recursive: true });
@@ -202,15 +446,9 @@ program
         ? readdirSync(mediaDir).filter((f) => MEDIA_RE.test(f)).sort()
         : [];
 
-      // Also scan the folder itself if user pointed at a media dump
       const rootFiles = readdirSync(abs).filter(
         (f) => MEDIA_RE.test(f) && f !== opts.out,
       );
-      for (const f of rootFiles) {
-        if (!files.includes(f)) {
-          /* prefer media/ — if root has files and media empty, use root */
-        }
-      }
 
       if (files.length === 0 && rootFiles.length > 0) {
         files = rootFiles.sort();
@@ -234,7 +472,7 @@ program
             join(mediaDir, "README.txt"),
             [
               "Drop JPG/PNG/WebP/MP4/WebM/MOV files here, then re-run:",
-              `  voyajes init ${mediaPath} --theme ${opts.theme}`,
+              `  voyajes init ${mediaPath} --theme ${themeId}`,
               "Or edit voyajes.project.json media[].path entries.",
               "",
             ].join("\n"),
@@ -250,32 +488,94 @@ program
           path: rel.replace(/\\/g, "/"),
           mute: true,
           durationSec: undefined,
+          // Seed per-clip transitionOut from template/global so edges match Create
+          ...(transition && transition !== "cut"
+            ? { transitionOut: transition }
+            : {}),
         });
       }
+      // Last clip has nowhere to go — clear its transitionOut
+      if (media.length > 0) {
+        const last = media[media.length - 1];
+        if (last) {
+          const { transitionOut: _drop, ...rest } = last;
+          media[media.length - 1] = rest;
+        }
+      }
 
-      const project = VoyajesProjectSchema.parse({
+      let project = VoyajesProjectSchema.parse({
         schema: 1,
         title,
-        aspect: opts.aspect,
+        aspect,
         theme: `${themePack.id}@${themePack.version}`,
+        ...(templateRef ? { template: templateRef } : {}),
         media,
+        ...(transition ? { transition } : {}),
         audio: {
           track: `${beatPack.id}@${beatPack.version}`,
           beatSync,
           ducking: true,
         },
-        text: [{ at: 0, role: "title", value: title }],
+        text: [
+          {
+            at: 0,
+            role: "title",
+            value: title,
+            ...(textStyle ? { style: textStyle } : {}),
+            ...(textTransition ? { animationIn: textTransition } : {}),
+            position: "bottom",
+          },
+        ],
+        ...(textStyle ? { textStyle } : {}),
+        ...(textTransition ? { textTransition } : {}),
         share: { title, public: true },
+        ...(durationTarget
+          ? {
+              export: {
+                watermark: false,
+                durationTargetSec: durationTarget,
+                destination: "custom",
+              },
+            }
+          : {}),
       });
+
+      if (opts.audio) {
+        project = resolveCustomAudioIntoProject(project, abs, opts.audio);
+        // Keep beat-sync from template/flags even with custom audio
+        project = {
+          ...project,
+          audio: {
+            ...project.audio!,
+            beatSync,
+            ducking: true,
+          },
+        };
+        project = VoyajesProjectSchema.parse(project);
+      }
 
       const outPath = resolve(abs, opts.out);
       writeFileSync(outPath, JSON.stringify(project, null, 2) + "\n");
 
       console.error(`Created ${outPath}`);
+      if (project.template) console.error(`  template: ${project.template}`);
       console.error(`  theme:     ${project.theme}`);
-      console.error(`  beat:      ${project.audio?.track} (sync=${beatSync})`);
+      console.error(
+        `  beat:      ${project.audio?.track} (sync=${project.audio?.beatSync})`,
+      );
+      if (project.transition) {
+        console.error(`  transition:${project.transition}`);
+      }
+      if (project.textStyle) {
+        console.error(
+          `  text:      ${project.textStyle}` +
+            (project.textTransition ? ` · ${project.textTransition}` : ""),
+        );
+      }
       console.error(`  media:     ${project.media.length} clip(s) under media/`);
-      console.error(`  next:      voyajes render ${relative(process.cwd(), outPath) || outPath} -o out.webm`);
+      console.error(
+        `  next:      voyajes render ${relative(process.cwd(), outPath) || outPath} -o out.webm`,
+      );
       console.log(outPath);
     },
   );
@@ -357,14 +657,29 @@ program
         return;
       }
 
+      const themes = packs.filter((p) => p.kind === "theme").length;
+      const templates = packs.filter((p) => p.kind === "template").length;
+      const beats = packs.filter((p) => p.kind === "audio-beat").length;
       console.error(
-        `Catalog ${manifest.catalogVersion} — ${packs.length} pack(s)\n`,
+        `Catalog ${manifest.catalogVersion} — ${packs.length} pack(s)` +
+          ` · ${themes} themes · ${templates} templates · ${beats} beats\n`,
       );
       for (const p of packs) {
         const name = "name" in p && p.name ? String(p.name) : "";
         const tier = "tier" in p ? String(p.tier) : "";
+        let extra = "";
+        if (p.kind === "template") {
+          const t = p as TemplatePack;
+          extra = ` → ${t.themeId} · ${t.transition} · ${t.beatId} · sync=${t.beatSync} · ${t.textStyle}`;
+        } else if (p.kind === "theme") {
+          const t = p as { transition?: string; motion?: string };
+          extra = t.transition ? ` · ${t.motion ?? ""} · ${t.transition}` : "";
+        } else if (p.kind === "audio-beat") {
+          const b = p as { bpm?: number; mood?: string[] };
+          extra = b.bpm ? ` · ${b.bpm}bpm` : "";
+        }
         console.log(
-          `${p.id.padEnd(28)} ${String(p.kind).padEnd(12)} v${p.version}  [${tier}]  ${name}`,
+          `${p.id.padEnd(28)} ${String(p.kind).padEnd(12)} v${p.version}  [${tier}]  ${name}${extra}`,
         );
       }
     },
@@ -373,7 +688,7 @@ program
 program
   .command("render")
   .description(
-    "Render a project to WebM/MP4 with local ffmpeg (theme grades, transitions, beat audio)",
+    "Render a project to WebM/MP4 with local ffmpeg (theme grades, per-clip transitions, text overlays, beat/custom audio)",
   )
   .argument("<project>", "Path to voyajes.project.json")
   .option("-o, --out <file>", "Output path (.webm or .mp4)", "out.webm")
@@ -387,8 +702,21 @@ program
     "Override aspect: 9:16 | 16:9 | 1:1 | 4:5",
   )
   .option(
+    "--duration-target <sec>",
+    "Soft social duration target: 15 | 30 | 60",
+  )
+  .option("--watermark", "Stamp export.watermark=true in project meta (drawtext stub)")
+  .option(
     "-t, --theme <ref>",
     "Override theme pack id (e.g. theme.neon-night)",
+  )
+  .option(
+    "--template <id>",
+    "Apply template pack before render (theme + transition + beat + text defaults)",
+  )
+  .option(
+    "--transition <kind>",
+    `Override global transition (${TRANSITION_KINDS.join("|")})`,
   )
   .option(
     "--beat-sync <mode>",
@@ -396,6 +724,10 @@ program
   )
   .option("--title <title>", "Override on-video title")
   .option("--beat <id>", "Override audio beat pack id")
+  .option(
+    "--audio <path>",
+    "Import custom audio file and mux instead of catalog beat",
+  )
   .option("--json", "JSON result on stdout")
   .option(
     "--engine <engine>",
@@ -410,10 +742,15 @@ program
         quality: string;
         preset?: string;
         aspect?: string;
+        durationTarget?: string;
+        watermark?: boolean;
         theme?: string;
+        template?: string;
+        transition?: string;
         beatSync?: string;
         title?: string;
         beat?: string;
+        audio?: string;
         json?: boolean;
         engine: string;
       },
@@ -421,8 +758,58 @@ program
       const abs = resolve(projectPath);
       // Always Zod-validate first (even if ffmpeg is missing)
       let project = loadProject(abs);
-      project = applyExportPreset(project, opts.preset, opts.aspect);
       const manifest = loadManifest();
+      const projectDir = dirname(abs);
+
+      if (opts.template) {
+        const tpl = findTemplate(manifest, opts.template);
+        if (!tpl) {
+          console.error(`Template not found: ${opts.template}`);
+          console.error("Try: voyajes catalog list --kind template");
+          process.exit(1);
+        }
+        const themePack = findTheme(manifest, tpl.themeId);
+        const beatPack = findBeat(manifest, tpl.beatId);
+        if (!themePack || !beatPack) {
+          console.error(
+            `Template ${tpl.id} references missing theme/beat — run voyajes sync`,
+          );
+          process.exit(1);
+        }
+        project = applyTemplatePack(
+          project,
+          tpl,
+          themePack.version,
+          beatPack.version,
+        );
+        console.error(`  template: ${tpl.name} applied`);
+      }
+
+      project = applyExportPreset(project, {
+        presetId: opts.preset,
+        aspectOverride: opts.aspect,
+        durationTarget: opts.durationTarget
+          ? parseDurationTarget(opts.durationTarget)
+          : undefined,
+        watermark: opts.watermark,
+      });
+
+      if (opts.transition) {
+        const t = parseTransitionKind(opts.transition);
+        if (!t) {
+          console.error(
+            `Invalid --transition: ${opts.transition} (use ${TRANSITION_KINDS.join("|")})`,
+          );
+          process.exit(1);
+        }
+        project = { ...project, transition: t };
+        console.error(`  transition: ${t}`);
+      }
+
+      if (opts.audio) {
+        project = resolveCustomAudioIntoProject(project, projectDir, opts.audio);
+        console.error(`  audio:    custom import → ${project.audio?.track}`);
+      }
 
       const quality = (["720p", "1080p", "4k"] as RenderQuality[]).includes(
         opts.quality as RenderQuality,
@@ -470,7 +857,10 @@ program
                 project: {
                   title: project.title,
                   theme: project.theme,
+                  template: project.template,
                   clips: project.media.length,
+                  transition: project.transition,
+                  export: project.export,
                 },
               },
               null,
@@ -553,6 +943,51 @@ program
           ? `✓ theme ${project.theme} found in catalog`
           : `⚠ theme ${project.theme} not in local catalog (run voyajes sync)`,
       );
+      if (project.template) {
+        let tid = project.template;
+        try {
+          tid = parsePackRef(project.template).id;
+        } catch {
+          /* bare */
+        }
+        const tpl = findTemplate(manifest, tid);
+        console.error(
+          tpl
+            ? `✓ template ${project.template}`
+            : `⚠ template ${project.template} not in catalog`,
+        );
+      }
+      if (project.transition) {
+        console.error(`✓ transition default: ${project.transition}`);
+      }
+      const edged = project.media.filter((m) => m.transitionOut).length;
+      if (edged) {
+        console.error(`✓ per-clip transitionOut on ${edged} clip(s)`);
+      }
+      if (project.audio?.track?.startsWith("custom:")) {
+        const cid = project.audio.track.slice("custom:".length);
+        const custom = project.audio.customSounds?.find((s) => s.id === cid);
+        const ap = custom?.path
+          ? resolve(projectDir, custom.path)
+          : undefined;
+        console.error(
+          ap && existsSync(ap)
+            ? `✓ custom audio: ${custom?.path}`
+            : `⚠ custom audio track ${project.audio.track} path missing`,
+        );
+      } else if (project.audio?.track) {
+        console.error(
+          `✓ beat: ${project.audio.track} (sync=${project.audio.beatSync})`,
+        );
+      }
+      if (project.export?.destination) {
+        console.error(
+          `✓ export preset: ${project.export.destination}` +
+            (project.export.durationTargetSec
+              ? ` · ${project.export.durationTargetSec}s`
+              : ""),
+        );
+      }
       console.error(
         missing === 0
           ? `✓ media: ${project.media.length} clip(s) resolvable`

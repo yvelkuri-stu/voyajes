@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAiActivity } from "../hooks/useAiActivity";
 import { Link } from "react-router-dom";
 import {
   APP_VERSION,
@@ -17,6 +18,7 @@ import {
 } from "../lib/catalogNotify";
 
 export function NotificationBell() {
+  const ai = useAiActivity();
   const [open, setOpen] = useState(false);
   const [toasts, setToasts] = useState<InAppToast[]>(() => getToasts());
   const [catalog, setCatalog] = useState<CatalogUpdateInfo | null>(null);
@@ -26,11 +28,18 @@ export function NotificationBell() {
 
   useEffect(() => {
     const ac = new AbortController();
+    ai.begin("catalog");
     void checkForUpdates({ softPrompt: true, signal: ac.signal }).then((r) => {
       setCatalog(r.catalog);
       setPerm(notificationPermission());
-    });
-    return () => ac.abort();
+      if (r.catalog?.isNew) ai.pulse("catalog", 1800);
+      else ai.end();
+    }).catch(() => ai.end());
+    return () => {
+      ac.abort();
+      ai.end();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pulse once on mount
   }, []);
 
   const unread = toasts.length + (catalog?.isNew ? 1 : 0);
@@ -52,7 +61,7 @@ export function NotificationBell() {
     <div className="notif-root">
       <button
         type="button"
-        className="notif-bell"
+        className={`notif-bell${ai.kind === "catalog" ? " is-pulsing" : ""}`}
         aria-label={unread ? `Notifications (${unread})` : "Notifications"}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}

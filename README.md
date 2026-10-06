@@ -50,6 +50,7 @@ voyajes/
 - **Export JSON** for the CLI · **Export WebM** (VP9/VP8 + Opus beat mux when the browser cooperates)
 - Audio panel: 9 catalog beats (Kevin MacLeod CC BY previews), beat-sync, ducking metadata, license badges
 - Transition + text style / caption presets on Create
+- Soft **AI working** feedback (breathing ambient, pulse on Story coach / template apply / export / catalog sync) — respects Kids Mode + reduce-motion
 - Attribution: [`catalog/ATTRIBUTION.md`](./catalog/ATTRIBUTION.md) · catalog shipping: [`catalog/CATALOG.md`](./catalog/CATALOG.md)
 
 **Honest limits:** export ≈ real-time length; Safari often skips WebM+Opus; clip camera audio isn’t captured; transitions approximate CSS; CLI ffmpeg render is best-effort parity, not pixel-identical. Cloud encode / HLS / billing = later.
@@ -115,10 +116,16 @@ pnpm voyajes catalog list --kind theme
 pnpm voyajes sync
 
 pnpm voyajes init ./my-voyage \
-  --theme theme.ocean-pop \
+  --template template.coastal-bounce \
   --title "Goa 2026" \
-  --beat-sync medium \
-  --beat audio.warm-acoustic-092
+  --beat-sync medium
+
+# or pick theme/beat/transition explicitly:
+pnpm voyajes init ./my-voyage \
+  --theme theme.ocean-pop \
+  --transition push \
+  --beat audio.warm-acoustic-092 \
+  --audio ./my-sound.mp3
 
 pnpm voyajes doctor ./my-voyage/voyajes.project.json
 
@@ -136,12 +143,38 @@ pnpm voyajes catalog list --kind template
 | Concept | Web Create | CLI |
 | --- | --- | --- |
 | Theme grades + transitions | CSS / canvas | ffmpeg `eq`/`colorbalance` + `xfade` |
+| Per-clip transitions | filmstrip gap picker | `media[].transitionOut` + `--transition` / template |
+| Text overlays + styles | timeline cards | `text[]` + `--text-style` / `--text-transition` (`drawtext`) |
+| Templates (14) | Themes / Create apply | `init --template` · `render --template` · `catalog list --kind template` |
+| Custom audio import | file picker → IndexedDB | `--audio <path>` → `audio/` + `custom:<id>` |
 | Beat-sync holds | soft/medium/hard | `--beat-sync` + project audio |
+| Export presets | YT / TikTok / IG | `--preset` + `--aspect` + `--duration-target` + `--watermark` |
 | On-video title | canvas | `--title` / `drawtext` |
-| Beat audio mux | MediaRecorder + AudioContext | catalog preview MP3 via ffmpeg |
+| Beat audio mux | MediaRecorder + AudioContext | catalog preview MP3 or custom file via ffmpeg |
 | Output | browser WebM download | `-o out.webm` / `-o out.mp4` |
 
+```bash
+# Template + custom sound + TikTok preset
+pnpm voyajes init ./trip --template template.pulse-reels --audio ./beat.mp3
+pnpm voyajes render ./trip/voyajes.project.json -o trip-tt.webm --preset tiktok --duration-target 30
+```
+
 No ffmpeg? `render` still Zod-validates and exits `2` with install hints.
+
+### CLI intentional gaps (web-only)
+
+These Create / shell features stay **web-only** on purpose — no CLI parity planned short-term:
+
+| Gap | Why |
+| --- | --- |
+| **Kids Mode** / stickers / Memory jar / guardian comments | UI prefs + localStorage UX, not project schema |
+| **Story coach** copy suggestions | Client-side wording helper; paste title/caption into project JSON if needed |
+| **IndexedDB blob media** (`local:…` paths) | CLI needs real filesystem paths under the project folder |
+| **Pixel-identical transitions / Ken Burns / text animations** | ffmpeg `xfade` + `drawtext` approximate CSS/canvas preview |
+| **Browser Notification / catalog toast bell** | `voyajes sync` covers catalog refresh on disk |
+| **PWA install prompt / OAuth Continue flow** | Browser shell only |
+
+Honest render limits still apply: ≈ real-time encode, Safari WebM quirks on web, clip camera audio not captured, cloud encode later.
 
 ---
 

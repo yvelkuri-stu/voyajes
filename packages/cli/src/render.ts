@@ -23,11 +23,12 @@ import type {
   Aspect,
   BeatSync,
   CatalogManifest,
+  TemplatePack,
   ThemePack,
   TransitionKind,
   VoyajesProject,
 } from "@voyajes/core";
-import { parsePackRef } from "@voyajes/core";
+import { parsePackRef, TRANSITION_KINDS } from "@voyajes/core";
 import { defaultImageDuration, snapDurationToBeat } from "./beatSync.js";
 
 export type RenderQuality = "720p" | "1080p" | "4k";
@@ -137,6 +138,28 @@ export function findTheme(
   return catalog.packs.find(
     (p) => p.id === id && p.kind === "theme",
   ) as ThemePack | undefined;
+}
+
+export function findTemplate(
+  catalog: CatalogManifest,
+  refOrId: string,
+): TemplatePack | undefined {
+  let id = refOrId;
+  try {
+    id = parsePackRef(refOrId).id;
+  } catch {
+    /* bare id ok */
+  }
+  return catalog.packs.find(
+    (p) => p.id === id && p.kind === "template",
+  ) as TemplatePack | undefined;
+}
+
+export function parseTransitionKind(value: string): TransitionKind | null {
+  if ((TRANSITION_KINDS as string[]).includes(value)) {
+    return value as TransitionKind;
+  }
+  return null;
 }
 
 export function findBeat(
@@ -314,6 +337,13 @@ function prepareClips(
       durationSec: duration,
       transitionOut: m.transitionOut,
     });
+  }
+  // Explicit transitionEdges win over media[].transitionOut when both set
+  if (project.transitionEdges?.length) {
+    for (const edge of project.transitionEdges) {
+      const clip = clips[edge.afterIndex];
+      if (clip) clip.transitionOut = edge.kind;
+    }
   }
   return clips;
 }

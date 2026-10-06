@@ -45,6 +45,7 @@ import {
 } from "../data/themes";
 import { getKidsSafeTemplates, getTemplateById, getTemplates, type TemplateCard } from "../data/templates";
 import { usePrefs } from "../hooks/usePrefs";
+import { useAiActivity } from "../hooks/useAiActivity";
 import {
   STICKER_PACK,
   addMemoryMoment,
@@ -122,6 +123,7 @@ export function Create() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { prefs } = usePrefs();
+  const ai = useAiActivity();
   const kidsMode = prefs.kidsMode;
   const themes = kidsMode
     ? getThemes().filter((t) =>
@@ -827,8 +829,9 @@ export function Create() {
       if (tpl.durationTargetSec) setDurationTargetSec(tpl.durationTargetSec);
       setTransitionKey((k) => k + 1);
       setStatus(`Template · ${tpl.name} applied`);
+      ai.pulse("template", 1200);
     },
-    [applyBeatSnap],
+    [applyBeatSnap, ai],
   );
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
@@ -949,6 +952,7 @@ export function Create() {
     const ac = new AbortController();
     exportAbortRef.current = ac;
     setExporting(true);
+    ai.begin("export");
     setExportProgress({
       phase: "prepare",
       ratio: 0,
@@ -1042,6 +1046,7 @@ export function Create() {
       exportAbortRef.current = null;
       setExporting(false);
       setExportProgress(null);
+      ai.end();
     }
   };
 
@@ -1148,6 +1153,7 @@ export function Create() {
   };
 
   const runStoryCoach = () => {
+    ai.pulse("coach", 1600);
     const suggestion = suggestStoryCopy({
       themeName: theme.name,
       clipCount: clips.length,
@@ -1238,7 +1244,7 @@ export function Create() {
           </button>
           <button
             type="button"
-            className="btn btn-ghost"
+            className={`btn btn-ghost${exporting || ai.kind === "export" ? " is-pulsing" : ""}`}
             disabled={exporting}
             title="Choose YouTube / TikTok / Instagram presets, then export WebM"
             onClick={() => setExportPanelOpen((o) => !o)}
@@ -1264,8 +1270,16 @@ export function Create() {
         </div>
       </div>
 
-      <div className="human-help-bar" aria-label="Story coach and tools">
-        <button type="button" className="btn btn-ghost" onClick={runStoryCoach} title="Suggest title and caption from theme + clips">
+      <div
+        className={`human-help-bar${ai.kind === "coach" || ai.kind === "template" ? " is-ai-assist" : ""}`}
+        aria-label="Story coach and tools"
+      >
+        <button
+          type="button"
+          className={`btn btn-ghost ai-assist-btn${ai.kind === "coach" ? " is-pulsing" : ""}`}
+          onClick={runStoryCoach}
+          title="Suggest title and caption from theme + clips"
+        >
           ✨ Story coach
         </button>
         <button
@@ -1292,7 +1306,11 @@ export function Create() {
           aria-label="Memory jar note"
         />
         {coachHint && (
-          <span className="muted" style={{ fontSize: "0.8rem" }} role="status">
+          <span
+            className={`muted coach-hint${ai.kind === "coach" ? " ai-shimmer" : ""}`}
+            style={{ fontSize: "0.8rem" }}
+            role="status"
+          >
             {coachHint}
           </span>
         )}
@@ -1886,7 +1904,7 @@ export function Create() {
               <button
                 key={tpl.id}
                 type="button"
-                className="chip"
+                className={`chip${templateId === tpl.id && ai.kind === "template" ? " is-pulsing" : ""}`}
                 style={{
                   justifyContent: "flex-start",
                   width: "100%",

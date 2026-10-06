@@ -25,7 +25,10 @@ export function Layout() {
   )}`;
 
   return (
-    <div className={`app-shell${prefs.kidsMode ? " is-kids" : ""}`}>
+    <div
+      className={`app-shell${prefs.kidsMode ? " is-kids" : ""}${prefs.reduceMotion ? " is-still" : ""}`}
+    >
+      <div className="ai-ambient" aria-hidden="true" />
       <header className="topnav">
         <NavLink to="/" style={{ display: "flex", alignItems: "center" }}>
           <Logo />

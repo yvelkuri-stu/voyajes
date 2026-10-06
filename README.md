@@ -34,9 +34,10 @@ voyajes/
 - **Play / Pause** auto-advances clips; timing uses theme `transitionDurationMs` + per-clip duration
 - Draft persists as Voyajes project JSON in `localStorage` (`voyajes.project.draft.json`) matching `@voyajes/core` schema; media blobs in IndexedDB
 - **Export JSON** downloads `voyajes.project.json` for the CLI
+- **Export video** (browser): canvas + MediaRecorder records the Create slideshow to **WebM** (VP9/VP8 when supported; MP4 only if the browser allows). Includes theme grade/vignette, Ken Burns on stills, best-effort transitions, and on-video title. Progress + cancel on the Compose toolbar. Named from the project title.
 - **Audio panel:** catalog beats (Warm Acoustic, Neon Pulse, Ocean Drift) with ▶ preview (MP3 stubs under `public/catalog/previews/`, WebAudio BPM metronome fallback), **license badges** (personal / creator), **beat-sync** (off/soft/medium/hard snaps image holds to beat/bar grid), **ducking** toggle persisted in project JSON for future export
 
-**Not implemented (intentional stubs):** real video encoding / FFmpeg / Remotion export, OAuth, cloud billing, HLS playback, true ducking mix. UI **Export video** is disabled; `voyajes render` validates the project and prints a clear TODO. Preview MP3s are short demo tone loops, not commercial stems.
+**Browser export limits (honest):** runs in near real-time (length ≈ slideshow duration); **no audio mux** yet (beats/ducking are project metadata only); video clips are drawn when the browser can decode them, otherwise skipped with a placeholder; transitions/Ken Burns are approximations of the CSS preview; Safari/Firefox mime support varies. **Cloud / FFmpeg / Remotion encode** remains a future TODO — `voyajes render` still validates and prints TODO. Also not done: OAuth, cloud billing, HLS playback, true ducking mix. Preview MP3s are short demo tone loops, not commercial stems.
 
 ## Design docs (parent workspace)
 
@@ -135,10 +136,11 @@ Source: `catalog/manifest.json` (copied to `apps/web/public/catalog-manifest.jso
 ## Roadmap (next)
 
 1. ~~Media import + local preview~~ (done in Create)  
-2. Real local/cloud render (FFmpeg or Remotion) — **not claimed done**  
-3. Catalog CDN sync + signed audio stems  
-4. Social OAuth + public share HLS/OG  
-5. Spark/Pro billing per sync-pricing doc  
+2. ~~Browser WebM export (canvas + MediaRecorder)~~ (best-effort slideshow)  
+3. Cloud / FFmpeg / Remotion encode + audio mux — **not claimed done**  
+4. Catalog CDN sync + signed audio stems  
+5. Social OAuth + public share HLS/OG  
+6. Spark/Pro billing per sync-pricing doc  
 
 ## License
 

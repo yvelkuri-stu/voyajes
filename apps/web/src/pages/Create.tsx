@@ -39,6 +39,12 @@ import {
   type DraftState,
 } from "../lib/draftStore";
 import { ensureShareFromDraft } from "../lib/shareStore";
+import {
+  downloadBlob,
+  exportSlideshowWebm,
+  filenameFromTitle,
+  type ExportProgress,
+} from "../lib/exportWebm";
 
 type LiveClip = DraftClipMeta & { objectUrl: string };
 
@@ -100,6 +106,11 @@ export function Create() {
   const [status, setStatus] = useState<string | null>(null);
   const [transitionKey, setTransitionKey] = useState(0);
   const [schemaOk, setSchemaOk] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(
+    null,
+  );
+  const exportAbortRef = useRef<AbortController | null>(null);
 
   const theme: ThemeCard = useMemo(
     () => getThemeById(themeId) ?? themes[0],
@@ -227,6 +238,8 @@ export function Create() {
       if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
       previewHandle.current?.stop();
       previewHandle.current = null;
+      exportAbortRef.current?.abort();
+      exportAbortRef.current = null;
       for (const url of objectUrlsRef.current) {
         URL.revokeObjectURL(url);
       }
@@ -494,6 +507,69 @@ export function Create() {
     setStatus("Draft cleared");
   };
 
+  const cancelExport = () => {
+    exportAbortRef.current?.abort();
+  };
+
+  const exportVideo = async () => {
+    if (clips.length === 0 || exporting) return;
+    stopPreview();
+    setPlaying(false);
+    clearAdvanceTimer();
+
+    const ac = new AbortController();
+    exportAbortRef.current = ac;
+    setExporting(true);
+    setExportProgress({
+      phase: "prepare",
+      ratio: 0,
+      clipIndex: 0,
+      clipCount: clips.length,
+      message: "Preparing export…",
+    });
+    setStatus("Exporting video…");
+
+    try {
+      const result = await exportSlideshowWebm({
+        clips: clips.map((c) => ({
+          id: c.id,
+          kind: c.kind,
+          objectUrl: c.objectUrl,
+          fileName: c.fileName,
+          durationSec: c.durationSec,
+        })),
+        theme,
+        title,
+        aspect,
+        onProgress: (p) => {
+          setExportProgress(p);
+          setStatus(p.message);
+        },
+        signal: ac.signal,
+      });
+      const name = filenameFromTitle(title, result.extension);
+      downloadBlob(result.blob, name);
+      const skipNote =
+        result.skippedVideos.length > 0
+          ? ` · skipped ${result.skippedVideos.length} video clip(s)`
+          : "";
+      setStatus(
+        `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB)${skipNote}`,
+      );
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setStatus("Export cancelled");
+      } else {
+        const msg = err instanceof Error ? err.message : "Export failed";
+        setStatus(msg);
+      }
+    } finally {
+      exportAbortRef.current = null;
+      setExporting(false);
+      setExportProgress(null);
+    }
+  };
+
   const downloadProjectJson = () => {
     const draft: DraftState = {
       title,
@@ -526,7 +602,7 @@ export function Create() {
     a.click();
     URL.revokeObjectURL(url);
     setStatus(
-      "Downloaded project JSON · video encode still stubbed (use CLI render later)",
+      "Downloaded project JSON · browser Export video for WebM; CLI/cloud FFmpeg still TODO",
     );
   };
 
@@ -617,11 +693,31 @@ export function Create() {
           <button
             type="button"
             className="btn btn-ghost"
-            disabled
-            title="Video encode not wired yet — FFmpeg/Remotion stub"
+            disabled={clips.length === 0 || exporting}
+            title={
+              clips.length === 0
+                ? "Import at least one clip"
+                : exporting
+                  ? "Export in progress"
+                  : "Record slideshow to WebM in the browser (canvas + MediaRecorder)"
+            }
+            onClick={() => void exportVideo()}
+            aria-busy={exporting}
           >
-            Export video
+            {exporting
+              ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
+              : "Export video"}
           </button>
+          {exporting && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={cancelExport}
+              title="Cancel browser export"
+            >
+              Cancel
+            </button>
+          )}
           <button type="button" className="btn btn-primary" onClick={openShare}>
             Share
           </button>
@@ -898,8 +994,9 @@ export function Create() {
             </button>
           </div>
           <p className="muted" style={{ fontSize: "0.8rem", textAlign: "center" }}>
-            Draft saves to localStorage (+ media in IndexedDB). Encode stays stubbed —
-            Export JSON for the CLI.
+            Draft saves to localStorage (+ media in IndexedDB). Export video records a
+            browser WebM from the slideshow (no audio mux yet). Cloud/FFmpeg encode is
+            still TODO — Export JSON for the CLI.
           </p>
           <div style={{ textAlign: "center", marginTop: 8 }}>
             <button type="button" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => void resetProject()}>

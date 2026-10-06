@@ -55,8 +55,18 @@ export function Home() {
             <Link to="/create" className="btn btn-primary">
               New story
             </Link>
-            <Link to="/create?mode=invitation" className="btn btn-ghost">
+            <Link
+              to="/create?mode=invitation"
+              className="btn btn-primary"
+              style={{
+                background: "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(61,220,151,0.55))",
+                boxShadow: "0 0 0 1px rgba(124,92,255,0.35)",
+              }}
+            >
               New invitation
+            </Link>
+            <Link to="/themes?tab=templates&filter=invitation" className="btn btn-ghost">
+              Invitation templates
             </Link>
             <Link to="/themes" className="btn btn-ghost">
               Browse themes
@@ -159,6 +169,28 @@ export function Home() {
             }}
           >
             + New story
+          </Link>
+          <Link
+            to="/create?mode=invitation"
+            className="card"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              minHeight: 180,
+              borderStyle: "dashed",
+              borderColor: "rgba(124,92,255,0.45)",
+              color: "var(--text-secondary)",
+              fontWeight: 600,
+              background: "rgba(124,92,255,0.06)",
+            }}
+          >
+            <span>+ New invitation</span>
+            <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 500 }}>
+              Guest playback share
+            </span>
           </Link>
         </div>
       </section>

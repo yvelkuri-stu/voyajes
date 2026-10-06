@@ -8,7 +8,8 @@ import { InstallPrompt } from "./InstallPrompt";
 
 const links = [
   { to: "/", label: "Home", end: true },
-  { to: "/create", label: "Create" },
+  { to: "/create", label: "Create", mode: "voyage" as const },
+  { to: "/create?mode=invitation", label: "Invitation", mode: "invitation" as const },
   { to: "/themes", label: "Themes" },
   { to: "/share", label: "Share" },
 ];
@@ -36,12 +37,24 @@ export function Layout() {
         <nav className="topnav-links" aria-label="Primary">
           {links.map((l) => (
             <NavLink
-              key={l.to}
+              key={l.label}
               to={l.to}
               end={l.end}
-              className={({ isActive }) =>
-                `nav-link${isActive ? " active" : ""}`
-              }
+              className={() => {
+                const invite = new URLSearchParams(location.search).get("mode") === "invitation";
+                const onCreate = location.pathname === "/create";
+                let active = false;
+                if ("mode" in l && l.mode === "invitation") {
+                  active = onCreate && invite;
+                } else if ("mode" in l && l.mode === "voyage") {
+                  active = onCreate && !invite;
+                } else if (l.end) {
+                  active = location.pathname === "/";
+                } else {
+                  active = location.pathname === l.to || location.pathname.startsWith(l.to + "/");
+                }
+                return `nav-link${active ? " active" : ""}`;
+              }}
             >
               {l.label}
             </NavLink>

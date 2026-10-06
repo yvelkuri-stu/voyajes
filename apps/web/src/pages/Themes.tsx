@@ -8,7 +8,9 @@ import { getBeats } from "../data/beats";
 import { getThemes, transitionLabel, type ThemeCard } from "../data/themes";
 import {
   getKidsSafeTemplates,
+  getInvitationTemplates,
   getTemplates,
+  isInvitationTemplate,
   templateComboSummary,
   type TemplateCard,
 } from "../data/templates";
@@ -22,6 +24,7 @@ export function Themes() {
   const { prefs } = usePrefs();
   const kidsMode = prefs.kidsMode;
   const tab: Tab = params.get("tab") === "templates" ? "templates" : "themes";
+  const filterInvitation = params.get("filter") === "invitation";
   const themes = useMemo(
     () =>
       kidsMode
@@ -31,10 +34,17 @@ export function Themes() {
         : getThemes(),
     [kidsMode],
   );
-  const templates = useMemo(
-    () => (kidsMode ? getKidsSafeTemplates() : getTemplates()),
-    [kidsMode],
-  );
+  const templates = useMemo(() => {
+    const base = kidsMode ? getKidsSafeTemplates() : getTemplates();
+    if (filterInvitation) {
+      const invites = getInvitationTemplates();
+      if (!kidsMode) return invites;
+      const kidsIds = new Set(base.map((t) => t.id));
+      const filtered = invites.filter((t) => kidsIds.has(t.id));
+      return filtered.length ? filtered : invites;
+    }
+    return base;
+  }, [kidsMode, filterInvitation]);
   const [selectedTheme, setSelectedTheme] = useState<ThemeCard>(() => getThemes()[0]);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateCard>(
     () => getTemplates()[0],
@@ -54,8 +64,20 @@ export function Themes() {
 
   const setTab = (next: Tab) => {
     const p = new URLSearchParams(params);
-    if (next === "themes") p.delete("tab");
-    else p.set("tab", next);
+    if (next === "themes") {
+      p.delete("tab");
+      p.delete("filter");
+    } else {
+      p.set("tab", next);
+    }
+    setParams(p, { replace: true });
+  };
+
+  const setTemplateFilter = (invitationOnly: boolean) => {
+    const p = new URLSearchParams(params);
+    p.set("tab", "templates");
+    if (invitationOnly) p.set("filter", "invitation");
+    else p.delete("filter");
     setParams(p, { replace: true });
   };
 
@@ -88,10 +110,18 @@ export function Themes() {
           </button>
           <button
             type="button"
-            className={`chip${tab === "templates" ? " chip-active" : ""}`}
-            onClick={() => setTab("templates")}
+            className={`chip${tab === "templates" && !filterInvitation ? " chip-active" : ""}`}
+            onClick={() => setTemplateFilter(false)}
           >
-            Templates ({templates.length})
+            Templates ({(kidsMode ? getKidsSafeTemplates() : getTemplates()).length})
+          </button>
+          <button
+            type="button"
+            className={`chip${tab === "templates" && filterInvitation ? " chip-active" : ""}`}
+            onClick={() => setTemplateFilter(true)}
+            title="Invitation packs for guest playback shares"
+          >
+            Invitations ({getInvitationTemplates().length})
           </button>
         </div>
       </div>
@@ -243,6 +273,11 @@ export function Themes() {
                     <span className={`badge badge-${t.tier === "free" ? "free" : "spark"}`}>
                       {t.tier}
                     </span>
+                    {isInvitationTemplate(t) && (
+                      <span className="badge badge-spark" style={{ marginLeft: 6 }}>
+                        invitation
+                      </span>
+                    )}
                     <div style={{ marginTop: 8, fontWeight: 700, fontSize: "1.1rem" }}>
                       {t.name}
                     </div>
@@ -361,11 +396,17 @@ export function Themes() {
                   </div>
                 </div>
                 <Link
-                  to={`/create?template=${encodeURIComponent(selectedTemplate.id)}`}
+                  to={
+                    isInvitationTemplate(selectedTemplate)
+                      ? `/create?mode=invitation&template=${encodeURIComponent(selectedTemplate.id)}`
+                      : `/create?template=${encodeURIComponent(selectedTemplate.id)}`
+                  }
                   className="btn btn-primary"
                   style={{ width: "100%", marginTop: 20 }}
                 >
-                  Apply full template
+                  {isInvitationTemplate(selectedTemplate)
+                    ? "Apply invitation template"
+                    : "Apply full template"}
                 </Link>
               </>
             )}

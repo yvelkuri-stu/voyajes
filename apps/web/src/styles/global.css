@@ -2719,7 +2719,7 @@ html.large-targets .btn {
 }
 
 
-/* —— Brand wordmark (intentional J) —— */
+/* —— Brand wordmark (intentional J — subtle weight + soft accent) —— */
 .vj-wordmark {
   display: inline-flex;
   align-items: baseline;
@@ -2732,23 +2732,20 @@ html.large-targets .btn {
   position: relative;
   display: inline-block;
   font-weight: 800;
-  color: #E84AFF;
-  background: linear-gradient(135deg, #E84AFF 0%, #7C5CFF 55%, #3DDC97 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* Soft single accent (indigo), not a rainbow fill */
+  color: #A994F5;
   padding: 0 0.02em;
   transform: translateY(0.02em);
 }
 .vj-wordmark-j-spark {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: -0.12em;
-  height: 0.14em;
+  left: 12%;
+  right: 12%;
+  bottom: -0.1em;
+  height: 0.07em;
   border-radius: 999px;
-  background: linear-gradient(90deg, #E84AFF, #F5C542, #3DDC97);
-  box-shadow: 0 0 8px rgba(232, 74, 255, 0.55), 0 0 2px rgba(245, 197, 66, 0.8);
+  background: rgba(124, 92, 255, 0.45);
+  box-shadow: none;
   pointer-events: none;
 }
 .vj-logo-mark {

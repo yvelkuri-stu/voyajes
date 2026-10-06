@@ -7,7 +7,7 @@ type Props = {
   variant?: "app" | "alt";
 };
 
-/** Brand wordmark with the intentional J highlighted. */
+/** Brand wordmark with a subtle intentional J accent (weight + soft tint). */
 export function Wordmark({ fontSize }: { fontSize: number }) {
   return (
     <span className="vj-wordmark" style={{ fontSize }}>

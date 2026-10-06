@@ -128,7 +128,7 @@ function aspectCss(aspect: Aspect): string {
 }
 
 export function Create() {
-  const [params] = useSearchParams();
+  const [params, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { prefs } = usePrefs();
   const ai = useAiActivity();
@@ -155,6 +155,30 @@ export function Create() {
       ? "invitation"
       : "voyage",
   );
+
+  /** Keep ?mode=invitation in the URL (basename-safe via react-router search params). */
+  const syncModeInUrl = (mode: ProjectMode) => {
+    const next = new URLSearchParams(params);
+    if (mode === "invitation") next.set("mode", "invitation");
+    else next.delete("mode");
+    setSearchParams(next, { replace: true });
+  };
+
+  // Respond when nav / Home CTA land on Create with ?mode=invitation without remounting
+  useEffect(() => {
+    const modeParam = params.get("mode");
+    if (modeParam === "invitation" || paramTemplate?.mode === "invitation") {
+      setProjectMode("invitation");
+      setTitle((prev) =>
+        !prev || prev === "Untitled voyage" ? "You're invited!" : prev,
+      );
+      return;
+    }
+    if (modeParam === null || modeParam === "voyage") {
+      setProjectMode("voyage");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.get("mode"), paramTemplate?.id]);
 
   const templates = useMemo(() => {
     if (projectMode === "invitation") {
@@ -325,7 +349,18 @@ export function Create() {
         }
       }
       if (cancelled) return;
-      setProjectMode(base.mode === "invitation" ? "invitation" : "voyage");
+      const resolvedMode: ProjectMode =
+        base.mode === "invitation" ? "invitation" : "voyage";
+      setProjectMode(resolvedMode);
+      // Reflect invitation on the URL so nav/share links stay correct under /voyajes/
+      {
+        const next = new URLSearchParams(params);
+        if (resolvedMode === "invitation") next.set("mode", "invitation");
+        else next.delete("mode");
+        const cur = params.toString();
+        const nxt = next.toString();
+        if (cur !== nxt) setSearchParams(next, { replace: true });
+      }
       setTitle(base.title);
       setAspect(base.aspect);
       setThemeId(base.themeId);
@@ -1268,12 +1303,17 @@ export function Create() {
               ? "Design an animated invite — guests open the link for fullscreen playback (same theme, transitions, audio & text)."
               : "Every voyage, in motion — drop photos or clips, pick a theme, play."}
           </p>
-          <div className="mode-toggle" style={{ marginTop: 10 }} role="group" aria-label="Project mode">
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              Mode
+            </span>
+          <div className="mode-toggle" role="group" aria-label="Project mode">
             <button
               type="button"
               className={projectMode === "voyage" ? "is-active" : undefined}
               onClick={() => {
                 setProjectMode("voyage");
+                syncModeInUrl("voyage");
                 setStatus("Mode · Voyage story");
               }}
             >
@@ -1284,6 +1324,7 @@ export function Create() {
               className={projectMode === "invitation" ? "is-active" : undefined}
               onClick={() => {
                 setProjectMode("invitation");
+                syncModeInUrl("invitation");
                 setTitle((prev) =>
                   !prev || prev === "Untitled voyage" ? "You're invited!" : prev,
                 );
@@ -1294,6 +1335,7 @@ export function Create() {
             >
               Invitation
             </button>
+          </div>
           </div>
           <div className="title-emoji-row" style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, maxWidth: 360 }}>
             <input

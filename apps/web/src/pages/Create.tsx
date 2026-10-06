@@ -43,7 +43,17 @@ import {
   transitionLabel,
   type ThemeCard,
 } from "../data/themes";
-import { getTemplateById, getTemplates, type TemplateCard } from "../data/templates";
+import { getKidsSafeTemplates, getTemplateById, getTemplates, type TemplateCard } from "../data/templates";
+import { usePrefs } from "../hooks/usePrefs";
+import {
+  STICKER_PACK,
+  addMemoryMoment,
+  loadMemoryJar,
+  removeMemoryMoment,
+  suggestStoryCopy,
+  type MemoryMoment,
+  KIDS_SAFE_THEME_IDS,
+} from "../lib/prefsStore";
 import {
   EXPORT_PRESETS,
   exportFilename,
@@ -111,7 +121,13 @@ function aspectCss(aspect: Aspect): string {
 export function Create() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const themes = getThemes();
+  const { prefs } = usePrefs();
+  const kidsMode = prefs.kidsMode;
+  const themes = kidsMode
+    ? getThemes().filter((t) =>
+        (KIDS_SAFE_THEME_IDS as readonly string[]).includes(t.id),
+      )
+    : getThemes();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const advanceTimer = useRef<number | null>(null);
@@ -124,7 +140,10 @@ export function Create() {
     themes.find((t) => t.id === "theme.ocean-pop") ??
     themes[0];
 
-  const templates = useMemo(() => getTemplates(), []);
+  const templates = useMemo(
+    () => (kidsMode ? getKidsSafeTemplates() : getTemplates()),
+    [kidsMode],
+  );
   const beats = useMemo(() => getBeats(), []);
   const previewHandle = useRef<PreviewHandle | null>(null);
   const audioPanelRef = useRef<HTMLElement>(null);
@@ -188,6 +207,10 @@ export function Create() {
     null,
   );
   const exportAbortRef = useRef<AbortController | null>(null);
+  const [stickerOpen, setStickerOpen] = useState(false);
+  const [coachHint, setCoachHint] = useState<string | null>(null);
+  const [memoryJar, setMemoryJar] = useState<MemoryMoment[]>(() => loadMemoryJar());
+  const [memoryNote, setMemoryNote] = useState("");
 
   const theme: ThemeCard = useMemo(
     () => getThemeById(themeId) ?? themes[0],
@@ -1124,6 +1147,41 @@ export function Create() {
     navigate(`/v/${share.id}`);
   };
 
+  const runStoryCoach = () => {
+    const suggestion = suggestStoryCopy({
+      themeName: theme.name,
+      clipCount: clips.length,
+      existingTitle: title,
+    });
+    setTitle(suggestion.title);
+    setCaptionText(suggestion.caption);
+    setCoachHint(`Story coach · “${suggestion.title}” + caption ready`);
+  };
+
+  const saveToMemoryJar = () => {
+    const entry = addMemoryMoment({
+      title: title.trim() || "Untitled voyage",
+      note: memoryNote.trim() || captionText.trim() || `${clips.length} clips · ${theme.name}`,
+      themeName: theme.name,
+      clipCount: clips.length,
+    });
+    setMemoryJar(loadMemoryJar());
+    setMemoryNote("");
+    setCoachHint(`Saved to Memory jar · ${entry.title}`);
+  };
+
+  const stampSticker = (sticker: string) => {
+    const overlay = {
+      ...defaultTextOverlay(0, 4, sticker),
+      position: "center" as const,
+      style: "clean-sans" as const,
+    };
+    setTextOverlays((prev) => [...prev, overlay]);
+    setEditingOverlayId(overlay.id);
+    setStickerOpen(false);
+    setCoachHint(`Sticker stamped · ${sticker}`);
+  };
+
   const active = clips[activeIndex];
   const transitionClass = `tx-${activeTransition}`;
   const kenBurns =
@@ -1205,6 +1263,93 @@ export function Create() {
           </button>
         </div>
       </div>
+
+      <div className="human-help-bar" aria-label="Story coach and tools">
+        <button type="button" className="btn btn-ghost" onClick={runStoryCoach} title="Suggest title and caption from theme + clips">
+          ✨ Story coach
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={saveToMemoryJar}
+          title="Save this moment to Memory jar"
+        >
+          🫙 Memory jar
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => setStickerOpen((o) => !o)}
+          aria-expanded={stickerOpen}
+        >
+          🌟 Stickers
+        </button>
+        <input
+          className="memory-note-input"
+          value={memoryNote}
+          onChange={(e) => setMemoryNote(e.target.value)}
+          placeholder="Memory note (optional)"
+          aria-label="Memory jar note"
+        />
+        {coachHint && (
+          <span className="muted" style={{ fontSize: "0.8rem" }} role="status">
+            {coachHint}
+          </span>
+        )}
+      </div>
+
+      {stickerOpen && (
+        <div className="sticker-tray" role="listbox" aria-label="Sticker stamp tray">
+          <p className="muted" style={{ margin: "0 0 8px", fontSize: "0.8rem" }}>
+            Tap a sticker to stamp it as a text overlay on the timeline.
+          </p>
+          <div className="sticker-grid">
+            {STICKER_PACK.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="sticker-cell"
+                onClick={() => stampSticker(s)}
+                aria-label={`Stamp ${s}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {memoryJar.length > 0 && (
+        <details className="memory-jar-panel">
+          <summary>
+            Memory jar ({memoryJar.length})
+          </summary>
+          <ul className="memory-jar-list">
+            {memoryJar.map((m) => (
+              <li key={m.id}>
+                <div>
+                  <strong>{m.title}</strong>
+                  <span className="muted" style={{ display: "block", fontSize: "0.75rem" }}>
+                    {m.note}
+                    {m.themeName ? ` · ${m.themeName}` : ""}
+                    {typeof m.clipCount === "number" ? ` · ${m.clipCount} clips` : ""}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-linkish"
+                  onClick={() => {
+                    removeMemoryMoment(m.id);
+                    setMemoryJar(loadMemoryJar());
+                  }}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <div
         style={{

@@ -36,7 +36,9 @@ voyajes/
   SETUP_AUTH.md      Google / Apple / Microsoft / Meta / GitHub OAuth setup
 ```
 
-**Screens:** Home · Create/Compose · Themes & **14 Templates** · Share · Sign-in (OAuth shell) · Notification bell (catalog updates)
+**Screens:** Home · Create/Compose · Themes & **14 Templates** · Share · Continue (auth demos) · Kids Mode · Notification bell
+
+**Home testing:** [docs/WORKFLOW.md](./docs/WORKFLOW.md) · **Native later:** [docs/NATIVE_APPS.md](./docs/NATIVE_APPS.md) (**Flutter** locked)
 
 ### Create / import / preview / export
 

@@ -5,6 +5,7 @@ import {
   approveQrPairSession,
   createQrPairSession,
   getProviders,
+  getSession,
   qrImageUrl,
   sendMockOtp,
   signInDemo,
@@ -28,9 +29,17 @@ const OTP_TABS: { id: OtpChannel; label: string; icon: string }[] = [
   { id: "telegram", label: "Telegram", icon: "✈️" },
 ];
 
+function safeNext(raw: string | null): string {
+  if (!raw) return "/create";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/create";
+  if (raw.startsWith("/signin") || raw.startsWith("/auth")) return "/create";
+  return raw;
+}
+
 export function SignIn() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const nextPath = safeNext(params.get("next"));
   const providers = useMemo(() => getProviders(), []);
   const anyConfigured = anyProviderConfigured();
   const [busy, setBusy] = useState<AuthProviderId | null>(null);
@@ -43,11 +52,27 @@ export function SignIn() {
 
   // OTP stub
   const [otpChannel, setOtpChannel] = useState<OtpChannel>("sms");
-  const [otpDest, setOtpDest] = useState("");
+  const [otpDest, setOtpDest] = useState("demo@voyajes.local");
   const [otpCode, setOtpCode] = useState("");
   const [otpDemoCode, setOtpDemoCode] = useState<string | null>(null);
   const [otpHint, setOtpHint] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
+
+  // Already signed in → go where they wanted
+  useEffect(() => {
+    if (getSession() && !params.get("qr")) {
+      navigate(nextPath, { replace: true });
+    }
+  }, [navigate, nextPath, params]);
+
+  // Remember next for OAuth callback
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("voyajes.auth.next", nextPath);
+    } catch {
+      /* ignore */
+    }
+  }, [nextPath]);
 
   // Incoming QR deep-link: /signin?qr=TOKEN
   useEffect(() => {
@@ -56,17 +81,17 @@ export function SignIn() {
     const ok = approveQrPairSession(token);
     if (ok) {
       setQrStatus("QR session approved — signed in as QR voyager (mock).");
-      navigate("/", { replace: true });
+      navigate(nextPath, { replace: true });
     } else {
       setHint("Could not approve QR session.");
     }
-  }, [params, navigate]);
+  }, [params, navigate, nextPath]);
 
   function refreshQr() {
     const { pairUrl, session } = createQrPairSession();
     setQrUrl(pairUrl);
     setQrToken(session.token);
-    setQrStatus("Scan or open the link on another device to approve (demo).");
+    setQrStatus(null);
   }
 
   useEffect(() => {
@@ -85,7 +110,7 @@ export function SignIn() {
 
   function onDemo() {
     signInDemo("github");
-    navigate("/");
+    navigate(nextPath);
   }
 
   function onSendOtp() {
@@ -99,8 +124,9 @@ export function SignIn() {
     }
     setOtpSent(true);
     setOtpDemoCode(result.demoCode);
+    setOtpCode(result.demoCode); // prefill for home testing
     setOtpHint(
-      `Demo code sent via ${otpChannel.toUpperCase()} stub → stored in sessionStorage. Real delivery needs a backend (SETUP_AUTH.md).`,
+      `Demo only — no real ${otpChannel.toUpperCase()} was sent. Use the code shown below.`,
     );
   }
 
@@ -111,7 +137,7 @@ export function SignIn() {
       setOtpHint(result.reason);
       return;
     }
-    navigate("/");
+    navigate(nextPath);
   }
 
   const destPlaceholder =
@@ -125,22 +151,25 @@ export function SignIn() {
     <div className="auth-page">
       <div className="auth-card auth-card-wide">
         <p className="muted" style={{ margin: "0 0 6px", fontSize: "0.8rem", fontWeight: 600 }}>
-          VOYAJES
+          VOYAJES · CONTINUE
         </p>
         <h1 className="display" style={{ margin: "0 0 8px", fontSize: "1.75rem" }}>
-          Sign in to pack your voyage
+          Continue to pack your voyage
         </h1>
-        <p className="muted" style={{ margin: "0 0 24px", fontSize: "0.95rem" }}>
-          Sync drafts across devices someday. Today: OAuth shell + QR / OTP demos —
-          see <code>SETUP_AUTH.md</code>.
+        <p className="muted" style={{ margin: "0 0 8px", fontSize: "0.95rem" }}>
+          Sign in and sign up are the same here — pick a path below. No OAuth keys?
+          Use <strong>demo</strong>, <strong>QR</strong>, or <strong>OTP</strong>.
+        </p>
+        <p className="muted" style={{ margin: "0 0 24px", fontSize: "0.8rem" }}>
+          After continue → <code>{nextPath}</code>
         </p>
 
         {!anyConfigured && (
           <div className="auth-banner" role="status">
-            No OAuth client IDs found. Buttons stay locked until you add{" "}
-            <code>VITE_AUTH_*_CLIENT_ID</code> values. Copy{" "}
-            <code>.env.example</code> → <code>apps/web/.env</code> and restart{" "}
-            <code>pnpm dev</code>.
+            No OAuth client IDs found — social buttons stay locked. Home testing
+            works with <strong>Continue as demo voyager</strong>, QR, or OTP below.
+            Real keys: copy <code>.env.example</code> → <code>apps/web/.env</code> (
+            <code>SETUP_AUTH.md</code>).
           </div>
         )}
 
@@ -182,16 +211,22 @@ export function SignIn() {
         )}
 
         <div className="auth-divider">
-          <span>or QR / one-time code</span>
+          <span>or QR / one-time code (demo)</span>
         </div>
 
         <div className="auth-alt-grid">
           <section className="auth-alt-panel" aria-label="QR code login">
             <h2 className="auth-alt-title">QR code login</h2>
-            <p className="muted" style={{ fontSize: "0.8rem", marginTop: 0 }}>
-              Pairing stub — QR links to <code>/signin?qr=…</code>. Real pairing
-              needs a short-lived server session.
-            </p>
+            <ol className="auth-howto">
+              <li>A pairing QR is ready below (refreshes with <em>New QR</em>).</li>
+              <li>
+                On another phone/tab, open the link under the QR — or scan it.
+              </li>
+              <li>
+                For one-browser testing: tap <strong>Simulate scan</strong> → you
+                continue as <code>QR voyager</code>.
+              </li>
+            </ol>
             {qrUrl && (
               <div className="auth-qr-wrap">
                 <img
@@ -206,7 +241,7 @@ export function SignIn() {
                 </p>
                 {qrToken && (
                   <p className="muted" style={{ fontSize: "0.72rem", margin: "4px 0 0" }}>
-                    Token <code>{qrToken.slice(0, 8)}…</code>
+                    Pairing token <code>{qrToken.slice(0, 10)}…</code>
                   </p>
                 )}
               </div>
@@ -221,7 +256,7 @@ export function SignIn() {
                   className="btn btn-primary"
                   onClick={() => {
                     approveQrPairSession(qrToken);
-                    navigate("/");
+                    navigate(nextPath);
                   }}
                 >
                   Simulate scan
@@ -237,10 +272,14 @@ export function SignIn() {
 
           <section className="auth-alt-panel" aria-label="OTP login">
             <h2 className="auth-alt-title">One-time code</h2>
-            <p className="muted" style={{ fontSize: "0.8rem", marginTop: 0 }}>
-              Mock 6-digit OTP. Provider tabs preview SMS / WhatsApp / Telegram
-              — delivery is stubbed.
-            </p>
+            <ol className="auth-howto">
+              <li>Pick SMS / WhatsApp / Telegram (all mock — nothing is sent).</li>
+              <li>Enter any phone or email → <strong>Send code</strong>.</li>
+              <li>
+                The <strong>demo code appears on screen</strong> — type or use the
+                prefilled field → <strong>Verify &amp; continue</strong>.
+              </li>
+            </ol>
             <div className="otp-tabs" role="tablist" aria-label="OTP channel">
               {OTP_TABS.map((t) => (
                 <button
@@ -253,6 +292,7 @@ export function SignIn() {
                     setOtpChannel(t.id);
                     setOtpSent(false);
                     setOtpDemoCode(null);
+                    setOtpCode("");
                     setOtpHint(null);
                   }}
                 >
@@ -282,9 +322,15 @@ export function SignIn() {
             {otpSent && (
               <div className="otp-verify">
                 {otpDemoCode && (
-                  <p className="otp-demo-code" role="status">
-                    Demo code: <strong>{otpDemoCode}</strong>
-                  </p>
+                  <div className="otp-demo-banner" role="status">
+                    <div className="otp-demo-label">Your demo code (copy this)</div>
+                    <div className="otp-demo-code-lg" aria-live="polite">
+                      {otpDemoCode}
+                    </div>
+                    <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.75rem" }}>
+                      Not delivered by {otpChannel} — shown here for home testing.
+                    </p>
+                  </div>
                 )}
                 <label className="otp-field">
                   <span className="muted">6-digit code</span>
@@ -308,7 +354,7 @@ export function SignIn() {
                   disabled={otpCode.length !== 6}
                   onClick={onVerifyOtp}
                 >
-                  Verify &amp; sign in
+                  Verify &amp; continue
                 </button>
               </div>
             )}
@@ -324,9 +370,12 @@ export function SignIn() {
           <span>or</span>
         </div>
 
-        <button type="button" className="btn btn-ghost auth-demo-btn" onClick={onDemo}>
+        <button type="button" className="btn btn-primary auth-demo-btn" onClick={onDemo}>
           Continue as demo voyager
         </button>
+        <p className="muted" style={{ margin: "10px 0 0", fontSize: "0.78rem", textAlign: "center" }}>
+          Fastest path for local demos — stub session in localStorage.
+        </p>
 
         <p className="muted" style={{ margin: "20px 0 0", fontSize: "0.8rem", textAlign: "center" }}>
           <Link to="/">← Back home</Link>

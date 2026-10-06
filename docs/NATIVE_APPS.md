@@ -2,7 +2,35 @@
 
 Voyajes is already a **responsive installable PWA** on GitHub Pages (`/voyajes/`). That covers “add to home screen,” offline shell caching, and a standalone display mode in Chromium and (with a Share → Add to Home Screen tip) on iOS Safari.
 
-This note is research only: how you’d get a **proper App Store / Play Store / desktop** listing if you want one later. No native shells are in the repo yet.
+This note is research + a **locked product decision** for a later App Store / Play Store build. No native shells are in the repo yet.
+
+---
+
+## Decision (locked) — Flutter for store apps
+
+**Chosen later path for iOS App Store + Google Play:** **[Flutter](https://docs.flutter.dev/)**.
+
+| | |
+| --- | --- |
+| **Why Flutter** | One Dart UI for iOS + Android; strong media / animation ecosystem; clear separation from the web PWA so store review can show native-shaped UX (Apple Guideline 4.2). |
+| **What stays web** | Shipping continues on the Vite/React PWA. Store apps are an *extra distribution channel*, not a rewrite gate for the browser product. |
+| **Reuse** | Domain ideas and catalog JSON can inform Flutter models; the React UI does **not** port. Prefer a dedicated `apps/mobile` (or sibling repo) when you start. |
+| **Effort class** | ~3–6+ months for Create / Themes / Share / export parity with one focused engineer. |
+
+Revisit only if product requirements clearly favor a different stack (e.g. heavy existing RN team). Until then, treat Flutter as the default answer to “when do we ship store apps?”
+
+---
+
+## Alternate — Capacitor wrap (not the chosen path)
+
+**[Capacitor](https://capacitorjs.com/docs)** remains a valid **alternate** if you need a thin App Store / Play listing *sooner* and can ship 2–3 native extras (offline drafts, share extension, push, Face ID) so Apple 4.2 is less scary.
+
+- **Effort:** days–few weeks for a thin shell + icons/splash + CI.
+- **Reuse:** ~100% of current React/Vite UI inside a WebView.
+- **Risk:** Guideline **4.2 Minimum Functionality** — bare “website in a WebView” rejections.
+- **Tooling:** macOS + Xcode; Android Studio for Play. Apple Developer **$99 USD / year**; Play Console **$25 once**.
+
+Use Capacitor only as a bridge; the **locked long-term store path is still Flutter**.
 
 ---
 
@@ -21,53 +49,36 @@ Official PWA overview: [web.dev Progressive Web Apps](https://web.dev/explore/pr
 Manifest + installability: [MDN Web App Manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest)  
 Vite PWA plugin: [vite-pwa-org.netlify.app](https://vite-pwa-org.netlify.app/guide/)
 
-**Bottom line:** keep shipping the PWA. Treat store apps as an *extra distribution channel*, not a rewrite gate.
+**Bottom line:** keep shipping the PWA. Flutter store apps come later as distribution, not a rewrite gate.
 
 ---
 
-## iOS App Store
+## iOS App Store (when you start)
 
-### Option A — Wrap with Capacitor (lowest effort for this codebase)
+### Chosen — Flutter
 
-[Capacitor](https://capacitorjs.com/docs) loads your built web app in a native WebView and exposes plugins (camera, filesystem, push, haptics, etc.).
+- New Flutter app sharing catalog concepts / project schema ideas with Voyajes web.
+- Docs: [Flutter](https://docs.flutter.dev/) · [iOS deployment](https://docs.flutter.dev/deployment/ios)
+- **Signing:** Apple Developer Program **$99 USD / year** ([enroll](https://developer.apple.com/programs/enroll/)).
+- Plan native value (background encode, share extension, widgets, push) before first submission.
 
-- **Effort:** days–few weeks for a thin shell + icons/splash + CI; more if you add push, IAP, or App Tracking.
-- **Reuse:** ~100% of current React/Vite UI.
-- **Tooling:** macOS + Xcode, CocoaPods/SPM as Capacitor requires. See [Environment setup](https://capacitorjs.com/docs/getting-started/environment-setup).
-- **Signing:** Apple Developer Program membership, certificates, provisioning profiles, App Store Connect. Membership is **$99 USD / year** ([Apple enrollment](https://developer.apple.com/programs/enroll/)).
-- **Review risk:** Guideline **4.2 Minimum Functionality** — Apple may reject a thin “website in a WebView” with no app-like value. Docs vibe: [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/). Plan native extras (offline drafts, share extension, push when a voyage finishes, home-screen widget, Face ID unlock of drafts) before you submit a bare wrapper.
-- **Store review:** typically days; expect iterations.
+### Alternate — Capacitor
 
-### Option B — React Native rewrite (or new RN app sharing packages)
+See [Capacitor environment setup](https://capacitorjs.com/docs/getting-started/environment-setup). Same $99 program; higher 4.2 risk for thin wrappers.
 
-- **Effort:** months for parity with Create / Themes / Share / export.
-- **Reuse:** TypeScript domain logic in `packages/core` might port; UI does **not**.
-- **Why bother:** gesture-heavy timeline, long lists, true native media pipeline.
-- Docs: [React Native](https://reactnative.dev/docs/getting-started)
+### Not preferred — React Native rewrite
 
-### Option C — Flutter rewrite
-
-- Same rewrite cost class as RN; Dart UI from scratch.
-- Docs: [Flutter](https://docs.flutter.dev/)
-
-**Recommendation for Voyajes:** Capacitor wrap **if** you need an App Store presence soon and can ship 2–3 native features. Full RN/Flutter only if the editor’s UX outgrows the browser (heavy timeline scrubbing, background encode, etc.).
+Same rewrite cost class as Flutter; only if the team is already RN-native. Docs: [React Native](https://reactnative.dev/docs/getting-started)
 
 ---
 
 ## Android Play Store
 
-Paths mirror iOS:
+1. **Flutter** (chosen) — same codebase as iOS. [Android deployment](https://docs.flutter.dev/deployment/android)
+2. **Alternate — Capacitor** — same web bundle, Android Studio project.
+3. **Alternate — Trusted Web Activity (TWA)** — Bubblewrap packaging of the live HTTPS PWA for Android-only. Fast; no iOS twin. [TWA docs](https://developer.chrome.com/docs/android/trusted-web-activity/)
 
-1. **Capacitor** — same web bundle, Android Studio project. Signing with a Play App Signing keystore.
-2. **Trusted Web Activity (TWA)** — Chrome Custom Tabs / Bubblewrap packaging of the *live* HTTPS PWA. Fast for Android-only; no iOS twin. See [Google TWA docs](https://developer.chrome.com/docs/android/trusted-web-activity/).
-3. **React Native / Flutter** — full rewrite, same caveats as iOS.
-
-**Cost / accounts**
-
-- Google Play Console registration: **one-time $25 USD** ([Play Console help](https://support.google.com/googleplay/android-developer/answer/6112435)).
-- Review is usually faster / more wrapper-tolerant than Apple, but still expect policy checks (permissions, data safety form, target API levels).
-
-**Effort:** Capacitor Android shell often lands in a long weekend once the iOS project exists; TWA can be even faster if you’re happy pointing at `https://yvelkuri-stu.github.io/voyajes/`.
+**Cost:** Google Play Console **one-time $25 USD** ([help](https://support.google.com/googleplay/android-developer/answer/6112435)).
 
 ---
 
@@ -76,15 +87,9 @@ Paths mirror iOS:
 | Approach | Effort | Footprint | Notes |
 | --- | --- | --- | --- |
 | **PWA install** (Edge/Chrome “Install app”) | Already done | Tiny | Best default for Voyajes web |
-| **[Tauri](https://v2.tauri.app/)** | 1–2 weeks for packaging | Small (system WebView + Rust) | Needs Rust toolchain ([prerequisites](https://v2.tauri.app/start/prerequisites/)); great for a lightweight “Voyajes Desktop” |
-| **[Electron](https://www.electronjs.org/docs/latest/)** | 1–2 weeks | Large (Chromium bundled) | Mature; heavier downloads; easy Node FS access for local projects |
-| Capacitor + desktop community targets | Experimental | Varies | Prefer Tauri/Electron for desktop-first |
-
-**Signing / distribution**
-
-- macOS: Apple Developer ID + notarization for Gatekeeper (same $99 program).
-- Windows: Authenticode cert (paid) or Microsoft Store packaging.
-- Linux: AppImage / Flatpak / Snap — often unsigned or community-signed.
+| **[Tauri](https://v2.tauri.app/)** | 1–2 weeks for packaging | Small (system WebView + Rust) | Great for a lightweight “Voyajes Desktop” |
+| **[Electron](https://www.electronjs.org/docs/latest/)** | 1–2 weeks | Large (Chromium bundled) | Mature; heavier downloads |
+| Flutter desktop | Possible later | Varies | Only if you already invested in Flutter mobile |
 
 ---
 
@@ -93,12 +98,12 @@ Paths mirror iOS:
 | Path | Calendar time* | Hard fees | Soft cost |
 | --- | --- | --- | --- |
 | Keep PWA only | Ongoing | $0 | Hosting already on Pages |
-| Capacitor iOS + Android | ~2–6 weeks first ship | $99/yr + $25 once | Mac CI or cloud Mac; screenshots; review cycles |
+| Flutter iOS + Android (**chosen**) | ~3–6+ months first ship | $99/yr + $25 once | Dart/Flutter skill set; dual store review |
+| Capacitor iOS + Android (alternate) | ~2–6 weeks first ship | $99/yr + $25 once | Mac CI; native extras for Apple 4.2 |
 | TWA Android only | ~days | $25 once | Digital Asset Links on domain |
 | Tauri / Electron desktop | ~1–3 weeks | Optional store / cert fees | Notarization, auto-update hosting |
-| RN / Flutter rewrite | ~3–6+ months | Same store fees | New UI skill set + dual maintenance |
 
-\*Assumes one familiar full-stack engineer; agency quotes for Capacitor ports often land in the mid–five figures — treat those as market noise, not a requirement.
+\*Assumes one familiar full-stack engineer.
 
 ---
 
@@ -109,7 +114,7 @@ Paths mirror iOS:
 1. Enroll: [developer.apple.com/programs/enroll](https://developer.apple.com/programs/enroll/) ($99/yr).
 2. Create App ID, certificates, profiles in Certificates, Identifiers & Profiles.
 3. Upload via Xcode / Transporter → App Store Connect.
-4. Privacy Nutrition Labels, screenshots for required device sizes, review notes explaining non-web functionality.
+4. Privacy Nutrition Labels, screenshots, review notes explaining non-web functionality.
 
 **Google**
 
@@ -117,29 +122,25 @@ Paths mirror iOS:
 2. Play App Signing, AAB upload, Data safety form, content rating questionnaire.
 3. Target recent Android API as required by Play policy.
 
-**Desktop**
-
-- Prefer **auto-update** (Tauri updater / electron-updater) hosted on your own CDN or GitHub Releases.
-- Store channels (Mac App Store, Microsoft Store) add review + sandbox rules; direct download is fine for early Voyajes.
-
 ---
 
 ## Suggested sequencing for Voyajes
 
-1. **Polish the PWA** (you’re here) — install prompt, icons, responsive Create/Home, `/voyajes/` base.
-2. **If Android discovery matters first:** Bubblewrap / TWA against the live Pages URL.
-3. **If both mobile stores matter:** Capacitor monorepo app next to `apps/web`, shared `dist`, plus a couple of native features so Apple 4.2 is less scary.
-4. **Desktop:** only if creators ask for local project folders / long encodes — then Tauri over Electron for a smaller binary.
-5. **Rewrite (RN/Flutter):** postpone until the editor’s product requirements clearly exceed what a WebView + MediaRecorder can do.
+1. **Polish the PWA** (you’re here) — install prompt, Kids Mode, auth demos, `/voyajes/` base.
+2. **If Android discovery matters first without Flutter yet:** Bubblewrap / TWA against the live Pages URL.
+3. **When both mobile stores matter for real:** start **Flutter** (`apps/mobile` or sibling), port catalog + compose flows deliberately.
+4. **Capacitor (alternate):** only if you need a stopgap listing before Flutter is ready — and ship native extras.
+5. **Desktop:** only if creators ask for local project folders / long encodes — then Tauri over Electron.
 
 ---
 
 ## Useful links
 
-- Capacitor docs: https://capacitorjs.com/docs  
-- Capacitor environment setup: https://capacitorjs.com/docs/getting-started/environment-setup  
-- React Native: https://reactnative.dev/docs/getting-started  
 - Flutter: https://docs.flutter.dev/  
+- Flutter iOS deploy: https://docs.flutter.dev/deployment/ios  
+- Flutter Android deploy: https://docs.flutter.dev/deployment/android  
+- Capacitor (alternate): https://capacitorjs.com/docs  
+- React Native: https://reactnative.dev/docs/getting-started  
 - Apple Developer Program: https://developer.apple.com/programs/enroll/  
 - App Review Guidelines: https://developer.apple.com/app-store/review/guidelines/  
 - Google Play registration: https://support.google.com/googleplay/android-developer/answer/6112435  
@@ -149,4 +150,4 @@ Paths mirror iOS:
 - vite-plugin-pwa: https://vite-pwa-org.netlify.app/guide/  
 - Learn PWA (web.dev): https://web.dev/learn/pwa  
 
-*Last researched: Oct 2026. Fees and Xcode/Android Studio minimums change — re-check Apple/Google pages before budgeting.*
+*Last updated: Oct 2026. **Flutter locked** as the store path; Capacitor kept as alternate. Fees and tool minimums change — re-check Apple/Google pages before budgeting.*

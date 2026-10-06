@@ -2263,3 +2263,209 @@ button {
     padding: 8px 10px;
   }
 }
+
+/* —— Kids Mode + human-help prefs —— */
+html.kids-mode,
+html.large-targets {
+  --kids-tap: 48px;
+}
+
+html.reduce-motion,
+html.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.app-shell.is-kids .btn {
+  min-height: var(--kids-tap, 48px);
+  padding: 12px 20px;
+  font-size: 1rem;
+  border-radius: 14px;
+}
+
+.app-shell.is-kids .nav-link {
+  padding: 10px 14px;
+  font-size: 0.95rem;
+}
+
+.app-shell.is-kids .chip {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+}
+
+.app-shell.is-kids .emoji-cell,
+.app-shell.is-kids .sticker-cell {
+  min-width: 48px;
+  min-height: 48px;
+  font-size: 1.6rem;
+}
+
+html.large-targets .btn {
+  min-height: 44px;
+}
+
+.prefs-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.prefs-toggle {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.prefs-toggle.is-on {
+  color: var(--text-primary);
+  border-color: var(--vj-mint);
+  background: rgba(61, 220, 151, 0.15);
+  box-shadow: 0 0 0 1px rgba(61, 220, 151, 0.25);
+}
+
+.human-help-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(124, 92, 255, 0.08);
+}
+
+.memory-note-input {
+  flex: 1;
+  min-width: 140px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.sticker-tray {
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--vj-mint);
+  background: rgba(61, 220, 151, 0.06);
+}
+
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 6px;
+}
+
+.sticker-cell {
+  appearance: none;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  font-size: 1.4rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.sticker-cell:hover {
+  border-color: var(--vj-mint);
+  transform: scale(1.06);
+}
+
+.memory-jar-panel {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.memory-jar-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.memory-jar-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memory-jar-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.auth-howto {
+  margin: 0 0 12px;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.auth-howto li {
+  margin-bottom: 4px;
+}
+
+.otp-demo-banner {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--vj-gold);
+  background: rgba(245, 197, 66, 0.12);
+  text-align: center;
+}
+
+.otp-demo-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vj-gold);
+}
+
+.otp-demo-code-lg {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  margin-top: 4px;
+  color: var(--text-primary);
+}
+
+.kids-comments-off {
+  border: 1px dashed var(--vj-mint);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: rgba(61, 220, 151, 0.05);
+}
+
+@media (max-width: 720px) {
+  .prefs-nav {
+    order: 5;
+  }
+
+  .otp-demo-code-lg {
+    font-size: 1.6rem;
+    letter-spacing: 0.25em;
+  }
+}

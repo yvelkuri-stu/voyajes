@@ -8,6 +8,7 @@ import {
 } from "../lib/commentStore";
 import { QUICK_REACTIONS, rememberEmoji } from "../lib/emoji";
 import { getSession } from "../lib/auth";
+import { usePrefs } from "../hooks/usePrefs";
 import { EmojiPicker } from "./EmojiPicker";
 
 type Props = {
@@ -33,11 +34,13 @@ function CommentItem({
   shareId,
   depth,
   onChanged,
+  kidsMode,
 }: {
   node: CommentNode;
   shareId: string;
   depth: number;
   onChanged: () => void;
+  kidsMode: boolean;
 }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyBody, setReplyBody] = useState("");
@@ -46,6 +49,7 @@ function CommentItem({
   const submitReply = (e: FormEvent) => {
     e.preventDefault();
     if (!replyBody.trim()) return;
+    if (kidsMode) return;
     const session = getSession();
     addComment({
       shareId,
@@ -89,32 +93,34 @@ function CommentItem({
               {emoji} <span>{count}</span>
             </button>
           ))}
-          <div className="comment-react-wrap">
-            <button
-              type="button"
-              className="btn-linkish"
-              onClick={() => setReactOpen((o) => !o)}
-              aria-expanded={reactOpen}
-            >
-              React
-            </button>
-            {reactOpen && (
-              <div className="comment-react-pop">
-                {QUICK_REACTIONS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    className="emoji-cell"
-                    onClick={() => react(e)}
-                  >
-                    {e}
-                  </button>
-                ))}
-                <EmojiPicker onSelect={react} label="＋" />
-              </div>
-            )}
-          </div>
-          {depth < 3 && (
+          {!kidsMode && (
+            <div className="comment-react-wrap">
+              <button
+                type="button"
+                className="btn-linkish"
+                onClick={() => setReactOpen((o) => !o)}
+                aria-expanded={reactOpen}
+              >
+                React
+              </button>
+              {reactOpen && (
+                <div className="comment-react-pop">
+                  {QUICK_REACTIONS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      className="emoji-cell"
+                      onClick={() => react(e)}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                  <EmojiPicker onSelect={react} label="＋" />
+                </div>
+              )}
+            </div>
+          )}
+          {!kidsMode && depth < 3 && (
             <button
               type="button"
               className="btn-linkish"
@@ -124,7 +130,7 @@ function CommentItem({
             </button>
           )}
         </div>
-        {replyOpen && (
+        {replyOpen && !kidsMode && (
           <form className="comment-reply-form" onSubmit={submitReply}>
             <div className="comment-compose-row">
               <input
@@ -152,6 +158,7 @@ function CommentItem({
               shareId={shareId}
               depth={depth + 1}
               onChanged={onChanged}
+              kidsMode={kidsMode}
             />
           ))}
         </ul>
@@ -161,8 +168,12 @@ function CommentItem({
 }
 
 export function CommentThread({ shareId }: Props) {
+  const { prefs } = usePrefs();
+  const kidsMode = prefs.kidsMode;
   const [tick, setTick] = useState(0);
   const [author, setAuthor] = useState(() => getSession()?.displayName ?? "");
+  const [guardian, setGuardian] = useState("");
+  const [commentsEnabled, setCommentsEnabled] = useState(!kidsMode);
   const [body, setBody] = useState("");
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
@@ -172,6 +183,12 @@ export function CommentThread({ shareId }: Props) {
     if (session?.displayName) setAuthor(session.displayName);
   }, []);
 
+  useEffect(() => {
+    // Kids Mode defaults comments off until guardian enables
+    if (kidsMode) setCommentsEnabled(false);
+    else setCommentsEnabled(true);
+  }, [kidsMode]);
+
   const tree = useMemo(() => {
     void tick;
     return buildCommentTree(listComments(shareId));
@@ -180,22 +197,70 @@ export function CommentThread({ shareId }: Props) {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
-    addComment({
-      shareId,
-      parentId: null,
-      author: author.trim() || "Anonymous voyager",
-      body,
-    });
+    if (kidsMode) {
+      const g = guardian.trim();
+      if (!g) return;
+      if (!commentsEnabled) return;
+      addComment({
+        shareId,
+        parentId: null,
+        author: `Guardian · ${g}`,
+        body,
+      });
+    } else {
+      addComment({
+        shareId,
+        parentId: null,
+        author: author.trim() || "Anonymous voyager",
+        body,
+      });
+    }
     setBody("");
     refresh();
   };
+
+  if (kidsMode && !commentsEnabled) {
+    return (
+      <section className="comment-thread kids-comments-off" aria-label="Comments">
+        <div className="comment-thread-head">
+          <h3 style={{ margin: 0 }}>Comments</h3>
+          <span className="badge badge-free">Kids Mode</span>
+        </div>
+        <p className="muted" style={{ fontSize: "0.9rem" }}>
+          Comments are off by default in Kids Mode. A grown-up can turn them on
+          and must label posts with a guardian name.
+        </p>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => setCommentsEnabled(true)}
+        >
+          Enable comments (guardian)
+        </button>
+        {tree.length > 0 && (
+          <ul className="comment-list" style={{ marginTop: 16 }}>
+            {tree.map((n) => (
+              <CommentItem
+                key={n.id}
+                node={n}
+                shareId={shareId}
+                depth={0}
+                onChanged={refresh}
+                kidsMode
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className="comment-thread" aria-label="Comments">
       <div className="comment-thread-head">
         <h3 style={{ margin: 0 }}>Comments</h3>
         <span className="muted" style={{ fontSize: "0.78rem" }}>
-          Demo · localStorage only
+          {kidsMode ? "Kids Mode · guardian labeled" : "Demo · localStorage only"}
         </span>
       </div>
       <p className="muted comment-sync-note">
@@ -204,28 +269,61 @@ export function CommentThread({ shareId }: Props) {
       </p>
 
       <form className="comment-compose" onSubmit={onSubmit}>
-        <label className="comment-author-field">
-          <span className="muted">Display name</span>
-          <input
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            placeholder="Your name"
-            aria-label="Comment author"
-          />
-        </label>
+        {kidsMode ? (
+          <label className="comment-author-field">
+            <span className="muted">Guardian name (required)</span>
+            <input
+              value={guardian}
+              onChange={(e) => setGuardian(e.target.value)}
+              placeholder="Parent / guardian name"
+              aria-label="Guardian name"
+              required
+            />
+          </label>
+        ) : (
+          <label className="comment-author-field">
+            <span className="muted">Display name</span>
+            <input
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              placeholder="Your name"
+              aria-label="Comment author"
+            />
+          </label>
+        )}
         <div className="comment-compose-row">
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Say something about this voyage… emoji welcome ✨"
+            placeholder={
+              kidsMode
+                ? "Guardian note about this voyage…"
+                : "Say something about this voyage… emoji welcome ✨"
+            }
             rows={3}
             aria-label="Comment body"
           />
-          <EmojiPicker onSelect={(emoji) => setBody((b) => b + emoji)} />
+          {!kidsMode && (
+            <EmojiPicker onSelect={(emoji) => setBody((b) => b + emoji)} />
+          )}
         </div>
-        <button type="submit" className="btn btn-primary" disabled={!body.trim()}>
-          Post comment
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={!body.trim() || (kidsMode && !guardian.trim())}
+        >
+          {kidsMode ? "Post as guardian" : "Post comment"}
         </button>
+        {kidsMode && (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ marginLeft: 8 }}
+            onClick={() => setCommentsEnabled(false)}
+          >
+            Turn comments off
+          </button>
+        )}
       </form>
 
       {tree.length === 0 ? (
@@ -241,6 +339,7 @@ export function CommentThread({ shareId }: Props) {
               shareId={shareId}
               depth={0}
               onChanged={refresh}
+              kidsMode={kidsMode}
             />
           ))}
         </ul>

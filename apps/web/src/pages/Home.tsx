@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { brand } from "@voyajes/core";
 import { getThemes } from "../data/themes";
+import { useAuthSession } from "../hooks/useAuthSession";
+import { usePrefs } from "../hooks/usePrefs";
 
 const recents = [
   {
@@ -27,6 +29,8 @@ const recents = [
 ];
 
 export function Home() {
+  const { session } = useAuthSession();
+  const { prefs } = usePrefs();
   const themes = getThemes().slice(0, 4);
 
   return (
@@ -55,8 +59,13 @@ export function Home() {
               Browse themes
             </Link>
             <Link to="/themes?tab=templates" className="btn btn-ghost">
-              14 templates
+              {prefs.kidsMode ? "Kids templates" : "14 templates"}
             </Link>
+            {!session && (
+              <Link to="/signin?next=/create" className="btn btn-ghost">
+                Continue
+              </Link>
+            )}
           </div>
         </div>
         <div

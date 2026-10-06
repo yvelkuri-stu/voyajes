@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   textStyleLabel,
@@ -7,24 +7,50 @@ import {
 import { getBeats } from "../data/beats";
 import { getThemes, transitionLabel, type ThemeCard } from "../data/themes";
 import {
+  getKidsSafeTemplates,
   getTemplates,
   templateComboSummary,
   type TemplateCard,
 } from "../data/templates";
+import { usePrefs } from "../hooks/usePrefs";
+import { KIDS_SAFE_THEME_IDS } from "../lib/prefsStore";
 
 type Tab = "themes" | "templates";
 
 export function Themes() {
   const [params, setParams] = useSearchParams();
+  const { prefs } = usePrefs();
+  const kidsMode = prefs.kidsMode;
   const tab: Tab = params.get("tab") === "templates" ? "templates" : "themes";
-  const themes = getThemes();
-  const templates = getTemplates();
-  const [selectedTheme, setSelectedTheme] = useState<ThemeCard>(
-    themes[2] ?? themes[0],
+  const themes = useMemo(
+    () =>
+      kidsMode
+        ? getThemes().filter((t) =>
+            (KIDS_SAFE_THEME_IDS as readonly string[]).includes(t.id),
+          )
+        : getThemes(),
+    [kidsMode],
   );
+  const templates = useMemo(
+    () => (kidsMode ? getKidsSafeTemplates() : getTemplates()),
+    [kidsMode],
+  );
+  const [selectedTheme, setSelectedTheme] = useState<ThemeCard>(() => getThemes()[0]);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateCard>(
-    templates[0],
+    () => getTemplates()[0],
   );
+
+  useEffect(() => {
+    if (themes.length && !themes.some((t) => t.id === selectedTheme?.id)) {
+      setSelectedTheme(themes[0]);
+    }
+  }, [kidsMode, themes, selectedTheme]);
+
+  useEffect(() => {
+    if (templates.length && !templates.some((t) => t.id === selectedTemplate?.id)) {
+      setSelectedTemplate(templates[0]);
+    }
+  }, [kidsMode, templates, selectedTemplate]);
 
   const setTab = (next: Tab) => {
     const p = new URLSearchParams(params);
@@ -50,6 +76,7 @@ export function Themes() {
         <p className="muted" style={{ margin: 0 }}>
           Themes are the look. Templates are a full pack — motion, clip transitions,
           beat, text style, and text transitions — ready to apply in Compose.
+          {kidsMode ? " Kids Mode shows a calmer subset." : ""}
         </p>
         <div className="chip-row" style={{ marginTop: 14 }}>
           <button

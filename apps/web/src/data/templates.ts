@@ -5,6 +5,7 @@ import {
   textTransitionLabel,
 } from "@voyajes/core";
 import manifest from "../../public/catalog-manifest.json";
+import { KIDS_SAFE_TEMPLATE_IDS } from "../lib/prefsStore";
 import { getThemeById, type ThemeCard } from "./themes";
 import { getBeatById, type BeatCard } from "./beats";
 
@@ -34,6 +35,17 @@ export function getTemplates(): TemplateCard[] {
 
 export function getTemplateById(id: string): TemplateCard | undefined {
   return getTemplates().find((t) => t.id === id);
+}
+
+/** Kids Mode — calmer / brighter packs only */
+export function getKidsSafeTemplates(): TemplateCard[] {
+  const all = getTemplates();
+  const set = new Set<string>(KIDS_SAFE_TEMPLATE_IDS);
+  return all.filter((t) => set.has(t.id));
+}
+
+export function isKidsSafeTemplate(id: string): boolean {
+  return (KIDS_SAFE_TEMPLATE_IDS as readonly string[]).includes(id);
 }
 
 export { textStyleLabel, textTransitionLabel };

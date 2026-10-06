@@ -9,8 +9,17 @@ import {
   type DragEvent,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { packRef, type Aspect } from "@voyajes/core";
+import { packRef, type Aspect, type BeatSync } from "@voyajes/core";
+import {
+  getBeats,
+  getBeatByRef,
+  licenseHint,
+  licenseLabel,
+  type BeatCard,
+} from "../data/beats";
 import { getThemes, getThemeById, type ThemeCard } from "../data/themes";
+import { startBeatPreview, type PreviewHandle } from "../lib/beatPreview";
+import { describeBeatSync, snapDurationToBeat } from "../lib/beatSync";
 import {
   clearAllBlobs,
   clearDraft,
@@ -33,6 +42,7 @@ import {
 type LiveClip = DraftClipMeta & { objectUrl: string };
 
 const ASPECTS: Aspect[] = ["9:16", "16:9", "1:1", "4:5"];
+const BEAT_SYNC_MODES: BeatSync[] = ["off", "soft", "medium", "hard"];
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
@@ -61,12 +71,22 @@ export function Create() {
     themes.find((t) => t.id === "theme.ocean-pop") ??
     themes[0];
 
+  const beats = useMemo(() => getBeats(), []);
+  const previewHandle = useRef<PreviewHandle | null>(null);
+  const audioPanelRef = useRef<HTMLElement>(null);
+
   const [hydrated, setHydrated] = useState(false);
   const [title, setTitle] = useState("Untitled voyage");
   const [aspect, setAspect] = useState<Aspect>("9:16");
   const [themeId, setThemeId] = useState(paramTheme.id);
   const [audioTrackRef, setAudioTrackRef] = useState(
     "audio.ocean-drift-084@1.0.0",
+  );
+  const [beatSync, setBeatSync] = useState<BeatSync>("medium");
+  const [ducking, setDucking] = useState(true);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<"file" | "metronome" | null>(
+    null,
   );
   const [clips, setClips] = useState<LiveClip[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -81,6 +101,19 @@ export function Create() {
     () => getThemeById(themeId) ?? themes[0],
     [themeId, themes],
   );
+
+  const selectedBeat: BeatCard =
+    getBeatByRef(audioTrackRef) ?? beats[0] ?? {
+      id: "audio.ocean-drift-084",
+      kind: "audio-beat" as const,
+      version: "1.0.0",
+      name: "Ocean Drift",
+      bpm: 84,
+      mood: ["calm", "ocean"],
+      license: "personal" as const,
+      tier: "free" as const,
+      packRef: "audio.ocean-drift-084@1.0.0",
+    };
 
   const totalDuration = useMemo(
     () => clips.reduce((sum, c) => sum + c.durationSec, 0),
@@ -120,6 +153,8 @@ export function Create() {
       setAspect(base.aspect);
       setThemeId(base.themeId);
       setAudioTrackRef(base.audioTrackRef);
+      setBeatSync(base.beatSync);
+      setDucking(base.ducking);
       const live: LiveClip[] = [];
       for (const meta of base.clips) {
         const blob = await getBlob(meta.id);
@@ -148,6 +183,8 @@ export function Create() {
       themeId,
       themeVersion: theme.version,
       audioTrackRef,
+      beatSync,
+      ducking,
       clips: clips.map(
         ({ id, fileName, mimeType, kind, durationSec, mute }): DraftClipMeta => ({
           id,
@@ -169,13 +206,17 @@ export function Create() {
     themeId,
     theme.version,
     audioTrackRef,
+    beatSync,
+    ducking,
     clips,
   ]);
 
-  // Cleanup object URLs on unmount
+  // Cleanup object URLs + audio preview on unmount
   useEffect(() => {
     return () => {
       if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+      previewHandle.current?.stop();
+      previewHandle.current = null;
       for (const url of objectUrlsRef.current) {
         URL.revokeObjectURL(url);
       }
@@ -263,10 +304,14 @@ export function Create() {
           continue;
         }
         const id = newClipId();
-        const durationSec =
+        let durationSec =
           kind === "video"
             ? await readVideoDuration(file)
             : defaultImageDuration(theme.motion);
+        if (kind === "image" && beatSync !== "off") {
+          const bpm = getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm;
+          durationSec = snapDurationToBeat(durationSec, bpm, beatSync);
+        }
         await putBlob(id, file);
         const objectUrl = trackUrl(URL.createObjectURL(file));
         added.push({
@@ -295,7 +340,75 @@ export function Create() {
         setStatus(`Could not import: ${skipped.join(", ")}`);
       }
     },
-    [clips.length, theme.motion, trackUrl],
+    [clips.length, theme.motion, trackUrl, beatSync, audioTrackRef, selectedBeat.bpm],
+  );
+
+  const stopPreview = useCallback(() => {
+    previewHandle.current?.stop();
+    previewHandle.current = null;
+    setPreviewingId(null);
+    setPreviewMode(null);
+  }, []);
+
+  const applyBeatSnap = useCallback(
+    (mode: BeatSync, bpm: number, onlyImages = true) => {
+      if (mode === "off") return;
+      setClips((prev) =>
+        prev.map((c) => {
+          if (onlyImages && c.kind !== "image") return c;
+          return {
+            ...c,
+            durationSec: snapDurationToBeat(c.durationSec, bpm, mode),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const selectBeat = useCallback(
+    (beat: BeatCard) => {
+      setAudioTrackRef(beat.packRef);
+      if (beatSync !== "off") {
+        applyBeatSnap(beatSync, beat.bpm, true);
+        setStatus(`Beat · ${beat.name} · holds snapped to ${beatSync}`);
+      } else {
+        setStatus(`Beat · ${beat.name}`);
+      }
+    },
+    [applyBeatSnap, beatSync],
+  );
+
+  const togglePreview = useCallback(
+    (beat: BeatCard) => {
+      if (previewingId === beat.id) {
+        stopPreview();
+        return;
+      }
+      stopPreview();
+      previewHandle.current = startBeatPreview({
+        previewUrl: beat.previewUrl,
+        bpm: beat.bpm,
+        mood: beat.mood,
+        onMode: (m) => setPreviewMode(m),
+        onError: (msg) => setStatus(msg),
+      });
+      setPreviewingId(beat.id);
+    },
+    [previewingId, stopPreview],
+  );
+
+  const setBeatSyncMode = useCallback(
+    (mode: BeatSync) => {
+      setBeatSync(mode);
+      if (mode !== "off") {
+        applyBeatSnap(mode, selectedBeat.bpm, true);
+        setStatus(`Beat-sync ${mode} · snapped image holds`);
+      } else {
+        setStatus("Beat-sync off");
+      }
+    },
+    [applyBeatSnap, selectedBeat.bpm],
   );
 
   const onDrop = useCallback(
@@ -360,6 +473,9 @@ export function Create() {
     setTitle(d.title);
     setAspect(d.aspect);
     setAudioTrackRef(d.audioTrackRef);
+    setBeatSync(d.beatSync);
+    setDucking(d.ducking);
+    stopPreview();
     setClips([]);
     setActiveIndex(0);
     setElapsed(0);
@@ -373,6 +489,8 @@ export function Create() {
       themeId,
       themeVersion: theme.version,
       audioTrackRef,
+      beatSync,
+      ducking,
       clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
         id,
         fileName,
@@ -406,13 +524,6 @@ export function Create() {
         ? "ken-bold"
         : "ken-gentle"
       : "";
-
-  const audioLabel =
-    audioTrackRef.startsWith("audio.neon")
-      ? "Neon Pulse"
-      : audioTrackRef.startsWith("audio.warm")
-        ? "Warm Acoustic"
-        : "Ocean Drift";
 
   return (
     <div>
@@ -486,16 +597,17 @@ export function Create() {
           type="button"
           className="chip"
           onClick={() =>
-            setAudioTrackRef((a) =>
-              a.startsWith("audio.ocean")
-                ? "audio.warm-acoustic-092@1.0.0"
-                : a.startsWith("audio.warm")
-                  ? "audio.neon-pulse-118@1.0.0"
-                  : "audio.ocean-drift-084@1.0.0",
-            )
+            audioPanelRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+            })
           }
+          title="Open audio panel"
         >
-          Audio · {audioLabel}
+          Audio · {selectedBeat.name}
+          <span className={`license-badge license-${selectedBeat.license}`}>
+            {licenseLabel(selectedBeat.license)}
+          </span>
         </button>
         <button
           type="button"
@@ -843,6 +955,123 @@ export function Create() {
               </>
             )}
           </div>
+
+          <hr
+            style={{
+              border: "none",
+              borderTop: "1px solid var(--border-subtle)",
+              margin: "20px 0 16px",
+            }}
+          />
+
+          <section ref={audioPanelRef} className="audio-panel" aria-label="Audio">
+            <h3 style={{ marginBottom: 4 }}>Audio panel</h3>
+            <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
+              Catalog beats · preview · beat-sync · ducking for export.
+            </p>
+
+            <div className="beat-list">
+              {beats.map((beat) => {
+                const selected = selectedBeat.id === beat.id;
+                const playing = previewingId === beat.id;
+                return (
+                  <div
+                    key={beat.id}
+                    className={`beat-row${selected ? " selected" : ""}`}
+                    style={
+                      selected
+                        ? {
+                            borderColor: theme.palette.accent,
+                            background: `linear-gradient(90deg, ${theme.palette.accent}18, transparent)`,
+                          }
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className="beat-select"
+                      onClick={() => selectBeat(beat)}
+                    >
+                      <span className="beat-name">{beat.name}</span>
+                      <span className="muted beat-meta">
+                        {beat.bpm} BPM · {beat.mood.join(" · ")}
+                        {beat.tier !== "free" ? ` · ${beat.tier}` : ""}
+                      </span>
+                      <span className={`license-badge license-${beat.license}`}>
+                        {licenseLabel(beat.license)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-ghost beat-play${playing ? " is-playing" : ""}`}
+                      aria-label={playing ? `Stop ${beat.name}` : `Preview ${beat.name}`}
+                      onClick={() => togglePreview(beat)}
+                    >
+                      {playing ? "Stop" : "▶"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="muted" style={{ fontSize: "0.75rem", marginTop: 10 }}>
+              {licenseHint(selectedBeat.license)}
+              {previewMode === "metronome"
+                ? " · Preview via BPM metronome"
+                : previewMode === "file"
+                  ? " · Playing catalog preview"
+                  : ""}
+            </p>
+
+            <div className="audio-toggles">
+              <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
+                Beat-sync
+              </div>
+              <div className="chip-row">
+                {BEAT_SYNC_MODES.map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`chip${beatSync === mode ? " chip-active" : ""}`}
+                    onClick={() => setBeatSyncMode(mode)}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+              <p className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>
+                {describeBeatSync(beatSync, selectedBeat.bpm)}
+              </p>
+
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={ducking}
+                  onChange={(e) => {
+                    setDucking(e.target.checked);
+                    setStatus(
+                      e.target.checked
+                        ? "Ducking on · will lower music under VO on export"
+                        : "Ducking off",
+                    );
+                  }}
+                />
+                <span>
+                  Ducking
+                  <span className="muted" style={{ display: "block", fontSize: "0.75rem" }}>
+                    Stored in project JSON · applied at export
+                  </span>
+                </span>
+              </label>
+
+              <div className="muted" style={{ fontSize: "0.75rem", marginTop: 12 }}>
+                Track ref
+              </div>
+              <code style={{ fontSize: "0.72rem", wordBreak: "break-all" }}>
+                {selectedBeat.packRef}
+              </code>
+            </div>
+          </section>
         </aside>
       </div>
     </div>

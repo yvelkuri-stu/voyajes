@@ -1,4 +1,4 @@
-import type { Aspect, VoyajesProject } from "@voyajes/core";
+import type { Aspect, BeatSync, VoyajesProject } from "@voyajes/core";
 import { packRef, safeParseProject } from "@voyajes/core";
 
 const LS_DRAFT = "voyajes.draft.v1";
@@ -24,6 +24,8 @@ export type DraftState = {
   themeId: string;
   themeVersion: string;
   audioTrackRef: string;
+  beatSync: BeatSync;
+  ducking: boolean;
   clips: DraftClipMeta[];
   updatedAt: string;
 };
@@ -35,8 +37,32 @@ export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
     themeId,
     themeVersion: "1.0.0",
     audioTrackRef: "audio.ocean-drift-084@1.0.0",
+    beatSync: "medium",
+    ducking: true,
     clips: [],
     updatedAt: new Date().toISOString(),
+  };
+}
+
+function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] }): DraftState | null {
+  if (!parsed || typeof parsed.title !== "string" || !Array.isArray(parsed.clips)) {
+    return null;
+  }
+  const beatSync = (["off", "soft", "medium", "hard"] as BeatSync[]).includes(
+    parsed.beatSync as BeatSync,
+  )
+    ? (parsed.beatSync as BeatSync)
+    : "medium";
+  return {
+    title: parsed.title,
+    aspect: (parsed.aspect as Aspect) ?? "9:16",
+    themeId: parsed.themeId ?? "theme.ocean-pop",
+    themeVersion: parsed.themeVersion ?? "1.0.0",
+    audioTrackRef: parsed.audioTrackRef ?? "audio.ocean-drift-084@1.0.0",
+    beatSync,
+    ducking: parsed.ducking !== false,
+    clips: parsed.clips,
+    updatedAt: parsed.updatedAt ?? new Date().toISOString(),
   };
 }
 
@@ -44,11 +70,7 @@ export function loadDraft(): DraftState | null {
   try {
     const raw = localStorage.getItem(LS_DRAFT);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as DraftState;
-    if (!parsed || typeof parsed.title !== "string" || !Array.isArray(parsed.clips)) {
-      return null;
-    }
-    return parsed;
+    return normalizeDraft(JSON.parse(raw) as Partial<DraftState>);
   } catch {
     return null;
   }
@@ -78,8 +100,8 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
     })),
     audio: {
       track: draft.audioTrackRef,
-      beatSync: "medium",
-      ducking: true,
+      beatSync: draft.beatSync,
+      ducking: draft.ducking,
     },
     text: [
       {

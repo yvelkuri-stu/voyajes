@@ -590,3 +590,145 @@ button {
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* ——— Audio panel ——— */
+.audio-panel h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.beat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beat-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  padding: 4px;
+  transition: border-color var(--duration-soft) var(--motion-soft),
+    background var(--duration-soft) var(--motion-soft);
+}
+
+.beat-row.selected {
+  box-shadow: 0 0 0 1px rgba(124, 92, 255, 0.35);
+}
+
+.beat-select {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.beat-select:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.beat-name {
+  font-family: Sora, Inter, sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.beat-meta {
+  font-size: 0.72rem;
+}
+
+.beat-play {
+  align-self: center;
+  min-width: 52px;
+  padding: 6px 10px !important;
+  font-size: 0.8rem;
+}
+
+.beat-play.is-playing {
+  border-color: var(--accent-magenta);
+  color: var(--accent-magenta);
+  background: rgba(232, 74, 255, 0.12);
+}
+
+.license-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chip .license-badge {
+  margin-top: 0;
+  margin-left: 6px;
+}
+
+.license-personal {
+  background: rgba(61, 220, 151, 0.18);
+  color: var(--vj-mint);
+}
+
+.license-creator {
+  background: rgba(245, 197, 66, 0.2);
+  color: var(--vj-gold);
+}
+
+.license-commercial {
+  background: rgba(124, 92, 255, 0.22);
+  color: #c4b5ff;
+}
+
+.license-preview {
+  background: rgba(168, 176, 192, 0.2);
+  color: var(--text-secondary);
+}
+
+.audio-toggles {
+  margin-top: 14px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-active {
+  border-color: var(--accent-brand) !important;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 92, 255, 0.28),
+    rgba(61, 220, 151, 0.1)
+  ) !important;
+  color: var(--text-primary);
+}
+
+.toggle-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.toggle-row input {
+  margin-top: 3px;
+  accent-color: var(--accent-brand);
+  width: 16px;
+  height: 16px;
+}

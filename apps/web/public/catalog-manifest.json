@@ -4,8 +4,12 @@
   "etag": "W/\"vj-20261006-1\"",
   "generatedAt": "2026-10-06T20:53:00Z",
   "channels": {
-    "stable": { "minApp": "0.1.0" },
-    "beta": { "minApp": "0.1.0" }
+    "stable": {
+      "minApp": "0.1.0"
+    },
+    "beta": {
+      "minApp": "0.1.0"
+    }
   },
   "packs": [
     {
@@ -15,7 +19,12 @@
       "name": "Neon Night",
       "description": "Magenta glow, snappy cuts, city-after-dark energy.",
       "tier": "free",
-      "tags": ["neon", "night", "bold", "9:16"],
+      "tags": [
+        "neon",
+        "night",
+        "bold",
+        "9:16"
+      ],
       "palette": {
         "bg": "#0A0614",
         "surface": "#1A0F2E",
@@ -37,7 +46,12 @@
       "name": "Soft Film",
       "description": "Warm grain, float easing, memory-reel calm.",
       "tier": "free",
-      "tags": ["warm", "film", "memory", "9:16"],
+      "tags": [
+        "warm",
+        "film",
+        "memory",
+        "9:16"
+      ],
       "palette": {
         "bg": "#1A1410",
         "surface": "#2A221C",
@@ -57,9 +71,14 @@
       "kind": "theme",
       "version": "1.0.0",
       "name": "Ocean Pop",
-      "description": "Indigo → mint gradients, soft push transitions.",
+      "description": "Indigo \u2192 mint gradients, soft push transitions.",
       "tier": "free",
-      "tags": ["ocean", "travel", "fresh", "9:16"],
+      "tags": [
+        "ocean",
+        "travel",
+        "fresh",
+        "9:16"
+      ],
       "palette": {
         "bg": "#06141C",
         "surface": "#0E2430",
@@ -81,7 +100,12 @@
       "name": "Golden Hour",
       "description": "Coral sun, cinematic ease, light-leak cuts.",
       "tier": "free",
-      "tags": ["sunset", "travel", "cinematic", "16:9"],
+      "tags": [
+        "sunset",
+        "travel",
+        "cinematic",
+        "16:9"
+      ],
       "palette": {
         "bg": "#1C1008",
         "surface": "#2E1A0C",
@@ -102,12 +126,16 @@
       "version": "1.0.0",
       "name": "Warm Acoustic",
       "bpm": 92,
-      "mood": ["warm", "acoustic"],
+      "mood": [
+        "warm",
+        "acoustic"
+      ],
       "license": "personal",
       "tier": "free",
-      "previewUrl": "/catalog/previews/warm-acoustic.m4a",
+      "previewUrl": "/catalog/previews/warm-acoustic.mp3",
       "beatmapUrl": "/catalog/beats/warm-acoustic.json",
-      "sizeBytes": 4200000
+      "sizeBytes": 64617,
+      "previewNote": "demo-tone-stub"
     },
     {
       "id": "audio.neon-pulse-118",
@@ -115,12 +143,16 @@
       "version": "1.0.0",
       "name": "Neon Pulse",
       "bpm": 118,
-      "mood": ["neon", "energetic"],
+      "mood": [
+        "neon",
+        "energetic"
+      ],
       "license": "creator",
       "tier": "spark",
-      "previewUrl": "/catalog/previews/neon-pulse.m4a",
+      "previewUrl": "/catalog/previews/neon-pulse.mp3",
       "beatmapUrl": "/catalog/beats/neon-pulse.json",
-      "sizeBytes": 5100000
+      "sizeBytes": 64617,
+      "previewNote": "demo-tone-stub"
     },
     {
       "id": "audio.ocean-drift-084",
@@ -128,12 +160,16 @@
       "version": "1.0.0",
       "name": "Ocean Drift",
       "bpm": 84,
-      "mood": ["calm", "ocean"],
+      "mood": [
+        "calm",
+        "ocean"
+      ],
       "license": "personal",
       "tier": "free",
-      "previewUrl": "/catalog/previews/ocean-drift.m4a",
+      "previewUrl": "/catalog/previews/ocean-drift.mp3",
       "beatmapUrl": "/catalog/beats/ocean-drift.json",
-      "sizeBytes": 3900000
+      "sizeBytes": 64617,
+      "previewNote": "demo-tone-stub"
     },
     {
       "id": "motion.float-soft",
@@ -141,7 +177,10 @@
       "version": "1.0.0",
       "name": "Float Soft",
       "tier": "free",
-      "tags": ["float", "soft"]
+      "tags": [
+        "float",
+        "soft"
+      ]
     }
   ],
   "tombstones": []

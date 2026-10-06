@@ -34,8 +34,9 @@ voyajes/
 - **Play / Pause** auto-advances clips; timing uses theme `transitionDurationMs` + per-clip duration
 - Draft persists as Voyajes project JSON in `localStorage` (`voyajes.project.draft.json`) matching `@voyajes/core` schema; media blobs in IndexedDB
 - **Export JSON** downloads `voyajes.project.json` for the CLI
+- **Audio panel:** catalog beats (Warm Acoustic, Neon Pulse, Ocean Drift) with ▶ preview (MP3 stubs under `public/catalog/previews/`, WebAudio BPM metronome fallback), **license badges** (personal / creator), **beat-sync** (off/soft/medium/hard snaps image holds to beat/bar grid), **ducking** toggle persisted in project JSON for future export
 
-**Not implemented (intentional stubs):** real video encoding / FFmpeg / Remotion export, OAuth, cloud billing, HLS playback. UI **Export video** is disabled; `voyajes render` validates the project and prints a clear TODO.
+**Not implemented (intentional stubs):** real video encoding / FFmpeg / Remotion export, OAuth, cloud billing, HLS playback, true ducking mix. UI **Export video** is disabled; `voyajes render` validates the project and prints a clear TODO. Preview MP3s are short demo tone loops, not commercial stems.
 
 ## Design docs (parent workspace)
 

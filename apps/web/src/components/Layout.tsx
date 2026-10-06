@@ -6,7 +6,7 @@ const links = [
   { to: "/", label: "Home", end: true },
   { to: "/create", label: "Create" },
   { to: "/themes", label: "Themes" },
-  { to: "/v/demo", label: "Share" },
+  { to: "/share", label: "Share" },
 ];
 
 export function Layout() {

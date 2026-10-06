@@ -27,6 +27,10 @@ export type DraftState = {
   beatSync: BeatSync;
   ducking: boolean;
   clips: DraftClipMeta[];
+  /** Stable public share id (local stub until cloud). */
+  shareId?: string;
+  /** When true, share page asks for a password (local stub). */
+  sharePassword?: boolean;
   updatedAt: string;
 };
 
@@ -40,6 +44,8 @@ export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
     beatSync: "medium",
     ducking: true,
     clips: [],
+    shareId: undefined,
+    sharePassword: false,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -62,6 +68,8 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     beatSync,
     ducking: parsed.ducking !== false,
     clips: parsed.clips,
+    shareId: typeof parsed.shareId === "string" ? parsed.shareId : undefined,
+    sharePassword: parsed.sharePassword === true,
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -112,7 +120,9 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
     ],
     share: {
       title: draft.title.trim() || "Untitled voyage",
-      public: true,
+      public: draft.sharePassword !== true,
+      password: draft.sharePassword === true,
+      id: draft.shareId,
     },
   };
   return project;

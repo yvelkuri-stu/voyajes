@@ -8,7 +8,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { packRef, type Aspect, type BeatSync } from "@voyajes/core";
 import {
   getBeats,
@@ -38,6 +38,7 @@ import {
   type DraftClipMeta,
   type DraftState,
 } from "../lib/draftStore";
+import { ensureShareFromDraft } from "../lib/shareStore";
 
 type LiveClip = DraftClipMeta & { objectUrl: string };
 
@@ -60,6 +61,7 @@ function aspectCss(aspect: Aspect): string {
 
 export function Create() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const themes = getThemes();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -84,6 +86,8 @@ export function Create() {
   );
   const [beatSync, setBeatSync] = useState<BeatSync>("medium");
   const [ducking, setDucking] = useState(true);
+  const [shareId, setShareId] = useState<string | undefined>(undefined);
+  const [sharePassword, setSharePassword] = useState(false);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"file" | "metronome" | null>(
     null,
@@ -155,6 +159,8 @@ export function Create() {
       setAudioTrackRef(base.audioTrackRef);
       setBeatSync(base.beatSync);
       setDucking(base.ducking);
+      setShareId(base.shareId);
+      setSharePassword(base.sharePassword === true);
       const live: LiveClip[] = [];
       for (const meta of base.clips) {
         const blob = await getBlob(meta.id);
@@ -185,6 +191,8 @@ export function Create() {
       audioTrackRef,
       beatSync,
       ducking,
+      shareId,
+      sharePassword,
       clips: clips.map(
         ({ id, fileName, mimeType, kind, durationSec, mute }): DraftClipMeta => ({
           id,
@@ -208,6 +216,8 @@ export function Create() {
     audioTrackRef,
     beatSync,
     ducking,
+    shareId,
+    sharePassword,
     clips,
   ]);
 
@@ -475,6 +485,8 @@ export function Create() {
     setAudioTrackRef(d.audioTrackRef);
     setBeatSync(d.beatSync);
     setDucking(d.ducking);
+    setShareId(undefined);
+    setSharePassword(false);
     stopPreview();
     setClips([]);
     setActiveIndex(0);
@@ -491,6 +503,8 @@ export function Create() {
       audioTrackRef,
       beatSync,
       ducking,
+      shareId,
+      sharePassword,
       clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
         id,
         fileName,
@@ -514,6 +528,40 @@ export function Create() {
     setStatus(
       "Downloaded project JSON · video encode still stubbed (use CLI render later)",
     );
+  };
+
+  const openShare = () => {
+    const draft: DraftState = {
+      title,
+      aspect,
+      themeId,
+      themeVersion: theme.version,
+      audioTrackRef,
+      beatSync,
+      ducking,
+      shareId,
+      sharePassword,
+      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute }) => ({
+        id,
+        fileName,
+        mimeType,
+        kind,
+        durationSec,
+        mute,
+      })),
+      updatedAt: new Date().toISOString(),
+    };
+    const share = ensureShareFromDraft(draft, {
+      themeName: theme.name,
+      themeAccent: theme.palette.accent,
+      themeGradient: theme.gradient,
+      audioName: selectedBeat.name,
+      audioBpm: selectedBeat.bpm,
+    });
+    setShareId(share.id);
+    saveDraft({ ...draft, shareId: share.id });
+    setStatus(`Share ready · ${share.id}`);
+    navigate(`/v/${share.id}`);
   };
 
   const active = clips[activeIndex];
@@ -574,9 +622,9 @@ export function Create() {
           >
             Export video
           </button>
-          <Link to="/v/demo" className="btn btn-primary">
+          <button type="button" className="btn btn-primary" onClick={openShare}>
             Share
-          </Link>
+          </button>
         </div>
       </div>
 

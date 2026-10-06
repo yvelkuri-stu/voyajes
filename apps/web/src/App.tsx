@@ -3,7 +3,7 @@ import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Create } from "./pages/Create";
 import { Themes } from "./pages/Themes";
-import { Share } from "./pages/Share";
+import { Share, ShareBootstrap } from "./pages/Share";
 
 export default function App() {
   return (
@@ -12,6 +12,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="create" element={<Create />} />
         <Route path="themes" element={<Themes />} />
+        <Route path="share" element={<ShareBootstrap />} />
         <Route path="v/:id" element={<Share />} />
       </Route>
     </Routes>

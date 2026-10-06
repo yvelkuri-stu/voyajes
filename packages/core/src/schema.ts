@@ -43,6 +43,7 @@ export const ShareMetaSchema = z.object({
   title: z.string().optional(),
   public: z.boolean().default(true),
   password: z.boolean().optional(),
+  id: z.string().min(4).optional(),
 });
 
 /** Voyajes project file — shared by GUI and CLI */

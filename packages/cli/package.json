@@ -1,7 +1,7 @@
 {
   "name": "@voyajes/cli",
   "version": "0.1.0",
-  "description": "Voyajes CLI — init, catalog, sync, render stubs for humans and robots",
+  "description": "Voyajes CLI \u2014 init, catalog, sync, doctor, ffmpeg render for humans and robots",
   "type": "module",
   "bin": {
     "voyajes": "./dist/index.js"

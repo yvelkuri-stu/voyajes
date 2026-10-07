@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   textStyleLabel,
   textTransitionLabel,
@@ -26,6 +26,7 @@ type Tab = "themes" | "templates";
 
 export function Themes() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const { prefs } = usePrefs();
   const kidsMode = prefs.kidsMode;
   const tab: Tab = params.get("tab") === "templates" ? "templates" : "themes";
@@ -86,6 +87,21 @@ export function Themes() {
     setParams(p, { replace: true });
   };
 
+  /** One-tap: apply theme and leave the picker for Compose. */
+  const applyThemeNow = (t: ThemeCard) => {
+    setSelectedTheme(t);
+    navigate(`/create?theme=${encodeURIComponent(t.id)}`);
+  };
+
+  /** One-tap: apply template / invitation pack and leave for Compose. */
+  const applyTemplateNow = (t: TemplateCard) => {
+    setSelectedTemplate(t);
+    const path = isInvitationTemplate(t)
+      ? `/create?mode=invitation&template=${encodeURIComponent(t.id)}`
+      : `/create?template=${encodeURIComponent(t.id)}`;
+    navigate(path);
+  };
+
   const templateTheme = useMemo(
     () =>
       selectedTemplate
@@ -101,8 +117,8 @@ export function Themes() {
           Themes &amp; Templates
         </h1>
         <p className="muted" style={{ margin: 0 }}>
-          Themes are the look. Templates are a full pack — motion, clip transitions,
-          beat, text style, and text transitions — ready to apply in Compose.
+          Tap a card to apply and open Compose. Side panel keeps details if you want
+          to inspect first — Apply stays at the top.
           {kidsMode ? " Kids Mode shows a calmer subset." : ""}
         </p>
         <div className="chip-row" style={{ marginTop: 14 }}>
@@ -141,7 +157,12 @@ export function Themes() {
                   key={t.id}
                   type="button"
                   className="card"
-                  onClick={() => setSelectedTheme(t)}
+                  onClick={() => applyThemeNow(t)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setSelectedTheme(t);
+                  }}
+                  title="Tap to apply · right-click to inspect only"
                   style={{
                     padding: 0,
                     textAlign: "left",
@@ -173,6 +194,19 @@ export function Themes() {
             <h3>Token inspector</h3>
             {selectedTheme && (
               <>
+                <div className="themes-inspector-apply">
+                  <p className="themes-applied-hint">Ready · {selectedTheme.name}</p>
+                  <Link
+                    to={`/create?theme=${encodeURIComponent(selectedTheme.id)}`}
+                    className="btn btn-primary"
+                    style={{ width: "100%" }}
+                  >
+                    Apply theme
+                  </Link>
+                  <p className="muted" style={{ fontSize: "0.7rem", margin: "8px 0 0" }}>
+                    Or tap any card — applies and opens Compose.
+                  </p>
+                </div>
                 <p style={{ margin: "0 0 12px", fontWeight: 600 }}>{selectedTheme.name}</p>
                 <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                   {Object.entries(selectedTheme.palette)
@@ -239,13 +273,6 @@ export function Themes() {
                       </div>
                     )}
                 </dl>
-                <Link
-                  to={`/create?theme=${encodeURIComponent(selectedTheme.id)}`}
-                  className="btn btn-primary"
-                  style={{ width: "100%", marginTop: 20 }}
-                >
-                  Use theme in Compose
-                </Link>
               </>
             )}
           </aside>
@@ -260,7 +287,12 @@ export function Themes() {
                   key={t.id}
                   type="button"
                   className="card"
-                  onClick={() => setSelectedTemplate(t)}
+                  onClick={() => applyTemplateNow(t)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setSelectedTemplate(t);
+                  }}
+                  title="Tap to apply · right-click to inspect only"
                   style={{
                     padding: 0,
                     textAlign: "left",
@@ -321,6 +353,25 @@ export function Themes() {
             <h3>Template pack</h3>
             {selectedTemplate && (
               <>
+                <div className="themes-inspector-apply">
+                  <p className="themes-applied-hint">Ready · {selectedTemplate.name}</p>
+                  <Link
+                    to={
+                      isInvitationTemplate(selectedTemplate)
+                        ? `/create?mode=invitation&template=${encodeURIComponent(selectedTemplate.id)}`
+                        : `/create?template=${encodeURIComponent(selectedTemplate.id)}`
+                    }
+                    className="btn btn-primary"
+                    style={{ width: "100%" }}
+                  >
+                    {isInvitationTemplate(selectedTemplate)
+                      ? "Apply invitation"
+                      : "Apply template"}
+                  </Link>
+                  <p className="muted" style={{ fontSize: "0.7rem", margin: "8px 0 0" }}>
+                    Or tap any card — applies and opens Compose.
+                  </p>
+                </div>
                 <p style={{ margin: "0 0 8px", fontWeight: 600 }}>{selectedTemplate.name}</p>
                 <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
                   {selectedTemplate.description}
@@ -414,19 +465,6 @@ export function Themes() {
                     {textTransitionLabel(selectedTemplate.textTransition)}
                   </div>
                 </div>
-                <Link
-                  to={
-                    isInvitationTemplate(selectedTemplate)
-                      ? `/create?mode=invitation&template=${encodeURIComponent(selectedTemplate.id)}`
-                      : `/create?template=${encodeURIComponent(selectedTemplate.id)}`
-                  }
-                  className="btn btn-primary"
-                  style={{ width: "100%", marginTop: 20 }}
-                >
-                  {isInvitationTemplate(selectedTemplate)
-                    ? "Apply invitation template"
-                    : "Apply full template"}
-                </Link>
               </>
             )}
           </aside>

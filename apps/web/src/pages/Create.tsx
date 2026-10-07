@@ -1221,6 +1221,7 @@ export function Create() {
           : `Template · ${tpl.name} · ${themeName} · ${beatName} · ${tx}`,
       );
       ai.pulse("template", 1200);
+      setMiniSheet(null);
       void seedTemplateLibraryMedia(tpl);
     },
     [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl],
@@ -2885,46 +2886,30 @@ export function Create() {
           <div className="side-section side-section-theme">
           <h3>Theme panel</h3>
           <p className="muted side-blurb" style={{ fontSize: "0.85rem", marginTop: 0 }}>
-            Live grade, title color, Ken Burns, and transition timing.
+            Tap a theme or template to apply and close — tweak details anytime.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {themes.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setThemeId(t.id);
-                  setTransitionOverride(null);
-                }}
-                className="chip"
-                style={{
-                  justifyContent: "flex-start",
-                  width: "100%",
-                  borderColor:
-                    themeId === t.id ? t.palette.accent : "var(--border-subtle)",
-                  background:
-                    themeId === t.id
-                      ? `linear-gradient(90deg, ${t.palette.accent}22, transparent)`
-                      : undefined,
-                }}
-              >
-                <span className="swatch" style={{ background: t.palette.accent }} />
-                {t.name}
-                <span className="muted" style={{ marginLeft: "auto", fontSize: "0.75rem" }}>
-                  {t.motion}
-                </span>
-              </button>
-            ))}
+          <div
+            className="themes-applied-hint"
+            style={{
+              marginBottom: 10,
+              padding: "8px 10px",
+              borderRadius: 10,
+              border: "1px solid var(--border-subtle)",
+              background: "rgba(61, 220, 151, 0.08)",
+            }}
+          >
+            Now · {theme.name}
+            {templateId
+              ? ` · ${getTemplateById(templateId)?.name ?? "template"}`
+              : ""}
           </div>
-
-
           {projectMode === "invitation" && (
-            <div className="invite-details-panel" style={{ marginTop: 14, marginBottom: 8 }}>
+            <div className="invite-details-panel" style={{ marginTop: 0, marginBottom: 12 }}>
               <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 8, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                 Invitation details
               </div>
               <p className="muted" style={{ fontSize: "0.75rem", margin: "0 0 10px" }}>
-                Shown on guest play &amp; export cards — not burned as a title on every frame.
+                Shown on guest play &amp; export cards — tweak after applying a pack.
               </p>
               <div className="invite-details-grid">
                 <label>
@@ -2987,9 +2972,44 @@ export function Create() {
               </div>
             </div>
           )}
+          <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6, fontWeight: 700 }}>
+            Themes — tap to apply
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {themes.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setThemeId(t.id);
+                  setTransitionOverride(null);
+                  setMiniSheet(null);
+                  setStatus(`Theme · ${t.name}`);
+                }}
+                className="chip"
+                style={{
+                  justifyContent: "flex-start",
+                  width: "100%",
+                  borderColor:
+                    themeId === t.id ? t.palette.accent : "var(--border-subtle)",
+                  background:
+                    themeId === t.id
+                      ? `linear-gradient(90deg, ${t.palette.accent}22, transparent)`
+                      : undefined,
+                }}
+              >
+                <span className="swatch" style={{ background: t.palette.accent }} />
+                {t.name}
+                <span className="muted" style={{ marginLeft: "auto", fontSize: "0.75rem" }}>
+                  {t.motion}
+                </span>
+              </button>
+            ))}
+          </div>
 
-          <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6 }}>
-            {projectMode === "invitation" ? "Invitation templates" : "Voyage templates"}
+
+          <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6, fontWeight: 700 }}>
+            {projectMode === "invitation" ? "Invitation templates — tap to apply" : "Voyage templates — tap to apply"}
           </div>
           {projectMode === "invitation" ? (
             <div className="invite-tpl-gallery">

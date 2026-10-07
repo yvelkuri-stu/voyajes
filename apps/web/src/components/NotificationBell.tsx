@@ -131,7 +131,7 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="notif-item muted" style={{ fontSize: "0.85rem" }}>
-              You&apos;re on the latest catalog.
+              You&apos;re on the latest catalog · App {APP_VERSION}
             </div>
           )}
           {toasts.map((t) => (

@@ -2511,8 +2511,11 @@ input.share-link-box:focus {
     padding: 8px 10px;
   }
 
-  /* Hide prefs toggles on narrow phones — Kids/Motion still available on tablet+ */
+  /* Narrow phones: keep Minimal/Classic visible; hide Kids/Motion */
   .prefs-nav {
+    display: inline-flex;
+  }
+  .prefs-nav .prefs-toggle:not(.prefs-toggle-mode) {
     display: none;
   }
 
@@ -3678,6 +3681,25 @@ html.large-targets .btn {
 }
 
 
+
+/* Themes page: apply CTA at top of inspector */
+.themes-inspector-apply {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.themes-applied-hint {
+  font-size: 0.75rem;
+  margin: 0 0 8px;
+  color: var(--vj-mint);
+  font-weight: 600;
+}
+
 /* ——— Minimalist mode ——— */
 html.minimalist-mode .tagline-bar {
   font-size: 0.72rem;
@@ -3701,16 +3723,50 @@ html.minimalist-mode .topnav-links .nav-link {
   padding: 6px 10px;
 }
 
-html.minimalist-mode .prefs-toggle-mini.is-on {
+html.minimalist-mode .prefs-toggle-mode.is-minimal {
   border-color: var(--vj-indigo);
-  background: rgba(124, 92, 255, 0.18);
-  box-shadow: 0 0 0 1px rgba(124, 92, 255, 0.28);
+  background: rgba(124, 92, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(124, 92, 255, 0.32);
 }
 
-.prefs-toggle-mini {
+.prefs-toggle-mode {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  min-height: 36px;
+  color: var(--text-secondary);
+}
+
+.prefs-toggle-mode.is-classic {
+  border-color: var(--vj-mint);
+  background: rgba(61, 220, 151, 0.14);
+  box-shadow: 0 0 0 1px rgba(61, 220, 151, 0.28);
+  color: var(--text-primary);
+}
+
+.prefs-toggle-mode .mode-seg {
+  opacity: 0.45;
+  font-weight: 600;
+}
+
+.prefs-toggle-mode .mode-seg.is-active {
+  opacity: 1;
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.prefs-toggle-mode .mode-seg-divider {
+  opacity: 0.35;
+  font-weight: 500;
+  user-select: none;
+}
+
+.prefs-toggle-label {
+  font-weight: 700;
 }
 
 .compose-root.is-minimalist .compose-header {

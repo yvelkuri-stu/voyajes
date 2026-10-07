@@ -88,14 +88,28 @@ export function Layout() {
           <div className="prefs-nav" role="group" aria-label="Display prefs">
             <button
               type="button"
-              className={`prefs-toggle prefs-toggle-mini${prefs.minimalistMode ? " is-on" : ""}`}
+              className={`prefs-toggle prefs-toggle-mode${prefs.minimalistMode ? " is-minimal" : " is-classic"}`}
               aria-pressed={prefs.minimalistMode}
-              title="Minimalist mode — content first, icon chrome, quieter panels (default for new sessions)"
+              aria-label={
+                prefs.minimalistMode
+                  ? "Mode: Minimal. Switch to Classic"
+                  : "Mode: Classic. Switch to Minimal"
+              }
+              title={
+                prefs.minimalistMode
+                  ? "Minimal mode on — tap for Classic (full panels)"
+                  : "Classic mode on — tap for Minimal (content first)"
+              }
               onClick={() => setMinimalistMode(!prefs.minimalistMode)}
             >
-              <span aria-hidden>◇</span>
-              <span className="prefs-toggle-label">
-                {prefs.minimalistMode ? "Minimal" : "Classic"}
+              <span className={`mode-seg${prefs.minimalistMode ? " is-active" : ""}`}>
+                Minimal
+              </span>
+              <span className="mode-seg-divider" aria-hidden>
+                /
+              </span>
+              <span className={`mode-seg${!prefs.minimalistMode ? " is-active" : ""}`}>
+                Classic
               </span>
             </button>
             <button
@@ -156,8 +170,8 @@ export function Layout() {
           {prefs.kidsMode
             ? "Kids Mode · bigger taps · safer templates · sticker stamps · guardian comments"
             : prefs.minimalistMode
-              ? `${brand.tagline} · Minimalist on — tap ◇ Classic anytime · library + icon chrome`
-              : `${brand.tagline} · Try Minimalist (◇) for a calmer Create`}
+              ? `${brand.tagline} · Mode: Minimal — tap header for Classic`
+              : `${brand.tagline} · Mode: Classic — tap header for Minimal`}
         </p>
       )}
       <main className={`main${hideChrome ? " main-immersive" : ""}`}>

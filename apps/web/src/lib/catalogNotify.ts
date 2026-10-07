@@ -10,8 +10,10 @@ import { assetUrl } from "./assetUrl";
 const LS_LAST_SEEN = "voyajes.catalog.lastSeenVersion";
 const LS_NOTIF_PROMPTED = "voyajes.notif.softPrompted";
 const LS_APP_VERSION_SEEN = "voyajes.app.lastSeenVersion";
+const LS_APP_TOASTED = "voyajes.app.toastedVersion";
+const LS_CATALOG_TOASTED = "voyajes.catalog.toastedVersion";
 
-export const APP_VERSION = "0.2.2";
+export const APP_VERSION = "0.2.3";
 export const BUNDLED_CATALOG_VERSION = String(
   (manifest as { catalogVersion?: string }).catalogVersion ?? "0",
 );
@@ -216,6 +218,43 @@ export function fireBrowserNotification(title: string, body: string) {
   }
 }
 
+function getToastedAppVersion(): string | null {
+  try {
+    return localStorage.getItem(LS_APP_TOASTED);
+  } catch {
+    return null;
+  }
+}
+
+function markAppToasted(version: string) {
+  try {
+    localStorage.setItem(LS_APP_TOASTED, version);
+  } catch {
+    /* ignore */
+  }
+}
+
+function getToastedCatalogVersion(): string | null {
+  try {
+    return localStorage.getItem(LS_CATALOG_TOASTED);
+  } catch {
+    return null;
+  }
+}
+
+function markCatalogToasted(version: string) {
+  try {
+    localStorage.setItem(LS_CATALOG_TOASTED, version);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Quiet update check: toast / browser alert at most once per version.
+ * Subsequent refreshes keep a quiet bell badge for catalog until Mark seen;
+ * app updates auto-acknowledge after the first notice so refresh is not noisy.
+ */
 export async function checkForUpdates(opts?: {
   softPrompt?: boolean;
   signal?: AbortSignal;
@@ -226,30 +265,41 @@ export async function checkForUpdates(opts?: {
   if (lastApp === null) markAppSeen(APP_VERSION);
 
   if (catalog.isNew) {
-    const title = "New Voyajes templates";
-    const body = `Catalog ${catalog.catalogVersion} · ${catalog.templateCount} templates available`;
-    pushToast({ title, body, kind: "catalog" });
-    if (opts?.softPrompt && !softPromptedAlready() && notificationPermission() === "default") {
-      // Soft in-app prompt only — actual Notification.requestPermission is user-gesture driven
-      pushToast({
-        title: "Get notified?",
-        body: "Enable browser notifications when new templates land. You can allow from the bell.",
-        kind: "info",
-      });
-      markSoftPrompted();
-    } else {
-      fireBrowserNotification(title, body);
+    const alreadyToasted = getToastedCatalogVersion() === catalog.catalogVersion;
+    if (!alreadyToasted) {
+      markCatalogToasted(catalog.catalogVersion);
+      const title = "New Voyajes templates";
+      const body = `Catalog ${catalog.catalogVersion} · ${catalog.templateCount} templates available`;
+      pushToast({ title, body, kind: "catalog" });
+      if (opts?.softPrompt && !softPromptedAlready() && notificationPermission() === "default") {
+        // Soft in-app prompt only — actual Notification.requestPermission is user-gesture driven
+        pushToast({
+          title: "Get notified?",
+          body: "Enable browser notifications when new templates land. You can allow from the bell.",
+          kind: "info",
+        });
+        markSoftPrompted();
+      } else if (notificationPermission() === "granted") {
+        fireBrowserNotification(title, body);
+      }
     }
+    // Quiet badge via catalog.isNew until user Marks seen — no re-toast on refresh
   }
 
   if (appUpdate) {
-    pushToast({
-      title: "Voyajes updated",
-      body: `App ${APP_VERSION} is ready · refresh if anything looks stale`,
-      kind: "app",
-    });
-    fireBrowserNotification("Voyajes updated", `Now on ${APP_VERSION}`);
+    const alreadyToasted = getToastedAppVersion() === APP_VERSION;
+    if (!alreadyToasted) {
+      markAppToasted(APP_VERSION);
+      pushToast({
+        title: "Voyajes updated",
+        body: `Now on ${APP_VERSION} · one-time notice`,
+        kind: "app",
+      });
+      // No browser Notification for app bumps — in-app toast is enough
+    }
+    // Acknowledge so every refresh does not keep "update available"
+    markAppSeen(APP_VERSION);
   }
 
-  return { catalog, appUpdate };
+  return { catalog, appUpdate: false };
 }

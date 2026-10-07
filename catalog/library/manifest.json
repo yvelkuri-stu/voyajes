@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "libraryVersion": "2026.10.07.1",
+  "generatedAt": "2026-10-07T14:10:00Z",
+  "license": "Voyajes original abstract art & synthetic audio — free to use in Voyajes projects (see LIBRARY.md)",
+  "items": [
+    {
+      "id": "lib.photo.neon-corridor",
+      "title": "Neon Corridor",
+      "kind": "photo",
+      "tags": ["neon", "futuristic", "magenta", "grid"],
+      "url": "library/photos/neon-corridor.webp",
+      "thumbnail": "library/photos/neon-corridor-thumb.webp"
+    },
+    {
+      "id": "lib.photo.aurora-drift",
+      "title": "Aurora Drift",
+      "kind": "photo",
+      "tags": ["aurora", "ocean", "calm", "waves"],
+      "url": "library/photos/aurora-drift.webp",
+      "thumbnail": "library/photos/aurora-drift-thumb.webp"
+    },
+    {
+      "id": "lib.photo.magenta-orbit",
+      "title": "Magenta Orbit",
+      "kind": "photo",
+      "tags": ["orbs", "bold", "party", "magenta"],
+      "url": "library/photos/magenta-orbit.webp",
+      "thumbnail": "library/photos/magenta-orbit-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cyber-horizon",
+      "title": "Cyber Horizon",
+      "kind": "photo",
+      "tags": ["city", "skyline", "indigo", "night"],
+      "url": "library/photos/cyber-horizon.webp",
+      "thumbnail": "library/photos/cyber-horizon-thumb.webp"
+    },
+    {
+      "id": "lib.photo.prism-cascade",
+      "title": "Prism Cascade",
+      "kind": "photo",
+      "tags": ["prism", "colorful", "abstract"],
+      "url": "library/photos/prism-cascade.webp",
+      "thumbnail": "library/photos/prism-cascade-thumb.webp"
+    },
+    {
+      "id": "lib.photo.void-bloom",
+      "title": "Void Bloom",
+      "kind": "photo",
+      "tags": ["bloom", "space", "rings", "futuristic"],
+      "url": "library/photos/void-bloom.webp",
+      "thumbnail": "library/photos/void-bloom-thumb.webp"
+    },
+    {
+      "id": "lib.photo.mint-nebula",
+      "title": "Mint Nebula",
+      "kind": "photo",
+      "tags": ["mint", "nebula", "soft", "travel"],
+      "url": "library/photos/mint-nebula.webp",
+      "thumbnail": "library/photos/mint-nebula-thumb.webp"
+    },
+    {
+      "id": "lib.photo.solar-flare",
+      "title": "Solar Flare",
+      "kind": "photo",
+      "tags": ["warm", "gold", "flare", "sunset"],
+      "url": "library/photos/solar-flare.webp",
+      "thumbnail": "library/photos/solar-flare-thumb.webp"
+    },
+    {
+      "id": "lib.photo.glass-city",
+      "title": "Glass City",
+      "kind": "photo",
+      "tags": ["city", "night", "neon", "metro"],
+      "url": "library/photos/glass-city.webp",
+      "thumbnail": "library/photos/glass-city-thumb.webp"
+    },
+    {
+      "id": "lib.photo.plasma-ring",
+      "title": "Plasma Ring",
+      "kind": "photo",
+      "tags": ["ring", "plasma", "futuristic", "bold"],
+      "url": "library/photos/plasma-ring.webp",
+      "thumbnail": "library/photos/plasma-ring-thumb.webp"
+    },
+    {
+      "id": "lib.photo.chromatic-mesh",
+      "title": "Chromatic Mesh",
+      "kind": "photo",
+      "tags": ["mesh", "abstract", "colorful"],
+      "url": "library/photos/chromatic-mesh.webp",
+      "thumbnail": "library/photos/chromatic-mesh-thumb.webp"
+    },
+    {
+      "id": "lib.photo.starfield-pop",
+      "title": "Starfield Pop",
+      "kind": "photo",
+      "tags": ["stars", "space", "celebration", "party"],
+      "url": "library/photos/starfield-pop.webp",
+      "thumbnail": "library/photos/starfield-pop-thumb.webp"
+    },
+    {
+      "id": "lib.audio.soft-pad",
+      "title": "Soft Pad",
+      "kind": "audio",
+      "tags": ["ambient", "pad", "calm", "loop"],
+      "url": "library/audio/soft-pad.mp3",
+      "durationSec": 6
+    },
+    {
+      "id": "lib.audio.deep-hum",
+      "title": "Deep Hum",
+      "kind": "audio",
+      "tags": ["bass", "hum", "night", "loop"],
+      "url": "library/audio/deep-hum.mp3",
+      "durationSec": 5
+    },
+    {
+      "id": "lib.audio.crystal-shimmer",
+      "title": "Crystal Shimmer",
+      "kind": "audio",
+      "tags": ["bright", "shimmer", "party", "loop"],
+      "url": "library/audio/crystal-shimmer.mp3",
+      "durationSec": 4
+    },
+    {
+      "id": "lib.audio.pink-drift",
+      "title": "Pink Drift",
+      "kind": "audio",
+      "tags": ["noise", "drift", "soft", "loop"],
+      "url": "library/audio/pink-drift.mp3",
+      "durationSec": 5
+    },
+    {
+      "id": "lib.audio.aurora-wash",
+      "title": "Aurora Wash",
+      "kind": "audio",
+      "tags": ["aurora", "wash", "ocean", "loop"],
+      "url": "library/audio/aurora-wash.mp3",
+      "durationSec": 5
+    },
+    {
+      "id": "lib.audio.pulse-glow",
+      "title": "Pulse Glow",
+      "kind": "audio",
+      "tags": ["pulse", "glow", "neon", "loop"],
+      "url": "library/audio/pulse-glow.mp3",
+      "durationSec": 4.5
+    }
+  ]
+}

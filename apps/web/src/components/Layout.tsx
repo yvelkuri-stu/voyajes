@@ -17,7 +17,7 @@ const links = [
 
 export function Layout() {
   const { session, signOut } = useAuthSession();
-  const { prefs, setKidsMode, setReduceMotion } = usePrefs();
+  const { prefs, setKidsMode, setReduceMotion, setMinimalistMode } = usePrefs();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [inviteGuest, setInviteGuest] = useState(false);
@@ -46,8 +46,8 @@ export function Layout() {
   return (
     <div
       className={`app-shell${prefs.kidsMode ? " is-kids" : ""}${prefs.reduceMotion ? " is-still" : ""}${
-        hideChrome ? " is-invite-guest" : ""
-      }`}
+        prefs.minimalistMode ? " is-minimalist" : ""
+      }${hideChrome ? " is-invite-guest" : ""}`}
     >
       {!hideChrome && <div className="ai-ambient" aria-hidden="true" />}
       {!hideChrome && (
@@ -86,6 +86,18 @@ export function Layout() {
             Free · 2 GB
           </span>
           <div className="prefs-nav" role="group" aria-label="Display prefs">
+            <button
+              type="button"
+              className={`prefs-toggle prefs-toggle-mini${prefs.minimalistMode ? " is-on" : ""}`}
+              aria-pressed={prefs.minimalistMode}
+              title="Minimalist mode — content first, icon chrome, quieter panels (default for new sessions)"
+              onClick={() => setMinimalistMode(!prefs.minimalistMode)}
+            >
+              <span aria-hidden>◇</span>
+              <span className="prefs-toggle-label">
+                {prefs.minimalistMode ? "Minimal" : "Classic"}
+              </span>
+            </button>
             <button
               type="button"
               className={`prefs-toggle${prefs.kidsMode ? " is-on" : ""}`}
@@ -143,7 +155,9 @@ export function Layout() {
         >
           {prefs.kidsMode
             ? "Kids Mode · bigger taps · safer templates · sticker stamps · guardian comments"
-            : `${brand.tagline} · templates · social export presets · browser WebM`}
+            : prefs.minimalistMode
+              ? `${brand.tagline} · Minimalist on — tap ◇ Classic anytime · library + icon chrome`
+              : `${brand.tagline} · Try Minimalist (◇) for a calmer Create`}
         </p>
       )}
       <main className={`main${hideChrome ? " main-immersive" : ""}`}>

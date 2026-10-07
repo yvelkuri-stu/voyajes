@@ -17,7 +17,9 @@ export function usePrefs() {
     root.classList.toggle("kids-mode", prefs.kidsMode);
     root.classList.toggle("large-targets", prefs.largeTargets || prefs.kidsMode);
     root.classList.toggle("reduce-motion", prefs.reduceMotion);
+    root.classList.toggle("minimalist-mode", prefs.minimalistMode);
     root.dataset.kids = prefs.kidsMode ? "1" : "0";
+    root.dataset.minimalist = prefs.minimalistMode ? "1" : "0";
   }, [prefs]);
 
   const setKidsMode = useCallback((on: boolean) => {
@@ -32,10 +34,15 @@ export function usePrefs() {
     setPrefs(updatePrefs({ largeTargets: on }));
   }, []);
 
+  const setMinimalistMode = useCallback((on: boolean) => {
+    setPrefs(updatePrefs({ minimalistMode: on }));
+  }, []);
+
   return {
     prefs,
     setKidsMode,
     setReduceMotion,
     setLargeTargets,
+    setMinimalistMode,
   };
 }

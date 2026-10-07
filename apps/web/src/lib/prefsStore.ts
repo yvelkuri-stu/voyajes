@@ -9,6 +9,11 @@ export type Prefs = {
   reduceMotion: boolean;
   /** Larger tap targets (on with Kids Mode; can be toggled alone) */
   largeTargets: boolean;
+  /**
+   * Content-first UI: icon chrome, secondary settings in sheets.
+   * Default ON for new sessions (no prefs key yet).
+   */
+  minimalistMode: boolean;
 };
 
 export type MemoryMoment = {
@@ -28,6 +33,7 @@ const DEFAULTS: Prefs = {
   kidsMode: false,
   reduceMotion: false,
   largeTargets: false,
+  minimalistMode: true,
 };
 
 export function loadPrefs(): Prefs {
@@ -39,6 +45,11 @@ export function loadPrefs(): Prefs {
       kidsMode: Boolean(parsed.kidsMode),
       reduceMotion: Boolean(parsed.reduceMotion),
       largeTargets: Boolean(parsed.largeTargets) || Boolean(parsed.kidsMode),
+      // Existing users without the key keep classic; new installs get DEFAULTS.minimalistMode
+      minimalistMode:
+        typeof parsed.minimalistMode === "boolean"
+          ? parsed.minimalistMode
+          : false,
     };
   } catch {
     return { ...DEFAULTS };

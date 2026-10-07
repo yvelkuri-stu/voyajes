@@ -117,6 +117,13 @@ import {
   peekStartFresh,
   type FreshMode,
 } from "../lib/startFresh";
+import { MediaImporter } from "../components/MediaImporter";
+import {
+  defaultLibraryForTheme,
+  getLibraryItem,
+  libraryAssetUrl,
+  type LibraryItem,
+} from "../data/library";
 
 type LiveClip = DraftClipMeta & { objectUrl: string };
 
@@ -293,6 +300,11 @@ export function Create() {
   const [coachHint, setCoachHint] = useState<string | null>(null);
   const [memoryJar, setMemoryJar] = useState<MemoryMoment[]>(() => loadMemoryJar());
   const [memoryNote, setMemoryNote] = useState("");
+  const [mediaImporterOpen, setMediaImporterOpen] = useState(false);
+  const [mediaImporterMode, setMediaImporterMode] = useState<"clips" | "audio" | "all">("all");
+  /** Minimalist secondary sheets: theme | audio | text | null */
+  const [miniSheet, setMiniSheet] = useState<"theme" | "audio" | "text" | null>(null);
+  const clipsRef = useRef<LiveClip[]>([]);
 
   const theme: ThemeCard = useMemo(
     () => getThemeById(themeId) ?? themes[0],
@@ -325,6 +337,9 @@ export function Create() {
     () => clips.reduce((sum, c) => sum + c.durationSec, 0),
     [clips],
   );
+
+  clipsRef.current = clips;
+  const minimalist = prefs.minimalistMode;
 
   const trackElapsed = useMemo(() => {
     let before = 0;
@@ -942,6 +957,76 @@ export function Create() {
     [trackUrl],
   );
 
+  const importAnyFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const list = Array.from(files);
+      const media: File[] = [];
+      const audio: File[] = [];
+      for (const f of list) {
+        if (clipKindFromMime(f.type, f.name)) media.push(f);
+        else if (audioKindFromMime(f.type, f.name)) audio.push(f);
+      }
+      if (media.length) await importFiles(media);
+      if (audio.length) await importAudioFiles(audio);
+      if (!media.length && !audio.length) {
+        setStatus("No supported photo, video, or audio in that selection");
+      }
+    },
+    [importFiles, importAudioFiles],
+  );
+
+  const insertLibraryItem = useCallback(
+    async (item: LibraryItem) => {
+      const url = libraryAssetUrl(item.url);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const ext = item.url.split(".").pop() || (item.kind === "audio" ? "mp3" : "webp");
+        const mime =
+          blob.type ||
+          (item.kind === "audio"
+            ? "audio/mpeg"
+            : item.kind === "video"
+              ? "video/mp4"
+              : "image/webp");
+        const file = new File([blob], `${item.title.replace(/\s+/g, "-").toLowerCase()}.${ext}`, {
+          type: mime,
+        });
+        if (item.kind === "audio") {
+          await importAudioFiles([file]);
+          setStatus(`Library audio · ${item.title}`);
+        } else {
+          await importFiles([file]);
+          setStatus(`Library ${item.kind} · ${item.title}`);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "fetch failed";
+        setStatus(`Library insert failed · ${item.title} · ${msg}`);
+      }
+    },
+    [importAudioFiles, importFiles],
+  );
+
+  const seedTemplateLibraryMedia = useCallback(
+    async (tpl: TemplateCard) => {
+      if (clipsRef.current.length > 0) return;
+      const pick = defaultLibraryForTheme({
+        themeId: tpl.themeId,
+        tags: tpl.tags,
+        name: tpl.name,
+      });
+      for (const id of pick.photoIds) {
+        const item = getLibraryItem(id);
+        if (item) await insertLibraryItem(item);
+      }
+      const audio = getLibraryItem(pick.audioId);
+      if (audio) await insertLibraryItem(audio);
+      setStatus(`Template · ${tpl.name} · library media applied`);
+    },
+    [insertLibraryItem],
+  );
+
   const importAudioUrl = useCallback(() => {
     const url = soundUrlInput.trim();
     if (!url) return;
@@ -1124,8 +1209,9 @@ export function Create() {
           : `Template · ${tpl.name} · ${themeName} · ${beatName} · ${tx}`,
       );
       ai.pulse("template", 1200);
+      void seedTemplateLibraryMedia(tpl);
     },
-    [ai, applyBeatSnap, showTransitionFlash, syncModeInUrl],
+    [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl],
   );
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
@@ -1713,7 +1799,7 @@ export function Create() {
       : "";
 
   return (
-    <div>
+    <div className={`compose-root${minimalist ? " is-minimalist" : ""}`}>
       <div className="compose-header">
         <div className="compose-header-main">
           <h1 className="display compose-title">
@@ -1808,6 +1894,84 @@ export function Create() {
           </button>
         </div>
       </div>
+
+      {minimalist && (
+        <div className="mini-icon-rail" role="toolbar" aria-label="Compose tools">
+          <button
+            type="button"
+            className="icon-tool"
+            title="Add media — photos, video, Voyajes library"
+            aria-label="Add media"
+            onClick={() => {
+              setMediaImporterMode("all");
+              setMediaImporterOpen(true);
+            }}
+          >
+            <span aria-hidden>＋</span>
+            <span className="icon-tool-tip">Media</span>
+          </button>
+          <button
+            type="button"
+            className={`icon-tool${miniSheet === "theme" ? " is-on" : ""}`}
+            title="Theme, templates, transitions"
+            aria-label="Theme & templates"
+            onClick={() => setMiniSheet((s) => (s === "theme" ? null : "theme"))}
+          >
+            <span aria-hidden>🎨</span>
+            <span className="icon-tool-tip">Theme</span>
+          </button>
+          <button
+            type="button"
+            className={`icon-tool${miniSheet === "audio" ? " is-on" : ""}`}
+            title="Beats & soundtrack"
+            aria-label="Audio"
+            onClick={() => setMiniSheet((s) => (s === "audio" ? null : "audio"))}
+          >
+            <span aria-hidden>♪</span>
+            <span className="icon-tool-tip">Audio</span>
+          </button>
+          <button
+            type="button"
+            className={`icon-tool${miniSheet === "text" ? " is-on" : ""}`}
+            title="Text & captions"
+            aria-label="Text"
+            onClick={() => setMiniSheet((s) => (s === "text" ? null : "text"))}
+          >
+            <span aria-hidden>𝐓</span>
+            <span className="icon-tool-tip">Text</span>
+          </button>
+          <button
+            type="button"
+            className="icon-tool"
+            title="Export presets & WebM"
+            aria-label="Export"
+            onClick={() => setExportPanelOpen((o) => !o)}
+          >
+            <span aria-hidden>⇩</span>
+            <span className="icon-tool-tip">Export</span>
+          </button>
+          <button
+            type="button"
+            className="icon-tool"
+            title="Share voyage / invite"
+            aria-label="Share"
+            onClick={openShare}
+          >
+            <span aria-hidden>↗</span>
+            <span className="icon-tool-tip">Share</span>
+          </button>
+          <button
+            type="button"
+            className="icon-tool"
+            title="Story coach"
+            aria-label="Story coach"
+            onClick={runStoryCoach}
+          >
+            <span aria-hidden>✨</span>
+            <span className="icon-tool-tip">Coach</span>
+          </button>
+        </div>
+      )}
 
       <div
         className={`human-help-bar${ai.kind === "coach" || ai.kind === "template" ? " is-ai-assist" : ""}`}
@@ -2099,7 +2263,7 @@ export function Create() {
       <div className="compose-layout">
         <div>
           <div
-            className={`dropzone${dragOver ? " drag-over" : ""}`}
+            className={`dropzone${dragOver ? " drag-over" : ""}${minimalist ? " dropzone-mini" : ""}`}
             onDragEnter={(e) => {
               e.preventDefault();
               setDragOver(true);
@@ -2125,12 +2289,30 @@ export function Create() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => fileInputRef.current?.click()}
+              title="Open media picker — device or Voyajes library"
+              aria-label="Add media"
+              onClick={() => {
+                setMediaImporterMode("all");
+                setMediaImporterOpen(true);
+              }}
             >
-              Import photos &amp; video
+              {minimalist ? "＋ Add media" : "Add media"}
             </button>
+            {!minimalist && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "8px 14px" }}
+                onClick={() => fileInputRef.current?.click()}
+                title="Quick pick from device"
+              >
+                From device
+              </button>
+            )}
             <span className="muted" style={{ fontSize: "0.85rem" }}>
-              or drag &amp; drop here · JPG, PNG, WebP, MP4, WebM
+              {minimalist
+                ? "Device · Voyajes library · drop files here"
+                : "Device or Voyajes library · or drag & drop · JPG, PNG, WebP, MP4, WebM"}
             </span>
           </div>
 
@@ -2438,9 +2620,39 @@ export function Create() {
           </div>
         </div>
 
-        <aside className="panel">
+        <aside
+          className={`panel compose-side-panel${
+            minimalist
+              ? miniSheet
+                ? ` mini-sheet-open mini-sheet-${miniSheet}`
+                : " mini-sheet-collapsed"
+              : ""
+          }`}
+        >
+          {minimalist && miniSheet && (
+            <div className="mini-sheet-bar">
+              <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 700 }}>
+                {miniSheet === "theme"
+                  ? "Theme & templates"
+                  : miniSheet === "audio"
+                    ? "Audio"
+                    : "Text & captions"}
+              </span>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "4px 10px", fontSize: "0.75rem" }}
+                onClick={() => setMiniSheet(null)}
+                aria-label="Close panel"
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="side-section side-section-theme">
           <h3>Theme panel</h3>
-          <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
+          <p className="muted side-blurb" style={{ fontSize: "0.85rem", marginTop: 0 }}>
             Live grade, title color, Ken Burns, and transition timing.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2775,7 +2987,9 @@ export function Create() {
             }}
           />
 
-          <section aria-label="Text & captions">
+          </div>
+
+          <section className="side-section side-section-text" aria-label="Text & captions">
             <h3 style={{ marginBottom: 4 }}>Text &amp; captions</h3>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
               Title style, entrance, and caption preset (original Voyajes packs). Emoji welcome in title &amp; caption.
@@ -3064,8 +3278,23 @@ export function Create() {
             }}
           />
 
-          <section ref={audioPanelRef} className="audio-panel" aria-label="Audio">
-            <h3 style={{ marginBottom: 4 }}>Audio panel</h3>
+          <section ref={audioPanelRef} className="audio-panel side-section side-section-audio" aria-label="Audio">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <h3 style={{ marginBottom: 4, marginTop: 0 }}>Audio panel</h3>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "4px 10px", fontSize: "0.75rem" }}
+                title="Add soundtrack from device or library"
+                aria-label="Add soundtrack"
+                onClick={() => {
+                  setMediaImporterMode("audio");
+                  setMediaImporterOpen(true);
+                }}
+              >
+                ＋ Sound
+              </button>
+            </div>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
               Catalog beats or import your own · mix or replace · beat-sync · ducking.
             </p>
@@ -3302,6 +3531,50 @@ export function Create() {
           </section>
         </aside>
       </div>
+
+      <MediaImporter
+        open={mediaImporterOpen}
+        onClose={() => setMediaImporterOpen(false)}
+        mode={mediaImporterMode}
+        onImportFiles={(files) => void importAnyFiles(files)}
+        onInsertLibrary={(item) => void insertLibraryItem(item)}
+        onImportAudioUrl={
+          mediaImporterMode === "clips"
+            ? undefined
+            : (url) => {
+                setSoundUrlInput(url);
+                // defer to existing URL importer after state flush
+                window.setTimeout(() => {
+                  const parsed = (() => {
+                    try {
+                      return new URL(url);
+                    } catch {
+                      return null;
+                    }
+                  })();
+                  if (!parsed || (parsed.protocol !== "http:" && parsed.protocol !== "https:")) {
+                    setStatus("Invalid audio URL");
+                    return;
+                  }
+                  const id = newSoundId();
+                  const name =
+                    decodeURIComponent(parsed.pathname.split("/").pop() || "Remote sound")
+                      .replace(/\.[^.]+$/, "") || "Remote sound";
+                  const sound = {
+                    id,
+                    name,
+                    source: "url" as const,
+                    url,
+                    mimeType: "audio/mpeg",
+                  };
+                  setCustomSounds((prev) => [...prev, sound]);
+                  setCustomSoundUrls((prev) => ({ ...prev, [id]: url }));
+                  setAudioTrackRef(`custom:${id}`);
+                  setStatus(`Added remote sound · ${name}`);
+                }, 0);
+              }
+        }
+      />
     </div>
   );
 }

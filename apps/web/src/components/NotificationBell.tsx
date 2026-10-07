@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAiActivity } from "../hooks/useAiActivity";
 import { Link } from "react-router-dom";
 import {
@@ -23,8 +23,27 @@ export function NotificationBell() {
   const [toasts, setToasts] = useState<InAppToast[]>(() => getToasts());
   const [catalog, setCatalog] = useState<CatalogUpdateInfo | null>(null);
   const [perm, setPerm] = useState(notificationPermission());
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => subscribeToasts(() => setToasts(getToasts())), []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onPointer = (e: MouseEvent | PointerEvent) => {
+      const el = rootRef.current;
+      if (el && !el.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    // Capture so we close when tapping outside (incl. backdrop siblings)
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -58,7 +77,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="notif-root">
+    <div className="notif-root" ref={rootRef}>
       <button
         type="button"
         className={`notif-bell${ai.kind === "catalog" ? " is-pulsing" : ""}`}
@@ -82,6 +101,13 @@ export function NotificationBell() {
       )}
 
       {open && (
+        <>
+        <button
+          type="button"
+          className="notif-backdrop"
+          aria-label="Close notifications"
+          onClick={() => setOpen(false)}
+        />
         <div className="notif-panel" role="dialog" aria-label="Notifications">
           <div className="notif-panel-head">
             <strong>Updates</strong>
@@ -133,6 +159,7 @@ export function NotificationBell() {
             </p>
           )}
         </div>
+        </>
       )}
     </div>
   );

@@ -293,6 +293,21 @@ button {
   }
 }
 
+@media (max-width: 768px) {
+  .share-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .invite-details-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .prefs-toggle {
+    padding: 8px 10px;
+    min-height: 40px;
+  }
+}
+
 .preview-stage {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
@@ -1236,6 +1251,7 @@ button {
   position: relative;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 .notif-bell {
   position: relative;
@@ -1243,6 +1259,8 @@ button {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
   padding: 6px 10px;
+  min-width: 40px;
+  min-height: 40px;
   color: var(--text-primary);
   font-size: 0.95rem;
   line-height: 1;
@@ -1262,11 +1280,15 @@ button {
   display: grid;
   place-items: center;
 }
+.notif-backdrop {
+  display: none;
+}
 .notif-toast {
   position: fixed;
   right: 16px;
-  bottom: 16px;
-  z-index: 80;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  left: auto;
+  z-index: 120;
   max-width: min(360px, calc(100vw - 32px));
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
@@ -1299,18 +1321,24 @@ button {
   top: calc(100% + 8px);
   right: 0;
   width: min(320px, calc(100vw - 24px));
+  max-height: min(70vh, 480px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 12px;
-  z-index: 60;
+  z-index: 70;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
 }
 .notif-panel-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
+  gap: 8px;
 }
 .notif-item {
   display: grid;
@@ -1318,6 +1346,43 @@ button {
   padding: 10px 0;
   border-top: 1px solid var(--border-subtle);
   font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .notif-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(5, 6, 10, 0.55);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .notif-panel {
+    position: fixed;
+    top: max(12px, calc(env(safe-area-inset-top, 0px) + 56px));
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: min(70vh, calc(100dvh - 80px - env(safe-area-inset-bottom, 0px)));
+    z-index: 100;
+    border-radius: 14px;
+  }
+  .notif-toast {
+    left: 12px;
+    right: 12px;
+    bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+    max-width: none;
+    width: auto;
+  }
+  .notif-bell {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* --- Text style previews --- */
@@ -2192,6 +2257,17 @@ button {
   .topnav {
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
+    align-items: center;
+  }
+
+  .topnav > a:first-child {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 140px);
+  }
+
+  .vj-logo {
+    gap: 8px !important;
   }
 
   .topnav-links {
@@ -2209,8 +2285,11 @@ button {
 
   .nav-link {
     white-space: nowrap;
-    padding: 6px 10px;
+    padding: 8px 12px;
     font-size: 0.82rem;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
   }
 
   .usage-chip {
@@ -2225,6 +2304,7 @@ button {
   .filmstrip {
     gap: 6px;
     padding-bottom: 4px;
+    justify-content: flex-start;
   }
 
   .panel {
@@ -2242,6 +2322,16 @@ button {
   .install-hint {
     left: 8px;
     right: 8px;
+  }
+
+  .share-header-row,
+  .share-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .share-link-box {
+    word-break: break-all;
   }
 }
 
@@ -2271,6 +2361,19 @@ button {
   .btn.btn-ghost {
     padding: 8px 10px;
   }
+
+  /* Hide prefs toggles on narrow phones — Kids/Motion still available on tablet+ */
+  .prefs-nav {
+    display: none;
+  }
+
+  .topnav > a:first-child {
+    max-width: calc(100% - 120px);
+  }
+
+  .vj-wordmark {
+    font-size: 0.85em;
+  }
 }
 
 
@@ -2295,6 +2398,11 @@ button {
 .app-shell > *:not(.ai-ambient) {
   position: relative;
   z-index: 1;
+}
+
+/* Keep chrome above page content so fixed/absolute panels (notif) aren't covered */
+.app-shell > .topnav {
+  z-index: 50;
 }
 
 @keyframes ai-breathe {
@@ -2719,6 +2827,8 @@ html.large-targets .btn {
 @media (max-width: 720px) {
   .prefs-nav {
     order: 5;
+    flex: 1 1 auto;
+    justify-content: flex-end;
   }
 
   .otp-demo-code-lg {
@@ -2728,7 +2838,7 @@ html.large-targets .btn {
 }
 
 
-/* —— Brand wordmark (intentional J — subtle weight + soft accent) —— */
+/* —— Brand wordmark (intentional J — bold + thin underline, no color accent) —— */
 .vj-wordmark {
   display: inline-flex;
   align-items: baseline;
@@ -2741,19 +2851,19 @@ html.large-targets .btn {
   position: relative;
   display: inline-block;
   font-weight: 800;
-  /* Soft single accent (indigo), not a rainbow fill */
-  color: #A994F5;
+  color: inherit;
   padding: 0 0.02em;
   transform: translateY(0.02em);
 }
 .vj-wordmark-j-spark {
   position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: -0.1em;
-  height: 0.07em;
+  left: 8%;
+  right: 8%;
+  bottom: -0.08em;
+  height: 1.5px;
   border-radius: 999px;
-  background: rgba(124, 92, 255, 0.45);
+  background: currentColor;
+  opacity: 0.35;
   box-shadow: none;
   pointer-events: none;
 }
@@ -2819,6 +2929,73 @@ html.large-targets .btn {
   text-align: center;
   margin-top: 16px;
 }
+/* —— Compose header / mobile polish —— */
+.compose-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.compose-header-main {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.compose-title {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.compose-mode-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.compose-mode-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.title-emoji-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  width: 100%;
+}
+.compose-title-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: Sora, sans-serif;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.compose-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.compose-meta-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
 .mode-toggle {
   display: inline-flex;
   padding: 3px;
@@ -3087,5 +3264,101 @@ html.large-targets .btn {
 @media (max-width: 520px) {
   .invite-details-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* —— Compose responsive (after base compose rules) —— */
+@media (max-width: 720px) {
+  .compose-title {
+    font-size: 1.15rem;
+  }
+
+  .compose-header {
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+
+  .compose-actions {
+    width: 100%;
+  }
+
+  .compose-actions .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+
+  .compose-mode-row {
+    margin-top: 10px;
+  }
+
+  .mode-toggle button {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+
+  .human-help-bar {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .human-help-bar .btn {
+    min-height: 44px;
+    padding: 10px 12px;
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .human-help-bar .memory-note-input {
+    flex: 1 1 100%;
+    min-height: 44px;
+  }
+
+  .compose-meta-chips {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .compose-meta-chips .chip {
+    min-height: 40px;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  .title-emoji-row {
+    max-width: none;
+  }
+
+  .invite-details-grid input {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .dropzone {
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .dropzone .btn {
+    min-height: 44px;
+  }
+
+  .tagline-bar {
+    font-size: 0.72rem !important;
+    padding: 6px 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .compose-title {
+    font-size: 1.05rem;
+  }
+
+  .compose-header .muted {
+    font-size: 0.8rem;
+  }
+
+  .human-help-bar .btn {
+    flex: 1 1 100%;
+    justify-content: flex-start;
   }
 }

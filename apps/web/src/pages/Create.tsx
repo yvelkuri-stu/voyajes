@@ -1354,18 +1354,9 @@ export function Create() {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-          flexWrap: "wrap",
-          gap: 12,
-        }}
-      >
-        <div>
-          <h1 className="display" style={{ margin: 0, fontSize: "1.35rem" }}>
+      <div className="compose-header">
+        <div className="compose-header-main">
+          <h1 className="display compose-title">
             {projectMode === "invitation" ? "Compose · Invitation" : "Compose · Auto"}
           </h1>
           <p className="muted" style={{ margin: "4px 0 0", fontSize: "0.85rem" }}>
@@ -1373,8 +1364,8 @@ export function Create() {
               ? "Design an animated invite — guests open the link for fullscreen playback (same theme, transitions, audio & text)."
               : "Every voyage, in motion — drop photos or clips, pick a theme, play."}
           </p>
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <div className="compose-mode-row">
+            <span className="muted compose-mode-label">
               Mode
             </span>
           <div className="mode-toggle" role="group" aria-label="Project mode">
@@ -1407,29 +1398,18 @@ export function Create() {
             </button>
           </div>
           </div>
-          <div className="title-emoji-row" style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, maxWidth: 360 }}>
+          <div className="title-emoji-row">
             <input
+              className="compose-title-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               aria-label="Project title"
               placeholder={projectMode === "invitation" ? "You're invited! 🎉" : "Untitled voyage ✨"}
-              style={{
-                background: "transparent",
-                border: "none",
-                borderBottom: "1px solid var(--border-subtle)",
-                color: "var(--text-primary)",
-                fontSize: "1rem",
-                fontFamily: "Sora, sans-serif",
-                fontWeight: 600,
-                flex: 1,
-                minWidth: 0,
-                padding: "4px 0",
-              }}
             />
             <EmojiPicker onSelect={(emoji) => setTitle((t) => t + emoji)} />
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="compose-actions">
           <button type="button" className="btn btn-ghost" onClick={downloadProjectJson}>
             Export JSON
           </button>
@@ -1560,15 +1540,7 @@ export function Create() {
         </details>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          flexWrap: "wrap",
-          marginBottom: 16,
-          alignItems: "center",
-        }}
-      >
+      <div className="compose-meta-chips">
         <Link to="/themes" className="chip" title="Browse themes">
           <span className="swatch" style={{ background: theme.palette.accent }} />
           Theme {theme.name}

@@ -72,3 +72,11 @@ export function getVoyageTemplates(): TemplateCard[] {
   return getTemplates().filter((t) => !isInvitationTemplate(t));
 }
 
+export function invitationEventEmoji(t: TemplateCard): string {
+  if (t.eventEmoji) return t.eventEmoji;
+  const fromOverlay = t.defaultOverlays?.find((o) =>
+    /\p{Extended_Pictographic}/u.test(o.value),
+  );
+  if (fromOverlay) return fromOverlay.value.trim().split(/\s+/)[0] ?? "✉️";
+  return "✉️";
+}

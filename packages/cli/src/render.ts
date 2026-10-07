@@ -251,6 +251,22 @@ function xfadeName(kind: TransitionKind): string {
       return "slidedown"; // incoming slides up from below (xfade naming)
     case "flash":
       return "fadewhite";
+    case "slide-left":
+      return "slideright"; // incoming from left
+    case "slide-right":
+      return "slideleft";
+    case "circle-wipe":
+      return "circlecrop";
+    case "blur-fade":
+      return "fade";
+    case "spin":
+      return "radial";
+    case "glitch":
+      return "pixelize";
+    case "heart-wipe":
+      return "horzopen";
+    case "soft-bloom":
+      return "fadewhite";
     case "cut":
     default:
       return "fade";

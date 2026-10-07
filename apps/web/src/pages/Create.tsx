@@ -40,6 +40,7 @@ import {
   getThemes,
   getThemeById,
   getTransitionKinds,
+  transitionIcon,
   transitionLabel,
   type ThemeCard,
 } from "../data/themes";
@@ -260,6 +261,12 @@ export function Create() {
   const [dragOver, setDragOver] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [transitionKey, setTransitionKey] = useState(0);
+  /** On-screen HUD when a transition is picked (compose chrome only). */
+  const [transitionFlash, setTransitionFlash] = useState<{
+    kind: TransitionKind;
+    token: number;
+  } | null>(null);
+  const transitionFlashTimer = useRef<number | null>(null);
   const [schemaOk, setSchemaOk] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(
@@ -710,6 +717,41 @@ export function Create() {
     [previewingId, stopPreview],
   );
 
+  const showTransitionFlash = useCallback((kind: TransitionKind) => {
+    if (transitionFlashTimer.current != null) {
+      window.clearTimeout(transitionFlashTimer.current);
+    }
+    const token = Date.now();
+    setTransitionFlash({ kind, token });
+    transitionFlashTimer.current = window.setTimeout(() => {
+      setTransitionFlash((cur) => (cur?.token === token ? null : cur));
+      transitionFlashTimer.current = null;
+    }, 1800);
+  }, []);
+
+  const pickGlobalTransition = useCallback(
+    (kind: TransitionKind) => {
+      setTransitionOverride(kind === theme.transition ? null : kind);
+      setTransitionKey((k) => k + 1);
+      showTransitionFlash(kind);
+      setStatus(
+        kind === theme.transition
+          ? `Transition · ${transitionIcon(kind)} ${transitionLabel(kind)} (theme default)`
+          : `Transition · ${transitionIcon(kind)} ${transitionLabel(kind)}`,
+      );
+    },
+    [showTransitionFlash, theme.transition],
+  );
+
+  const pickRandomTransition = useCallback(() => {
+    const pool = TRANSITIONS.filter((k) => k !== "cut");
+    const kind = pool[Math.floor(Math.random() * pool.length)] ?? "dissolve";
+    setTransitionOverride(kind === theme.transition ? null : kind);
+    setTransitionKey((k) => k + 1);
+    showTransitionFlash(kind);
+    setStatus(`Random transition · ${transitionIcon(kind)} ${transitionLabel(kind)}`);
+  }, [showTransitionFlash, theme.transition]);
+
   const setGapTransition = useCallback(
     (afterIndex: number, kind: TransitionKind | null) => {
       setClips((prev) =>
@@ -724,13 +766,15 @@ export function Create() {
       );
       setGapMenuIndex(null);
       setTransitionKey((k) => k + 1);
+      const resolved = kind ?? globalTransition;
+      showTransitionFlash(resolved);
       setStatus(
         kind
-          ? `Gap after clip ${afterIndex + 1} · ${transitionLabel(kind)}`
-          : `Gap after clip ${afterIndex + 1} · theme default`,
+          ? `Gap after clip ${afterIndex + 1} · ${transitionIcon(kind)} ${transitionLabel(kind)}`
+          : `Gap after clip ${afterIndex + 1} · theme default (${transitionLabel(globalTransition)})`,
       );
     },
-    [],
+    [globalTransition, showTransitionFlash],
   );
 
   const gapTransitionKind = useCallback(
@@ -911,6 +955,7 @@ export function Create() {
     (tpl: TemplateCard) => {
       const th = getThemeById(tpl.themeId);
       const beat = getBeatById(tpl.beatId);
+      const invite = isInvitationTemplate(tpl);
       setTemplateId(tpl.id);
       if (th) setThemeId(th.id);
       setTransitionOverride(tpl.transition);
@@ -925,41 +970,59 @@ export function Create() {
       setTextTransition(tpl.textTransition);
       if (tpl.aspect) setAspect(tpl.aspect);
       if (tpl.durationTargetSec) setDurationTargetSec(tpl.durationTargetSec);
-      if (isInvitationTemplate(tpl)) {
+
+      if (invite) {
         setProjectMode("invitation");
         syncModeInUrl("invitation");
         const nextTitle = tpl.defaultTitle || "You're invited!";
-        setTitle((prev) =>
-          !prev || prev === "Untitled voyage" || prev === "You're invited!"
-            ? nextTitle
-            : prev,
-        );
+        setTitle(nextTitle);
         const et = tpl.eventType || "";
-        if (et) setEventType((prev) => prev || et);
-        if (et) setEventName((prev) => prev || et);
-        const starters = tpl.defaultOverlays ?? [];
+        if (et) {
+          setEventType(et);
+          setEventName((prev) => (prev.trim() ? prev : et));
+        }
+        const starters = [...(tpl.defaultOverlays ?? [])];
+        if (tpl.defaultEmojis?.length && !starters.some((s) => /\p{Extended_Pictographic}/u.test(s.value))) {
+          starters.push({
+            value: tpl.defaultEmojis.join(" "),
+            role: "caption",
+          });
+        }
         if (starters.length) {
           setTextOverlays((prev) => {
-            if (prev.some((o) => o.value.trim())) return prev;
-            return starters.map((s, i) => ({
-              ...defaultTextOverlay(i * 0.2, 3.5 + i, s.value),
+            const keepUser = prev.filter(
+              (o) =>
+                o.value.trim() &&
+                !["You're invited", "You're invited!", "Join us", "New text"].includes(
+                  o.value.trim(),
+                ),
+            );
+            if (keepUser.length >= 2) return keepUser;
+            const built = starters.map((s, i) => ({
+              ...defaultTextOverlay(i * 0.25, 3.8 + i * 0.4, s.value),
               role: s.role ?? (i === 0 ? "title" : "caption"),
               style: tpl.textStyle,
               animationIn: tpl.textTransition,
-              position: i === 0 ? "center" : "bottom",
+              position: (i === 0 ? "center" : "bottom") as TextPosition,
             }));
+            return keepUser.length ? [...built, ...keepUser] : built;
           });
         }
       }
+
       setTransitionKey((k) => k + 1);
+      showTransitionFlash(tpl.transition);
+      const themeName = th?.name ?? tpl.themeId;
+      const beatName = beat?.name ?? tpl.beatId;
+      const tx = `${transitionIcon(tpl.transition)} ${transitionLabel(tpl.transition)}`;
       setStatus(
-        isInvitationTemplate(tpl)
-          ? `Invitation · ${tpl.name} applied`
-          : `Template · ${tpl.name} applied`,
+        invite
+          ? `Applied ${tpl.name} · ${themeName} · ${beatName} · ${tx}`
+          : `Template · ${tpl.name} · ${themeName} · ${beatName} · ${tx}`,
       );
       ai.pulse("template", 1200);
     },
-    [applyBeatSnap, ai, syncModeInUrl],
+    [ai, applyBeatSnap, showTransitionFlash, syncModeInUrl],
   );
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
@@ -1766,15 +1829,27 @@ export function Create() {
             </span>
           </div>
 
+          <div className="preview-stage-wrap" style={{ marginTop: 16, width: "100%" }}>
           <div
             className="preview-stage"
             style={{
               aspectRatio: aspectCss(aspect),
               width: aspect === "9:16" || aspect === "4:5" ? "min(100%, 360px)" : "100%",
               maxHeight: aspect === "9:16" || aspect === "4:5" ? "70vh" : 420,
-              marginTop: 16,
+              background:
+                !active && projectMode === "invitation"
+                  ? theme.gradient
+                  : undefined,
             }}
           >
+            {transitionFlash && (
+              <div className="tx-hud-badge" key={transitionFlash.token} aria-live="polite">
+                <span className="tx-hud-icon" aria-hidden>
+                  {transitionIcon(transitionFlash.kind)}
+                </span>
+                <span>{transitionLabel(transitionFlash.kind)}</span>
+              </div>
+            )}
             {active ? (
               <div
                 key={`${active.id}-${transitionKey}`}
@@ -1803,6 +1878,21 @@ export function Create() {
                   />
                 )}
               </div>
+            ) : projectMode === "invitation" ? (
+              <>
+                <div className="invite-stage-watermark" aria-hidden>
+                  {(templateId && getTemplateById(templateId)?.eventEmoji) ||
+                    (eventType ? "✉️" : "🎉")}
+                </div>
+                <div className="invite-stage-empty-copy">
+                  <div className="display" style={{ fontSize: "1.1rem", opacity: 0.95 }}>
+                    {title.trim() || "You're invited!"}
+                  </div>
+                  <div className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
+                    {theme.name} backdrop · import photos to fill the invite
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="preview-empty">
                 <div className="display" style={{ fontSize: "1.1rem", opacity: 0.9 }}>
@@ -1819,7 +1909,7 @@ export function Create() {
               style={{
                 background: theme.gradient,
                 mixBlendMode: "soft-light",
-                opacity: active ? 0.45 : 0.55,
+                opacity: active ? 0.45 : projectMode === "invitation" ? 0.35 : 0.55,
               }}
             />
             <div
@@ -1851,6 +1941,7 @@ export function Create() {
                 />
               </div>
             )}
+          </div>
           </div>
 
           <div className="preview-meta-strip" aria-label="Preview details">
@@ -1993,6 +2084,9 @@ export function Create() {
                             }
                             onClick={() => setGapTransition(i, kind)}
                           >
+                            <span className="chip-tx-icon" aria-hidden>
+                              {transitionIcon(kind)}
+                            </span>
                             {transitionLabel(kind)}
                           </button>
                         ))}
@@ -2076,7 +2170,10 @@ export function Create() {
                   <input
                     value={hostName}
                     onChange={(e) => setHostName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={
+                      (templateId && getTemplateById(templateId)?.hostPlaceholder) ||
+                      "Your name"
+                    }
                     aria-label="Host name"
                   />
                 </label>
@@ -2130,38 +2227,98 @@ export function Create() {
           )}
 
           <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6 }}>
-            {projectMode === "invitation" ? "Invitation templates" : "Templates"}
+            {projectMode === "invitation" ? "Invitation templates" : "Voyage templates"}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflow: "auto" }}>
-            {templates.slice(0, projectMode === "invitation" ? 16 : 14).map((tpl) => (
-              <button
-                key={tpl.id}
-                type="button"
-                className={`chip${templateId === tpl.id && ai.kind === "template" ? " is-pulsing" : ""}`}
-                style={{
-                  justifyContent: "flex-start",
-                  width: "100%",
-                  borderColor:
-                    templateId === tpl.id
-                      ? tpl.theme?.palette.accent ?? "var(--accent-brand)"
-                      : "var(--border-subtle)",
-                }}
-                onClick={() => applyTemplate(tpl)}
-                title={tpl.description}
-              >
-                {tpl.name}
-                <span className="muted" style={{ marginLeft: "auto", fontSize: "0.7rem" }}>
-                  {tpl.motion}
-                </span>
-              </button>
-            ))}
-          </div>
+          {projectMode === "invitation" ? (
+            <div className="invite-tpl-gallery">
+              {templates.map((tpl) => {
+                const selected = templateId === tpl.id;
+                const emoji =
+                  tpl.eventEmoji ||
+                  (tpl.defaultOverlays?.find((o) =>
+                    /\p{Extended_Pictographic}/u.test(o.value),
+                  )?.value.split(/\s+/)[0]) ||
+                  "✉️";
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className={`invite-tpl-card${selected ? " is-selected" : ""}${
+                      selected && ai.kind === "template" ? " is-pulsing" : ""
+                    }`}
+                    style={
+                      selected
+                        ? {
+                            ["--accent-brand" as string]:
+                              tpl.theme?.palette.accent ?? "var(--accent-brand)",
+                          }
+                        : undefined
+                    }
+                    onClick={() => applyTemplate(tpl)}
+                    title={tpl.description}
+                  >
+                    <div className="invite-tpl-card-top">
+                      <span className="invite-tpl-emoji" aria-hidden>
+                        {emoji}
+                      </span>
+                      <span className="invite-tpl-name">{tpl.name}</span>
+                      <span className="muted" style={{ marginLeft: "auto", fontSize: "0.68rem" }}>
+                        {tpl.aspect ?? "9:16"}
+                      </span>
+                    </div>
+                    <div className="invite-tpl-vibe">
+                      {tpl.vibe || tpl.description || tpl.eventType || "Invitation pack"}
+                    </div>
+                    <div className="invite-tpl-audio">
+                      ♪ {tpl.beat?.name ?? tpl.beatId}
+                    </div>
+                    <div className="invite-tpl-includes">
+                      Includes: {transitionIcon(tpl.transition)}{" "}
+                      {transitionLabel(tpl.transition)} · {tpl.textStyle.replace(/-/g, " ")} ·{" "}
+                      {tpl.motion}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflow: "auto" }}>
+              {templates.slice(0, 14).map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  className={`chip${templateId === tpl.id && ai.kind === "template" ? " is-pulsing" : ""}`}
+                  style={{
+                    justifyContent: "flex-start",
+                    width: "100%",
+                    borderColor:
+                      templateId === tpl.id
+                        ? tpl.theme?.palette.accent ?? "var(--accent-brand)"
+                        : "var(--border-subtle)",
+                  }}
+                  onClick={() => applyTemplate(tpl)}
+                  title={tpl.description}
+                >
+                  {tpl.name}
+                  <span className="muted" style={{ marginLeft: "auto", fontSize: "0.7rem" }}>
+                    {tpl.motion}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           <Link
-            to="/themes?tab=templates"
+            to={
+              projectMode === "invitation"
+                ? "/themes?tab=templates&filter=invitation"
+                : "/themes?tab=templates"
+            }
             className="muted"
             style={{ fontSize: "0.75rem", display: "inline-block", marginTop: 6 }}
           >
-            Browse all templates →
+            {projectMode === "invitation"
+              ? "Browse invitation templates →"
+              : "Browse all templates →"}
           </Link>
 
           <hr
@@ -2183,6 +2340,15 @@ export function Create() {
               Used for gaps without a per-clip pick on the filmstrip.
             </p>
             <div className="chip-row" style={{ marginTop: 6, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="chip"
+                title="Pick a random transition (excludes cut)"
+                onClick={pickRandomTransition}
+              >
+                <span className="chip-tx-icon" aria-hidden>🎲</span>
+                Random
+              </button>
               {TRANSITIONS.filter((k) => k !== "cut").map((kind) => {
                 const selected = globalTransition === kind;
                 const isDefault = theme.transition === kind;
@@ -2196,18 +2362,11 @@ export function Create() {
                         ? `${transitionLabel(kind)} (theme default)`
                         : transitionLabel(kind)
                     }
-                    onClick={() => {
-                      setTransitionOverride(
-                        kind === theme.transition ? null : kind,
-                      );
-                      setTransitionKey((k) => k + 1);
-                      setStatus(
-                        kind === theme.transition
-                          ? `Transition · ${transitionLabel(kind)} (theme default)`
-                          : `Transition · ${transitionLabel(kind)}`,
-                      );
-                    }}
+                    onClick={() => pickGlobalTransition(kind)}
                   >
+                    <span className="chip-tx-icon" aria-hidden>
+                      {transitionIcon(kind)}
+                    </span>
                     {transitionLabel(kind)}
                     {isDefault ? " ★" : ""}
                   </button>

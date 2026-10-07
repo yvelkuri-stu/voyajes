@@ -1,5 +1,9 @@
 import type { ThemePack, TransitionKind } from "@voyajes/core";
-import { TRANSITION_KINDS } from "@voyajes/core";
+import {
+  TRANSITION_KINDS,
+  transitionIcon as coreTransitionIcon,
+  transitionLabel as coreTransitionLabel,
+} from "@voyajes/core";
 import manifest from "../../public/catalog-manifest.json";
 
 export type ThemeCard = ThemePack & { gradient: string };
@@ -46,26 +50,9 @@ export function getTransitionKinds(): TransitionKind[] {
 }
 
 export function transitionLabel(kind: TransitionKind): string {
-  switch (kind) {
-    case "cut":
-      return "Cut";
-    case "dissolve":
-      return "Dissolve";
-    case "push":
-      return "Push";
-    case "whip":
-      return "Whip";
-    case "light-leak":
-      return "Light leak";
-    case "fade-black":
-      return "Fade black";
-    case "zoom-through":
-      return "Zoom through";
-    case "slide-up":
-      return "Slide up";
-    case "flash":
-      return "Flash";
-    default:
-      return kind;
-  }
+  return coreTransitionLabel(kind);
+}
+
+export function transitionIcon(kind: TransitionKind): string {
+  return coreTransitionIcon(kind);
 }

@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "catalogVersion": "2026.10.06.5",
-  "etag": "W/\"vj-20261006-5\"",
-  "generatedAt": "2026-10-07T00:41:42Z",
+  "catalogVersion": "2026.10.06.6",
+  "etag": "W/\"vj-20261006-6\"",
+  "generatedAt": "2026-10-07T04:21:33Z",
   "channels": {
     "stable": {
       "minApp": "0.1.0"
@@ -79,7 +79,7 @@
       "kind": "theme",
       "version": "1.0.0",
       "name": "Ocean Pop",
-      "description": "Indigo → mint gradients, soft push transitions.",
+      "description": "Indigo \u2192 mint gradients, soft push transitions.",
       "tier": "free",
       "tags": [
         "ocean",
@@ -704,9 +704,9 @@
     {
       "id": "template.birthday-blast",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Birthday Blast",
-      "description": "Invitation pack: party strobe flashes, hyperfun beat, bold-impact RSVP titles.",
+      "description": "Birthday invitation: party-strobe flashes, Hyperfun beat, bold-impact titles \u2014 ready to RSVP.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -727,26 +727,34 @@
       "aspect": "9:16",
       "durationTargetSec": 15,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-birthday-blast-v1",
+      "hash": "sha256:tpl-birthday-blast-v2",
       "eventType": "Birthday",
-      "defaultTitle": "Birthday bash 🎉",
+      "defaultTitle": "Birthday bash \ud83c\udf89",
       "defaultOverlays": [
         {
           "value": "You're invited!",
           "role": "title"
         },
         {
-          "value": "🎉 🎂",
+          "value": "\ud83c\udf89 \ud83c\udf82",
           "role": "caption"
         }
-      ]
+      ],
+      "vibe": "Neon party strobes \u00b7 hard beat \u00b7 bold RSVP titles",
+      "eventEmoji": "\ud83c\udf89",
+      "defaultEmojis": [
+        "\ud83c\udf89",
+        "\ud83c\udf82",
+        "\ud83e\udd73"
+      ],
+      "hostPlaceholder": "Host name"
     },
     {
       "id": "template.garden-soiree",
       "kind": "template",
-      "version": "1.0.0",
-      "name": "Garden Soirée",
-      "description": "Invitation pack: rose float, slide-up reveals, warm acoustic — bridal & garden parties.",
+      "version": "1.1.0",
+      "name": "Garden Soir\u00e9e",
+      "description": "Garden / bridal invitation: rose-quartz float, slide-up reveals, Warm Acoustic \u2014 outdoor soir\u00e9es.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -757,8 +765,8 @@
       "mode": "invitation",
       "themeId": "theme.rose-quartz",
       "motion": "float",
-      "transition": "slide-up",
-      "transitionDurationMs": 440,
+      "transition": "soft-bloom",
+      "transitionDurationMs": 520,
       "photoMotion": "gentle",
       "beatId": "audio.warm-acoustic-092",
       "beatSync": "soft",
@@ -767,26 +775,33 @@
       "aspect": "4:5",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-garden-soiree-v1",
+      "hash": "sha256:tpl-garden-soiree-v2",
       "eventType": "Wedding",
-      "defaultTitle": "Garden soirée 🌸",
+      "defaultTitle": "Garden soir\u00e9e \ud83c\udf38",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "🌸 Join us",
+          "value": "\ud83c\udf38 Join us",
           "role": "caption"
         }
-      ]
+      ],
+      "vibe": "Rose float \u00b7 soft slide \u00b7 warm acoustic garden feel",
+      "eventEmoji": "\ud83c\udf38",
+      "defaultEmojis": [
+        "\ud83c\udf38",
+        "\ud83e\udd42"
+      ],
+      "hostPlaceholder": "Hosts"
     },
     {
       "id": "template.candle-wish",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Candle Wish",
-      "description": "Invitation pack: golden-hour light-leaks, soft titles — intimate birthdays & dinners.",
+      "description": "Intimate birthday invitation: golden-hour light-leaks, soft serif titles, Lobby Time \u2014 candles & wishes.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -797,8 +812,8 @@
       "mode": "invitation",
       "themeId": "theme.golden-hour",
       "motion": "cinematic",
-      "transition": "light-leak",
-      "transitionDurationMs": 520,
+      "transition": "blur-fade",
+      "transitionDurationMs": 440,
       "photoMotion": "gentle",
       "beatId": "audio.lobby-time-096",
       "beatSync": "medium",
@@ -807,26 +822,33 @@
       "aspect": "1:1",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-candle-wish-v1",
+      "hash": "sha256:tpl-candle-wish-v2",
       "eventType": "Birthday",
-      "defaultTitle": "Candle wish 🕯️",
+      "defaultTitle": "Candle wish \ud83d\udd6f\ufe0f",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "🕯️ ✨",
+          "value": "\ud83d\udd6f\ufe0f \u2728",
           "role": "caption"
         }
-      ]
+      ],
+      "vibe": "Golden candlelight \u00b7 light-leaks \u00b7 intimate toast",
+      "eventEmoji": "\ud83d\udd6f\ufe0f",
+      "defaultEmojis": [
+        "\ud83d\udd6f\ufe0f",
+        "\u2728"
+      ],
+      "hostPlaceholder": "Your name"
     },
     {
       "id": "template.wedding-vows",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Wedding Vows",
-      "description": "Invitation pack: soft rose float, script titles, warm acoustic — weddings & engagements.",
+      "description": "Wedding invitation: rose-quartz, heart-wipe romance, script-soft titles, Warm Acoustic.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -836,21 +858,21 @@
       ],
       "mode": "invitation",
       "eventType": "Wedding",
-      "defaultTitle": "You're invited 💍",
+      "defaultTitle": "You're invited \ud83d\udc8d",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "💍 Join us",
+          "value": "\ud83d\udc8d Join us",
           "role": "caption"
         }
       ],
       "themeId": "theme.rose-quartz",
       "motion": "float",
-      "transition": "dissolve",
-      "transitionDurationMs": 480,
+      "transition": "heart-wipe",
+      "transitionDurationMs": 520,
       "photoMotion": "gentle",
       "beatId": "audio.warm-acoustic-092",
       "beatSync": "soft",
@@ -859,14 +881,21 @@
       "aspect": "4:5",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-wedding-vows-v1"
+      "hash": "sha256:tpl-wedding-vows-v2",
+      "vibe": "Soft rose \u00b7 heart wipe \u00b7 script vows & warm strings",
+      "eventEmoji": "\ud83d\udc8d",
+      "defaultEmojis": [
+        "\ud83d\udc8d",
+        "\ud83e\udd0d"
+      ],
+      "hostPlaceholder": "Partner names"
     },
     {
       "id": "template.baby-shower-bloom",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Baby Shower Bloom",
-      "description": "Invitation pack: soft film pastels, gentle pops — baby showers & gender reveals.",
+      "description": "Baby shower invitation: soft-film pastels, soft-bloom transitions, gentle Lobby Time.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -876,21 +905,21 @@
       ],
       "mode": "invitation",
       "eventType": "Baby shower",
-      "defaultTitle": "Baby shower 👶",
+      "defaultTitle": "Baby shower \ud83d\udc76",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "👶 💕",
+          "value": "\ud83d\udc76 \ud83d\udc95",
           "role": "caption"
         }
       ],
       "themeId": "theme.soft-film",
       "motion": "float",
-      "transition": "slide-up",
-      "transitionDurationMs": 420,
+      "transition": "soft-bloom",
+      "transitionDurationMs": 540,
       "photoMotion": "gentle",
       "beatId": "audio.lobby-time-096",
       "beatSync": "soft",
@@ -899,14 +928,22 @@
       "aspect": "1:1",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-baby-shower-bloom-v1"
+      "hash": "sha256:tpl-baby-shower-bloom-v2",
+      "vibe": "Pastel soft-film \u00b7 gentle bloom \u00b7 sweet pops",
+      "eventEmoji": "\ud83d\udc76",
+      "defaultEmojis": [
+        "\ud83d\udc76",
+        "\ud83d\udc95",
+        "\ud83c\udf80"
+      ],
+      "hostPlaceholder": "Parents-to-be"
     },
     {
       "id": "template.housewarming-glow",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Housewarming Glow",
-      "description": "Invitation pack: golden-hour warmth, clean sans — open houses & housewarmings.",
+      "description": "Housewarming invitation: golden-hour warmth, slide-right welcome, Ocean Drift beat.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -916,21 +953,21 @@
       ],
       "mode": "invitation",
       "eventType": "Housewarming",
-      "defaultTitle": "Open house 🏡",
+      "defaultTitle": "Open house \ud83c\udfe1",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "🏡 Come say hi",
+          "value": "\ud83c\udfe1 Come say hi",
           "role": "caption"
         }
       ],
       "themeId": "theme.golden-hour",
       "motion": "cinematic",
-      "transition": "push",
-      "transitionDurationMs": 360,
+      "transition": "slide-right",
+      "transitionDurationMs": 380,
       "photoMotion": "gentle",
       "beatId": "audio.ocean-drift-084",
       "beatSync": "medium",
@@ -939,14 +976,21 @@
       "aspect": "9:16",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-housewarming-glow-v1"
+      "hash": "sha256:tpl-housewarming-glow-v2",
+      "vibe": "Golden open-house \u00b7 slide-right welcome \u00b7 ocean drift",
+      "eventEmoji": "\ud83c\udfe1",
+      "defaultEmojis": [
+        "\ud83c\udfe1",
+        "\ud83d\udd11"
+      ],
+      "hostPlaceholder": "Homeowners"
     },
     {
       "id": "template.grad-caps",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Grad Caps",
-      "description": "Invitation pack: bold ocean pop, flash cuts — graduations & parties.",
+      "description": "Graduation invitation: ocean-pop energy, circle-wipe reveals, Carefree beat.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -956,21 +1000,21 @@
       ],
       "mode": "invitation",
       "eventType": "Graduation",
-      "defaultTitle": "Graduation! 🎓",
+      "defaultTitle": "Graduation! \ud83c\udf93",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "🎓 Celebrate",
+          "value": "\ud83c\udf93 Celebrate",
           "role": "caption"
         }
       ],
       "themeId": "theme.ocean-pop",
       "motion": "snappy",
-      "transition": "flash",
-      "transitionDurationMs": 200,
+      "transition": "circle-wipe",
+      "transitionDurationMs": 460,
       "photoMotion": "bold",
       "beatId": "audio.carefree-140",
       "beatSync": "hard",
@@ -979,14 +1023,21 @@
       "aspect": "9:16",
       "durationTargetSec": 15,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-grad-caps-v1"
+      "hash": "sha256:tpl-grad-caps-v2",
+      "vibe": "Ocean pop \u00b7 circle wipe \u00b7 celebrate hard",
+      "eventEmoji": "\ud83c\udf93",
+      "defaultEmojis": [
+        "\ud83c\udf93",
+        "\ud83e\udd73"
+      ],
+      "hostPlaceholder": "Graduate"
     },
     {
       "id": "template.holiday-sparkle",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Holiday Sparkle",
-      "description": "Invitation pack: neon winter glow, whip-ins — holiday parties & NYE.",
+      "description": "Holiday / NYE invitation: neon-night glow, short glitch sparkle, Neon Pulse beat.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -996,21 +1047,21 @@
       ],
       "mode": "invitation",
       "eventType": "Holiday party",
-      "defaultTitle": "Holiday party ✨",
+      "defaultTitle": "Holiday party \u2728",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "🎄 ✨",
+          "value": "\ud83c\udf84 \u2728",
           "role": "caption"
         }
       ],
       "themeId": "theme.neon-night",
       "motion": "snappy",
-      "transition": "whip",
-      "transitionDurationMs": 220,
+      "transition": "glitch",
+      "transitionDurationMs": 280,
       "photoMotion": "bold",
       "beatId": "audio.neon-pulse-118",
       "beatSync": "hard",
@@ -1019,14 +1070,22 @@
       "aspect": "9:16",
       "durationTargetSec": 15,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-holiday-sparkle-v1"
+      "hash": "sha256:tpl-holiday-sparkle-v2",
+      "vibe": "Neon winter \u00b7 glitch sparkle \u00b7 whip-in titles",
+      "eventEmoji": "\ud83c\udf84",
+      "defaultEmojis": [
+        "\ud83c\udf84",
+        "\u2728",
+        "\u2744\ufe0f"
+      ],
+      "hostPlaceholder": "Hosts"
     },
     {
       "id": "template.dinner-table",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Dinner Table",
-      "description": "Invitation pack: documentary grain, soft serif — dinner parties & supper clubs.",
+      "description": "Dinner invitation: documentary grain, blur-fade elegance, Lobby Time \u2014 supper clubs.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -1036,21 +1095,21 @@
       ],
       "mode": "invitation",
       "eventType": "Dinner party",
-      "defaultTitle": "Dinner invitation 🍽️",
+      "defaultTitle": "Dinner invitation \ud83c\udf7d\ufe0f",
       "defaultOverlays": [
         {
           "value": "Join us for dinner",
           "role": "title"
         },
         {
-          "value": "🍽️",
+          "value": "\ud83c\udf7d\ufe0f",
           "role": "caption"
         }
       ],
       "themeId": "theme.documentary-grain",
       "motion": "cinematic",
-      "transition": "fade-black",
-      "transitionDurationMs": 500,
+      "transition": "blur-fade",
+      "transitionDurationMs": 460,
       "photoMotion": "gentle",
       "beatId": "audio.lobby-time-096",
       "beatSync": "soft",
@@ -1059,14 +1118,21 @@
       "aspect": "4:5",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-dinner-table-v1"
+      "hash": "sha256:tpl-dinner-table-v2",
+      "vibe": "Documentary grain \u00b7 blur-fade \u00b7 soft supper club",
+      "eventEmoji": "\ud83c\udf7d\ufe0f",
+      "defaultEmojis": [
+        "\ud83c\udf7d\ufe0f",
+        "\ud83c\udf77"
+      ],
+      "hostPlaceholder": "Chef / host"
     },
     {
       "id": "template.kids-party-pop",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Kids Party Pop",
-      "description": "Invitation pack: cyber-lime bounce, pop titles — kids birthdays & playdates.",
+      "description": "Kids party invitation: cyber-lime bounce, spin transitions, Hyperfun beat.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -1077,21 +1143,21 @@
       ],
       "mode": "invitation",
       "eventType": "Kids party",
-      "defaultTitle": "Party time! 🎈",
+      "defaultTitle": "Party time! \ud83c\udf88",
       "defaultOverlays": [
         {
           "value": "You're invited!",
           "role": "title"
         },
         {
-          "value": "🎈 🎂 🎉",
+          "value": "\ud83c\udf88 \ud83c\udf82 \ud83c\udf89",
           "role": "caption"
         }
       ],
       "themeId": "theme.cyber-lime",
       "motion": "snappy",
-      "transition": "zoom-through",
-      "transitionDurationMs": 240,
+      "transition": "spin",
+      "transitionDurationMs": 400,
       "photoMotion": "bold",
       "beatId": "audio.hyperfun-128",
       "beatSync": "hard",
@@ -1100,14 +1166,22 @@
       "aspect": "1:1",
       "durationTargetSec": 15,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-kids-party-pop-v1"
+      "hash": "sha256:tpl-kids-party-pop-v2",
+      "vibe": "Cyber-lime bounce \u00b7 spin-in \u00b7 hyperfun chaos",
+      "eventEmoji": "\ud83c\udf88",
+      "defaultEmojis": [
+        "\ud83c\udf88",
+        "\ud83c\udf82",
+        "\ud83c\udf89"
+      ],
+      "hostPlaceholder": "Parents"
     },
     {
       "id": "template.brunch-breeze",
       "kind": "template",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "name": "Brunch Breeze",
-      "description": "Invitation pack: minimal white, clean sans — brunch & daytime gatherings.",
+      "description": "Brunch invitation: minimal-white calm, circle-wipe reveals, Funk Loop beat.",
       "tier": "free",
       "tags": [
         "invitation",
@@ -1117,21 +1191,21 @@
       ],
       "mode": "invitation",
       "eventType": "Brunch",
-      "defaultTitle": "Brunch? ☕",
+      "defaultTitle": "Brunch? \u2615",
       "defaultOverlays": [
         {
           "value": "You're invited",
           "role": "title"
         },
         {
-          "value": "☕ 🥐",
+          "value": "\u2615 \ud83e\udd50",
           "role": "caption"
         }
       ],
       "themeId": "theme.minimal-white",
       "motion": "soft",
-      "transition": "dissolve",
-      "transitionDurationMs": 400,
+      "transition": "circle-wipe",
+      "transitionDurationMs": 460,
       "photoMotion": "gentle",
       "beatId": "audio.funk-loop-104",
       "beatSync": "medium",
@@ -1140,7 +1214,61 @@
       "aspect": "1:1",
       "durationTargetSec": 30,
       "sizeBytes": 48000,
-      "hash": "sha256:tpl-brunch-breeze-v1"
+      "hash": "sha256:tpl-brunch-breeze-v2",
+      "vibe": "Minimal daylight \u00b7 circle wipe \u00b7 funky brunch",
+      "eventEmoji": "\u2615",
+      "defaultEmojis": [
+        "\u2615",
+        "\ud83e\udd50"
+      ],
+      "hostPlaceholder": "Host"
+    },
+    {
+      "id": "template.anniversary-glow",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Anniversary Glow",
+      "description": "Anniversary invitation: soft rose bloom, heart-wipe, Warm Acoustic \u2014 years together.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "anniversary",
+        "romantic",
+        "4:5"
+      ],
+      "mode": "invitation",
+      "eventType": "Anniversary",
+      "eventEmoji": "\ud83e\udd42",
+      "vibe": "Rose bloom \u00b7 heart wipe \u00b7 warm toast for years together",
+      "defaultTitle": "Happy anniversary \ud83e\udd42",
+      "hostPlaceholder": "Partners",
+      "defaultEmojis": [
+        "\ud83e\udd42",
+        "\ud83d\udc95"
+      ],
+      "defaultOverlays": [
+        {
+          "value": "Happy anniversary",
+          "role": "title"
+        },
+        {
+          "value": "\ud83e\udd42 \ud83d\udc95",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.rose-quartz",
+      "motion": "float",
+      "transition": "heart-wipe",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "script-soft",
+      "textTransition": "fade",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-anniversary-glow-v1"
     },
     {
       "id": "audio.warm-acoustic-092",
@@ -1157,7 +1285,7 @@
       "previewUrl": "/catalog/previews/warm-acoustic.mp3",
       "beatmapUrl": "/catalog/beats/warm-acoustic.json",
       "sizeBytes": 193569,
-      "attribution": "Kevin MacLeod — Easy Lemon (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Easy Lemon (CC BY 3.0)",
       "previewNote": "12s loop from Easy Lemon"
     },
     {
@@ -1175,7 +1303,7 @@
       "previewUrl": "/catalog/previews/neon-pulse.mp3",
       "beatmapUrl": "/catalog/beats/neon-pulse.json",
       "sizeBytes": 193573,
-      "attribution": "Kevin MacLeod — Electrodoodle (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Electrodoodle (CC BY 3.0)",
       "previewNote": "12s loop from Electrodoodle"
     },
     {
@@ -1193,7 +1321,7 @@
       "previewUrl": "/catalog/previews/ocean-drift.mp3",
       "beatmapUrl": "/catalog/beats/ocean-drift.json",
       "sizeBytes": 225367,
-      "attribution": "Kevin MacLeod — Floating Cities (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Floating Cities (CC BY 3.0)",
       "previewNote": "14s loop from Floating Cities"
     },
     {
@@ -1212,7 +1340,7 @@
       "previewUrl": "/catalog/previews/funk-loop.mp3",
       "beatmapUrl": "/catalog/beats/funk-loop.json",
       "sizeBytes": 193590,
-      "attribution": "Kevin MacLeod — Funk Game Loop (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Funk Game Loop (CC BY 3.0)",
       "previewNote": "12s loop from Funk Game Loop"
     },
     {
@@ -1231,7 +1359,7 @@
       "previewUrl": "/catalog/previews/hyperfun.mp3",
       "beatmapUrl": "/catalog/beats/hyperfun.json",
       "sizeBytes": 193568,
-      "attribution": "Kevin MacLeod — Hyperfun (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Hyperfun (CC BY 3.0)",
       "previewNote": "12s loop from Hyperfun"
     },
     {
@@ -1250,7 +1378,7 @@
       "previewUrl": "/catalog/previews/hot-swing.mp3",
       "beatmapUrl": "/catalog/beats/hot-swing.json",
       "sizeBytes": 193580,
-      "attribution": "Kevin MacLeod — Hot Swing (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Hot Swing (CC BY 3.0)",
       "previewNote": "12s loop from Hot Swing"
     },
     {
@@ -1269,7 +1397,7 @@
       "previewUrl": "/catalog/previews/lobby-time.mp3",
       "beatmapUrl": "/catalog/beats/lobby-time.json",
       "sizeBytes": 193621,
-      "attribution": "Kevin MacLeod — Lobby Time (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Lobby Time (CC BY 3.0)",
       "previewNote": "12s loop from Lobby Time"
     },
     {
@@ -1288,7 +1416,7 @@
       "previewUrl": "/catalog/previews/spy-glass.mp3",
       "beatmapUrl": "/catalog/beats/spy-glass.json",
       "sizeBytes": 193619,
-      "attribution": "Kevin MacLeod — Spy Glass (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Spy Glass (CC BY 3.0)",
       "previewNote": "12s loop from Spy Glass"
     },
     {
@@ -1307,7 +1435,7 @@
       "previewUrl": "/catalog/previews/carefree.mp3",
       "beatmapUrl": "/catalog/beats/carefree.json",
       "sizeBytes": 193623,
-      "attribution": "Kevin MacLeod — Carefree (CC BY 3.0)",
+      "attribution": "Kevin MacLeod \u2014 Carefree (CC BY 3.0)",
       "previewNote": "12s loop from Carefree"
     },
     {

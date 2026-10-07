@@ -31,6 +31,14 @@ export const TransitionKindSchema = z.enum([
   "zoom-through",
   "slide-up",
   "flash",
+  "slide-left",
+  "slide-right",
+  "circle-wipe",
+  "blur-fade",
+  "spin",
+  "glitch",
+  "heart-wipe",
+  "soft-bloom",
 ]);
 export type TransitionKindSchemaType = z.infer<typeof TransitionKindSchema>;
 

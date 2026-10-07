@@ -503,6 +503,38 @@ button {
   animation: vj-flash var(--tx-ms, 160ms) var(--tx-ease, var(--motion-snappy)) both;
 }
 
+.tx-slide-left {
+  animation: vj-slide-left var(--tx-ms, 380ms) var(--tx-ease, var(--motion-soft)) both;
+}
+
+.tx-slide-right {
+  animation: vj-slide-right var(--tx-ms, 380ms) var(--tx-ease, var(--motion-soft)) both;
+}
+
+.tx-circle-wipe {
+  animation: vj-circle-wipe var(--tx-ms, 480ms) var(--tx-ease, var(--motion-float)) both;
+}
+
+.tx-blur-fade {
+  animation: vj-blur-fade var(--tx-ms, 420ms) var(--tx-ease, var(--motion-soft)) both;
+}
+
+.tx-spin {
+  animation: vj-spin var(--tx-ms, 420ms) var(--tx-ease, var(--motion-snappy)) both;
+}
+
+.tx-glitch {
+  animation: vj-glitch var(--tx-ms, 280ms) var(--tx-ease, var(--motion-snappy)) both;
+}
+
+.tx-heart-wipe {
+  animation: vj-heart-wipe var(--tx-ms, 520ms) var(--tx-ease, var(--motion-float)) both;
+}
+
+.tx-soft-bloom {
+  animation: vj-soft-bloom var(--tx-ms, 560ms) var(--tx-ease, var(--motion-float)) both;
+}
+
 @keyframes vj-dissolve {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -546,6 +578,93 @@ button {
   100% { opacity: 1; filter: brightness(1) contrast(1); }
 }
 
+@keyframes vj-slide-left {
+  from { transform: translateX(-34%); opacity: 0.25; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes vj-slide-right {
+  from { transform: translateX(34%); opacity: 0.25; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes vj-circle-wipe {
+  0% {
+    opacity: 0.15;
+    clip-path: circle(0% at 50% 50%);
+    transform: scale(1.08);
+  }
+  70% {
+    opacity: 1;
+    clip-path: circle(72% at 50% 50%);
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    clip-path: circle(120% at 50% 50%);
+    transform: scale(1);
+  }
+}
+
+@keyframes vj-blur-fade {
+  from { opacity: 0; filter: blur(12px) brightness(1.1); transform: scale(1.04); }
+  to { opacity: 1; filter: blur(0) brightness(1); transform: scale(1); }
+}
+
+@keyframes vj-spin {
+  from { transform: rotate(-18deg) scale(0.86); opacity: 0.2; filter: blur(2px); }
+  to { transform: rotate(0) scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes vj-glitch {
+  0% {
+    opacity: 0.2;
+    transform: translate(-3%, 1%) skewX(-4deg);
+    filter: contrast(1.4) saturate(1.6) hue-rotate(-18deg);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(2%, -1%) skewX(3deg);
+    filter: contrast(1.25) saturate(1.4) hue-rotate(12deg);
+  }
+  60% {
+    transform: translate(-1%, 0) skewX(-1deg);
+    filter: contrast(1.1) saturate(1.15) hue-rotate(-4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0) skewX(0);
+    filter: contrast(1) saturate(1) hue-rotate(0);
+  }
+}
+
+@keyframes vj-heart-wipe {
+  0% {
+    opacity: 0.1;
+    clip-path: polygon(50% 55%, 50% 55%, 50% 55%, 50% 55%);
+    filter: saturate(1.3) brightness(1.25);
+    transform: scale(0.92);
+  }
+  55% {
+    opacity: 1;
+    clip-path: polygon(50% 12%, 88% 38%, 72% 88%, 28% 88%, 12% 38%);
+    filter: saturate(1.15) brightness(1.08);
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    clip-path: polygon(50% -20%, 120% 30%, 100% 120%, 0% 120%, -20% 30%);
+    filter: saturate(1) brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes vj-soft-bloom {
+  0% { opacity: 0; filter: brightness(1.6) saturate(1.35) blur(8px); transform: scale(1.06); }
+  45% { opacity: 1; filter: brightness(1.2) saturate(1.15) blur(2px); transform: scale(1.02); }
+  100% { opacity: 1; filter: brightness(1) saturate(1) blur(0); transform: scale(1); }
+}
+
 /* Ken Burns on stills */
 .ken-gentle img {
   animation: vj-ken-gentle 8s var(--motion-float) infinite alternate;
@@ -574,6 +693,14 @@ button {
   .tx-zoom-through,
   .tx-slide-up,
   .tx-flash,
+  .tx-slide-left,
+  .tx-slide-right,
+  .tx-circle-wipe,
+  .tx-blur-fade,
+  .tx-spin,
+  .tx-glitch,
+  .tx-heart-wipe,
+  .tx-soft-bloom,
   .ken-gentle img,
   .ken-bold img {
     animation: none !important;
@@ -3362,3 +3489,155 @@ html.large-targets .btn {
     justify-content: flex-start;
   }
 }
+
+
+/* Transition HUD badge (compose preview chrome — not burned into export) */
+.preview-stage-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tx-hud-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(10, 10, 14, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: vj-tx-hud 1.7s var(--motion-soft) both;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.tx-hud-badge .tx-hud-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+@keyframes vj-tx-hud {
+  0% { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-hud-badge {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Invitation empty-stage watermark (UI only) */
+.invite-stage-watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: clamp(3.5rem, 18vw, 5.5rem);
+  opacity: 0.22;
+  filter: saturate(1.1);
+  user-select: none;
+}
+
+.invite-stage-empty-copy {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: var(--space-5);
+}
+
+/* Invitation template gallery cards */
+.invite-tpl-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.invite-tpl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-subtle);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent),
+    var(--bg-elevated);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 160ms var(--motion-soft), box-shadow 160ms var(--motion-soft);
+}
+
+.invite-tpl-card:hover {
+  border-color: var(--accent-brand);
+}
+
+.invite-tpl-card.is-selected {
+  border-color: var(--accent-brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-brand) 35%, transparent);
+}
+
+.invite-tpl-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invite-tpl-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.invite-tpl-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.invite-tpl-vibe {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.invite-tpl-includes {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.invite-tpl-audio {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+
+.chip-tx-icon {
+  margin-right: 4px;
+  font-size: 0.85em;
+  opacity: 0.95;
+}
+

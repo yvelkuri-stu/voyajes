@@ -5,7 +5,12 @@ import {
   textTransitionLabel,
 } from "@voyajes/core";
 import { getBeats } from "../data/beats";
-import { getThemes, transitionLabel, type ThemeCard } from "../data/themes";
+import {
+  getThemes,
+  transitionIcon,
+  transitionLabel,
+  type ThemeCard,
+} from "../data/themes";
 import {
   getKidsSafeTemplates,
   getInvitationTemplates,
@@ -278,10 +283,22 @@ export function Themes() {
                         invitation
                       </span>
                     )}
-                    <div style={{ marginTop: 8, fontWeight: 700, fontSize: "1.1rem" }}>
+                    <div style={{ marginTop: 8, fontWeight: 700, fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 8 }}>
+                      {isInvitationTemplate(t) && (
+                        <span aria-hidden style={{ fontSize: "1.25rem" }}>
+                          {t.eventEmoji || "✉️"}
+                        </span>
+                      )}
                       {t.name}
                     </div>
-                    <div style={{ fontSize: "0.8rem", opacity: 0.9 }}>{t.description}</div>
+                    <div style={{ fontSize: "0.8rem", opacity: 0.9 }}>
+                      {isInvitationTemplate(t) ? (t.vibe || t.description) : t.description}
+                    </div>
+                    {isInvitationTemplate(t) && (
+                      <div style={{ marginTop: 8, fontSize: "0.72rem", opacity: 0.9, fontWeight: 600 }}>
+                        ♪ {t.beat?.name ?? t.beatId} · {t.aspect ?? "9:16"}
+                      </div>
+                    )}
                     <div
                       style={{
                         marginTop: 10,
@@ -290,7 +307,9 @@ export function Themes() {
                         lineHeight: 1.35,
                       }}
                     >
-                      {templateComboSummary(t)}
+                      {isInvitationTemplate(t)
+                        ? `Includes: ${transitionIcon(t.transition)} ${transitionLabel(t.transition)} · ${t.textStyle.replace(/-/g, " ")} · ${t.motion}`
+                        : templateComboSummary(t)}
                     </div>
                   </div>
                 </button>

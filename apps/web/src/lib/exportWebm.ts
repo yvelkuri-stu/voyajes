@@ -825,8 +825,66 @@ function transitionOpacity(
         opacity: Math.min(1, t * 2),
         brightness: 1 + (1 - t) * 2,
       };
+    case "slide-left":
+      return {
+        ...base,
+        opacity: 0.25 + 0.75 * t,
+        translateX: (1 - t) * -0.34,
+      };
+    case "slide-right":
+      return {
+        ...base,
+        opacity: 0.25 + 0.75 * t,
+        translateX: (1 - t) * 0.34,
+      };
+    case "circle-wipe":
+      return {
+        ...base,
+        opacity: 0.15 + 0.85 * t,
+        scale: 1 + (1 - t) * 0.08,
+      };
+    case "blur-fade":
+      return {
+        ...base,
+        opacity: t,
+        blur: (1 - t) * 12,
+        scale: 1 + (1 - t) * 0.04,
+        brightness: 1 + (1 - t) * 0.1,
+      };
+    case "spin":
+      return {
+        ...base,
+        opacity: 0.2 + 0.8 * t,
+        blur: (1 - t) * 2,
+        scale: 0.86 + 0.14 * t,
+        skewX: (1 - t) * -8,
+      };
+    case "glitch":
+      return {
+        ...base,
+        opacity: 0.2 + 0.8 * t,
+        translateX: (1 - t) * (t < 0.5 ? -0.03 : 0.02),
+        skewX: (1 - t) * (t < 0.5 ? -4 : 3),
+        brightness: 1 + (1 - t) * 0.35,
+      };
+    case "heart-wipe":
+      return {
+        ...base,
+        opacity: 0.1 + 0.9 * t,
+        scale: 0.92 + 0.08 * t,
+        brightness: 1 + (1 - t) * 0.25,
+      };
+    case "soft-bloom":
+      return {
+        ...base,
+        opacity: Math.min(1, t * 1.35),
+        blur: (1 - t) * 8,
+        brightness: 1 + (1 - t) * 0.6,
+        scale: 1 + (1 - t) * 0.06,
+      };
     default:
-      return base;
+      // Unknown kinds fall back to a soft dissolve so exports never hard-cut.
+      return { ...base, opacity: t };
   }
 }
 

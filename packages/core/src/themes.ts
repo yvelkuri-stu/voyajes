@@ -21,7 +21,15 @@ export type TransitionKind =
   | "fade-black"
   | "zoom-through"
   | "slide-up"
-  | "flash";
+  | "flash"
+  | "slide-left"
+  | "slide-right"
+  | "circle-wipe"
+  | "blur-fade"
+  | "spin"
+  | "glitch"
+  | "heart-wipe"
+  | "soft-bloom";
 
 /** All transitions the preview / export / CLI understand */
 export const TRANSITION_KINDS: TransitionKind[] = [
@@ -34,6 +42,14 @@ export const TRANSITION_KINDS: TransitionKind[] = [
   "zoom-through",
   "slide-up",
   "flash",
+  "slide-left",
+  "slide-right",
+  "circle-wipe",
+  "blur-fade",
+  "spin",
+  "glitch",
+  "heart-wipe",
+  "soft-bloom",
 ];
 
 /** Title / caption look presets (original Voyajes — not CapCut assets) */
@@ -145,6 +161,14 @@ export interface TemplatePack {
     value: string;
     role?: "title" | "subtitle" | "caption";
   }>;
+  /** Hero emoji for invitation gallery / empty-stage watermark */
+  eventEmoji?: string;
+  /** One-line vibe shown on invitation template cards */
+  vibe?: string;
+  /** Optional host field placeholder when applying */
+  hostPlaceholder?: string;
+  /** Extra emoji accents (merged into overlays if no text overlays yet) */
+  defaultEmojis?: string[];
 }
 
 export interface AudioBeatPack {
@@ -238,5 +262,88 @@ export function textTransitionLabel(kind: TextTransitionKind): string {
       return "Flash in";
     default:
       return kind;
+  }
+}
+
+export function transitionLabel(kind: TransitionKind): string {
+  switch (kind) {
+    case "cut":
+      return "Cut";
+    case "dissolve":
+      return "Dissolve";
+    case "push":
+      return "Push";
+    case "whip":
+      return "Whip";
+    case "light-leak":
+      return "Light leak";
+    case "fade-black":
+      return "Fade black";
+    case "zoom-through":
+      return "Zoom through";
+    case "slide-up":
+      return "Slide up";
+    case "flash":
+      return "Flash";
+    case "slide-left":
+      return "Slide left";
+    case "slide-right":
+      return "Slide right";
+    case "circle-wipe":
+      return "Circle wipe";
+    case "blur-fade":
+      return "Blur fade";
+    case "spin":
+      return "Spin";
+    case "glitch":
+      return "Glitch";
+    case "heart-wipe":
+      return "Heart wipe";
+    case "soft-bloom":
+      return "Soft bloom";
+    default:
+      return kind;
+  }
+}
+
+/** Small emoji icon suggesting the transition feel (UI chips / HUD). */
+export function transitionIcon(kind: TransitionKind): string {
+  switch (kind) {
+    case "cut":
+      return "✂";
+    case "dissolve":
+      return "◌";
+    case "push":
+      return "⇨";
+    case "whip":
+      return "⟲";
+    case "light-leak":
+      return "☀";
+    case "fade-black":
+      return "⬤";
+    case "zoom-through":
+      return "◎";
+    case "slide-up":
+      return "⇧";
+    case "flash":
+      return "⚡";
+    case "slide-left":
+      return "⇦";
+    case "slide-right":
+      return "⇨";
+    case "circle-wipe":
+      return "◯";
+    case "blur-fade":
+      return "≋";
+    case "spin":
+      return "↻";
+    case "glitch":
+      return "▞";
+    case "heart-wipe":
+      return "♥";
+    case "soft-bloom":
+      return "❀";
+    default:
+      return "✦";
   }
 }

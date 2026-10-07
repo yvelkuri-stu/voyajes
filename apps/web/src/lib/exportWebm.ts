@@ -16,6 +16,7 @@ import type {
   TransitionKind,
 } from "@voyajes/core";
 import type { ThemeCard } from "../data/themes";
+import { assetUrl } from "./assetUrl";
 import { buildInviteCardLines } from "./inviteCard";
 
 export type ExportClip = {
@@ -89,7 +90,7 @@ export type ExportWebmOptions = {
   /** Target short-edge ~1080; long edge follows aspect */
   shortEdge?: number;
   fps?: number;
-  /** Soft Voyajes watermark stub (bottom-right) */
+  /** Soft Voyajes logo watermark (bottom-right) */
   watermark?: boolean;
   /**
    * When true, burn project title on every frame (legacy).
@@ -686,23 +687,48 @@ function drawTextOverlays(
   }
 }
 
+/** Cached Voyajes logo for export watermark (null if load failed). */
+let watermarkLogoPromise: Promise<HTMLImageElement | null> | null = null;
+
+function getWatermarkLogo(): Promise<HTMLImageElement | null> {
+  if (!watermarkLogoPromise) {
+    const url = assetUrl("/brand/logo-app.png") ?? "/brand/logo-app.png";
+    watermarkLogoPromise = loadImage(url)
+      .then((img) => img)
+      .catch(() => null);
+  }
+  return watermarkLogoPromise;
+}
+
 function drawWatermark(
   ctx: CanvasRenderingContext2D,
   theme: ThemeCard,
   w: number,
   h: number,
+  logo?: HTMLImageElement | null,
 ) {
   ctx.save();
   const pad = Math.round(w * 0.04);
-  const size = Math.max(12, Math.round(w * 0.028));
-  ctx.font = `600 ${size}px Sora, system-ui, sans-serif`;
-  ctx.textAlign = "right";
-  ctx.textBaseline = "bottom";
-  ctx.globalAlpha = 0.55;
-  ctx.fillStyle = theme.palette.text;
-  ctx.shadowColor = "rgba(0,0,0,0.4)";
-  ctx.shadowBlur = 8;
-  ctx.fillText("Voyajes", w - pad, h - pad);
+  if (logo && logo.naturalWidth > 0 && logo.naturalHeight > 0) {
+    const markW = Math.max(24, Math.round(w * 0.07));
+    const markH = Math.round(markW * (logo.naturalHeight / logo.naturalWidth));
+    const x = w - pad - markW;
+    const y = h - pad - markH;
+    ctx.globalAlpha = 0.42;
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 10;
+    ctx.drawImage(logo, x, y, markW, markH);
+  } else {
+    const size = Math.max(12, Math.round(w * 0.028));
+    ctx.font = `600 ${size}px Sora, system-ui, sans-serif`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = theme.palette.text;
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = 8;
+    ctx.fillText("Voyajes", w - pad, h - pad);
+  }
   ctx.restore();
 }
 
@@ -1051,6 +1077,8 @@ export async function exportSlideshowWebm(
     });
   }
 
+  const watermarkLogo = watermark ? await getWatermarkLogo() : null;
+
   recorder.start(200);
 
   const txMs = Math.max(80, theme.transitionDurationMs);
@@ -1073,7 +1101,7 @@ export async function exportSlideshowWebm(
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       drawInviteCard(ctx, theme, width, height, "intro", invitation, title, textStyle);
-      if (watermark) drawWatermark(ctx, theme, width, height);
+      if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
       await sleep(1000 / fps, signal);
     }
     elapsedTotal += INTRO_SEC;
@@ -1222,7 +1250,7 @@ export async function exportSlideshowWebm(
           nowSec,
         );
         if (watermark) {
-          drawWatermark(ctx, theme, width, height);
+          drawWatermark(ctx, theme, width, height, watermarkLogo);
         }
         ctx.restore();
 
@@ -1266,7 +1294,7 @@ export async function exportSlideshowWebm(
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       drawInviteCard(ctx, theme, width, height, "end", invitation, title, textStyle);
-      if (watermark) drawWatermark(ctx, theme, width, height);
+      if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
       await sleep(1000 / fps, signal);
     }
     elapsedTotal += END_SEC;

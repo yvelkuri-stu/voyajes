@@ -471,7 +471,13 @@ export function InvitePlayer({
           ))}
           {(playback?.watermark ?? false) && phase === "clips" && (
             <div className="preview-watermark" aria-hidden>
-              Voyajes
+              <img
+                src={assetUrl("/brand/logo-app.png") ?? "/brand/logo-app.png"}
+                alt=""
+                width={28}
+                height={28}
+                draggable={false}
+              />
             </div>
           )}
         </div>

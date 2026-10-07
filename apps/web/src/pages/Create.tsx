@@ -97,6 +97,7 @@ import {
   type DraftState,
   type DraftTextOverlay,
 } from "../lib/draftStore";
+import { assetUrl } from "../lib/assetUrl";
 import { ensureShareFromDraft } from "../lib/shareStore";
 import {
   downloadBlob,
@@ -1722,7 +1723,7 @@ export function Create() {
                   setWatermark(e.target.checked);
                   setStatus(
                     e.target.checked
-                      ? "Watermark on · Voyajes mark on export (stub)"
+                      ? "Watermark on · Voyajes logo on export"
                       : "Watermark off",
                   );
                 }}
@@ -1730,7 +1731,7 @@ export function Create() {
               <span>
                 Watermark
                 <span className="muted" style={{ display: "block", fontSize: "0.75rem" }}>
-                  Soft Voyajes mark · stub for Pro branding later
+                  Places the Voyajes logo softly in the corner
                 </span>
               </span>
             </label>
@@ -1869,7 +1870,13 @@ export function Create() {
             ))}
             {watermark && (
               <div className="preview-watermark" aria-hidden>
-                Voyajes
+                <img
+                  src={assetUrl("/brand/logo-app.png") ?? "/brand/logo-app.png"}
+                  alt=""
+                  width={28}
+                  height={28}
+                  draggable={false}
+                />
               </div>
             )}
           </div>

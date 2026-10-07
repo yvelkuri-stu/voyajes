@@ -38,13 +38,13 @@ export function buildWhatsAppInviteText(opts: {
   }
 
   if (opts.attachHint) {
-    msg += `\n\n📎 Tip: Export video from Voyajes and attach it here for the full cut (link uses photo stills for videos).`;
+    msg += `\n\n📎 Tip: Export GIF (lighter) or video from Voyajes and attach it here for the full cut (link uses photo stills for videos).`;
   }
 
   return msg;
 }
 
-export function canShareVideoFile(file: File): boolean {
+export function canShareMediaFile(file: File): boolean {
   try {
     if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
       return false;
@@ -57,6 +57,11 @@ export function canShareVideoFile(file: File): boolean {
   } catch {
     return false;
   }
+}
+
+/** @deprecated use canShareMediaFile — videos and GIF/WebP images */
+export function canShareVideoFile(file: File): boolean {
+  return canShareMediaFile(file);
 }
 
 export function openWhatsAppWithText(text: string): void {
@@ -81,7 +86,7 @@ export async function shareInviteToWhatsApp(opts: {
 }): Promise<WhatsAppShareResult> {
   const { title, text, file } = opts;
 
-  if (file && canShareVideoFile(file)) {
+  if (file && canShareMediaFile(file)) {
     try {
       await navigator.share({
         files: [file],
@@ -106,7 +111,13 @@ export async function shareInviteToWhatsApp(opts: {
 }
 
 export function blobToShareFile(blob: Blob, filename: string): File {
-  const type = blob.type || "video/webm";
+  const type =
+    blob.type ||
+    (filename.toLowerCase().endsWith(".gif")
+      ? "image/gif"
+      : filename.toLowerCase().endsWith(".webp")
+        ? "image/webp"
+        : "video/webm");
   try {
     return new File([blob], filename, { type, lastModified: Date.now() });
   } catch {

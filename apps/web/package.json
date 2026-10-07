@@ -1,6 +1,6 @@
 {
   "name": "@voyajes/web",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@voyajes/core": "workspace:*",
+    "gifenc": "1.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2"

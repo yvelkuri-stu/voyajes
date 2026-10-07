@@ -84,7 +84,7 @@ export function getExportPreset(id: ExportDestination): ExportPreset {
 export function exportFilename(
   title: string,
   preset: ExportPreset,
-  extension: "webm" | "mp4",
+  extension: "webm" | "mp4" | "gif" | "webp",
 ): string {
   const base =
     title

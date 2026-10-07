@@ -21,7 +21,17 @@ import {
   exportSlideshowWebm,
   type ExportProgress,
 } from "../lib/exportWebm";
-import { getLastExport, setLastExport } from "../lib/lastExportStore";
+import {
+  exportSlideshowGif,
+  filenameFromTitleGif,
+  GIF_SIZE_HINT,
+  VIDEO_HEAVY_BYTES,
+} from "../lib/exportGif";
+import {
+  getLastExport,
+  getLastGifExport,
+  setLastExport,
+} from "../lib/lastExportStore";
 import {
   ensureShareFromDraft,
   formatDuration,
@@ -49,6 +59,7 @@ import {
 import {
   blobToShareFile,
   buildWhatsAppInviteText,
+  canShareMediaFile,
   shareInviteToWhatsApp,
 } from "../lib/whatsappShare";
 import { markStartFresh } from "../lib/startFresh";
@@ -505,6 +516,7 @@ export function Share() {
     blob: Blob;
     filename: string;
     mimeType: string;
+    kind: "video";
   } | null> => {
     if (!record) return null;
     const playback = record.playback;
@@ -597,11 +609,12 @@ export function Share() {
         shareId: record.id,
         title: record.title,
         createdAt: Date.now(),
+        kind: "video",
       });
       setStatus(
         `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB) — ready for WhatsApp`,
       );
-      return { blob: result.blob, filename: name, mimeType: result.mimeType };
+      return { blob: result.blob, filename: name, mimeType: result.mimeType, kind: "video" as const };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Export failed";
       setStatus(msg);
@@ -613,13 +626,133 @@ export function Share() {
     }
   }, [record]);
 
+
+  const exportShareGif = useCallback(async () => {
+    if (!record || exporting) return null;
+    const playback = record.playback;
+    const metas = playback?.clips ?? [];
+    if (metas.length === 0) {
+      setStatus("No clips to export");
+      return null;
+    }
+    const theme = getThemeById(record.themeId);
+    if (!theme) {
+      setStatus("Theme missing — cannot export");
+      return null;
+    }
+
+    setExporting(true);
+    setExportProgress({
+      phase: "prepare",
+      ratio: 0,
+      clipIndex: 0,
+      clipCount: metas.length,
+      message: "Preparing GIF…",
+    });
+    setStatus("Exporting GIF…");
+
+    const objectUrls: string[] = [];
+    try {
+      const live = [];
+      for (const meta of metas) {
+        const blob = await getBlob(meta.id);
+        if (!blob) continue;
+        const objectUrl = URL.createObjectURL(blob);
+        objectUrls.push(objectUrl);
+        live.push({
+          id: meta.id,
+          kind: meta.kind,
+          objectUrl,
+          fileName: meta.fileName,
+          durationSec: meta.durationSec,
+          transitionOut: meta.transitionOut,
+        });
+      }
+      if (live.length === 0) {
+        setStatus(
+          "Clips not found on this device (IndexedDB). Export from Compose on the phone that created them.",
+        );
+        return null;
+      }
+
+      const result = await exportSlideshowGif({
+        clips: live,
+        theme,
+        title: record.title,
+        aspect: playback?.aspect ?? "9:16",
+        transition: playback?.transitionOverride ?? theme.transition,
+        textOverlays: playback?.textOverlays,
+        captionText: playback?.captionText,
+        captionStyle: playback?.captionStyle,
+        textStyle: playback?.textStyle,
+        watermark: playback?.watermark ?? false,
+        burnTitle: false,
+        mode: record.mode,
+        invitation: record.invitation ?? playback?.invitation,
+        maxWidth: 720,
+        preferFormat: "gif",
+        onProgress: (p) => {
+          setExportProgress(p);
+          setStatus(p.message);
+        },
+      });
+
+      const name = filenameFromTitleGif(record.title, result.extension);
+      downloadBlob(result.blob, name);
+      setLastExport({
+        blob: result.blob,
+        filename: name,
+        mimeType: result.mimeType,
+        shareId: record.id,
+        title: record.title,
+        createdAt: Date.now(),
+        kind: result.extension === "webp" ? "webp" : "gif",
+      });
+      const shareFile = blobToShareFile(result.blob, name);
+      const shareHint = canShareMediaFile(shareFile)
+        ? " · tip: Share to WhatsApp to attach this GIF"
+        : "";
+      setStatus(
+        `Downloaded ${name} (${result.sizeNote}) — lightweight for WhatsApp${shareHint}`,
+      );
+      return {
+        blob: result.blob,
+        filename: name,
+        mimeType: result.mimeType,
+        kind: "gif" as const,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "GIF export failed";
+      setStatus(msg);
+      return null;
+    } finally {
+      for (const u of objectUrls) URL.revokeObjectURL(u);
+      setExporting(false);
+      setExportProgress(null);
+    }
+  }, [record, exporting]);
+
   const shareToWhatsApp = useCallback(async () => {
     if (!record) return;
     setWhatsappBusy(true);
     try {
-      let exp = getLastExport(record.id) ?? getLastExport();
-      if (!exp) {
-        const exported = await exportShareVideo();
+      // Prefer GIF for friend try-out; use video only when light enough.
+      let exp = getLastGifExport(record.id) ?? getLastGifExport();
+      const lastAny = getLastExport(record.id) ?? getLastExport();
+      if (
+        !exp &&
+        lastAny &&
+        (lastAny.kind === "gif" ||
+          lastAny.kind === "webp" ||
+          lastAny.mimeType.startsWith("image/"))
+      ) {
+        exp = lastAny;
+      }
+      if (!exp && lastAny?.kind === "video" && lastAny.blob.size <= VIDEO_HEAVY_BYTES) {
+        exp = lastAny;
+      } else if (!exp && lastAny?.kind === "video" && lastAny.blob.size > VIDEO_HEAVY_BYTES) {
+        setStatus("Video is heavy — exporting a lighter GIF for WhatsApp…");
+        const exported = await exportShareGif();
         if (exported) {
           exp = {
             blob: exported.blob,
@@ -628,6 +761,24 @@ export function Share() {
             shareId: record.id,
             title: record.title,
             createdAt: Date.now(),
+            kind: "gif",
+          };
+        } else {
+          exp = lastAny;
+        }
+      }
+      if (!exp) {
+        setStatus("Exporting GIF for WhatsApp (lighter than video)…");
+        const exported = await exportShareGif();
+        if (exported) {
+          exp = {
+            blob: exported.blob,
+            filename: exported.filename,
+            mimeType: exported.mimeType,
+            shareId: record.id,
+            title: record.title,
+            createdAt: Date.now(),
+            kind: "gif",
           };
         }
       }
@@ -648,6 +799,11 @@ export function Share() {
       if (!link) link = publicShareUrl(record.id);
 
       const file = exp ? blobToShareFile(exp.blob, exp.filename) : null;
+      const isImage =
+        !!exp &&
+        (exp.kind === "gif" ||
+          exp.kind === "webp" ||
+          exp.mimeType.startsWith("image/"));
       const textMsg = buildWhatsAppInviteText({
         title: record.title,
         shareUrl: link,
@@ -663,13 +819,19 @@ export function Share() {
       });
 
       if (result === "shared-file") {
-        setStatus("Shared video via system share — pick WhatsApp");
+        setStatus(
+          isImage
+            ? "Shared GIF via system share — pick WhatsApp"
+            : "Shared video via system share — pick WhatsApp",
+        );
       } else if (result === "whatsapp-text") {
         if (exp) downloadBlob(exp.blob, exp.filename);
         setStatus(
           exp
-            ? "Opened WhatsApp — attach the video you just downloaded"
-            : "Opened WhatsApp with text — Export video first so your friend can watch",
+            ? isImage
+              ? "Opened WhatsApp — attach the GIF you just downloaded"
+              : "Opened WhatsApp — attach the video you just downloaded"
+            : "Opened WhatsApp with text — Export GIF first so your friend can watch",
         );
       } else if (result === "aborted") {
         setStatus("Share cancelled");
@@ -679,7 +841,7 @@ export function Share() {
     } finally {
       setWhatsappBusy(false);
     }
-  }, [record, exportShareVideo, portableUrl, fromPortableHash]);
+  }, [record, exportShareGif, portableUrl, fromPortableHash]);
 
   // Open Graph–style document meta for invitation / voyage shares
   useEffect(() => {
@@ -1153,6 +1315,63 @@ export function Share() {
               <button
                 type="button"
                 className="btn btn-ghost"
+                disabled={exporting}
+                onClick={() => void exportShareGif()}
+                title={GIF_SIZE_HINT}
+              >
+                Export GIF
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={exporting || whatsappBusy}
+                title="Export GIF if needed, then system share (image/gif)"
+                onClick={() => {
+                  void (async () => {
+                    if (!record) return;
+                    let exp = getLastGifExport(record.id) ?? getLastGifExport();
+                    if (!exp) {
+                      const out = await exportShareGif();
+                      if (!out) return;
+                      exp = {
+                        blob: out.blob,
+                        filename: out.filename,
+                        mimeType: out.mimeType,
+                        shareId: record.id,
+                        title: record.title,
+                        createdAt: Date.now(),
+                        kind: "gif",
+                      };
+                    }
+                    const file = blobToShareFile(exp.blob, exp.filename);
+                    if (canShareMediaFile(file)) {
+                      try {
+                        await navigator.share({
+                          files: [file],
+                          title: record.title,
+                          text: "Voyajes GIF",
+                        });
+                        setStatus("Shared GIF via system share");
+                      } catch (err) {
+                        if (err instanceof DOMException && err.name === "AbortError") {
+                          setStatus("Share cancelled");
+                        } else {
+                          downloadBlob(exp.blob, exp.filename);
+                          setStatus("Share not available — GIF downloaded instead");
+                        }
+                      }
+                    } else {
+                      downloadBlob(exp.blob, exp.filename);
+                      setStatus("Web Share not available for images here — GIF downloaded");
+                    }
+                  })();
+                }}
+              >
+                Share GIF
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
                 disabled={!fromPortableHash && (portableBusy || !portableUrl)}
                 onClick={() => void copy()}
               >
@@ -1221,8 +1440,8 @@ export function Share() {
 
             <p className="muted share-hint">
               {isInvitation
-                ? "Instagram & TikTok want uploads — use Export video. The invite link embeds photos for any browser; some chat apps truncate very long URLs — use Download invite pack or Export as backup."
-                : "Instagram & TikTok rank uploads higher — export a file for those feeds; this link embeds photos for chats & sites."}
+                ? "Instagram & TikTok want uploads — use Export video. For WhatsApp / friends, prefer Export GIF (lighter, ~720px · 10 fps · ~12s). The invite link embeds photos; long URLs → Download invite pack."
+                : "Instagram & TikTok rank uploads higher — export video for those feeds. For chats, Export GIF is lighter (~720px · 10 fps · ~12s). This link embeds photos."}
             </p>
 
             {!locked && (

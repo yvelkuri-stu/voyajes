@@ -52,11 +52,11 @@ export function Home() {
             robots use.
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Link to="/create" className="btn btn-primary">
+            <Link to="/create?fresh=1" className="btn btn-primary">
               New story
             </Link>
             <Link
-              to="/create?mode=invitation"
+              to="/create?mode=invitation&fresh=1"
               className="btn btn-primary"
               style={{
                 background: "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(61,220,151,0.55))",
@@ -156,7 +156,7 @@ export function Home() {
             </Link>
           ))}
           <Link
-            to="/create"
+            to="/create?fresh=1"
             className="card"
             style={{
               display: "flex",
@@ -171,7 +171,7 @@ export function Home() {
             + New story
           </Link>
           <Link
-            to="/create?mode=invitation"
+            to="/create?mode=invitation&fresh=1"
             className="card"
             style={{
               display: "flex",

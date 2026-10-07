@@ -99,12 +99,18 @@ import {
   type DraftTextOverlay,
 } from "../lib/draftStore";
 import { assetUrl } from "../lib/assetUrl";
-import { ensureShareFromDraft } from "../lib/shareStore";
+import { ensureShareFromDraft, publicShareUrl } from "../lib/shareStore";
 import {
   downloadBlob,
   exportSlideshowWebm,
   type ExportProgress,
 } from "../lib/exportWebm";
+import { clearLastExport, getLastExport, setLastExport } from "../lib/lastExportStore";
+import {
+  blobToShareFile,
+  buildWhatsAppInviteText,
+  shareInviteToWhatsApp,
+} from "../lib/whatsappShare";
 
 type LiveClip = DraftClipMeta & { objectUrl: string };
 
@@ -144,6 +150,8 @@ export function Create() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const advanceTimer = useRef<number | null>(null);
   const objectUrlsRef = useRef<Set<string>>(new Set());
+  /** Prevent remount-effect from double-wiping after mount hydrate handled ?fresh=1 */
+  const freshHandledRef = useRef(false);
 
   const paramTemplate = getTemplateById(params.get("template") ?? "");
   const paramTheme =
@@ -328,10 +336,68 @@ export function Create() {
     return url;
   }, []);
 
-  // Hydrate from localStorage + IndexedDB
+  // Hydrate from localStorage + IndexedDB (or start fresh when ?fresh=1)
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const wantFresh = params.get("fresh") === "1";
+      if (wantFresh) {
+        freshHandledRef.current = true;
+        await clearAllBlobs();
+        clearDraft();
+        clearLastExport();
+        if (cancelled) return;
+        const mode: ProjectMode =
+          params.get("mode") === "invitation" || paramTemplate?.mode === "invitation"
+            ? "invitation"
+            : "voyage";
+        const tid = paramTheme.id;
+        const d = defaultDraft(tid);
+        setProjectMode(mode);
+        setTitle(mode === "invitation" ? "You're invited!" : d.title);
+        setAspect(d.aspect);
+        setThemeId(tid);
+        setTemplateId(undefined);
+        setTransitionOverride(null);
+        setAudioTrackRef(d.audioTrackRef);
+        setBeatSync(d.beatSync);
+        setDucking(d.ducking);
+        setTextStyle(d.textStyle);
+        setTextTransition(d.textTransition);
+        setCaptionStyle(d.captionStyle);
+        setCaptionText("");
+        setWatermark(false);
+        setDurationTargetSec(undefined);
+        setExportDestination("custom");
+        setShareId(undefined);
+        setSharePassword(false);
+        setHostName("");
+        setGuestName("");
+        setEventName("");
+        setEventType("");
+        setEventWhen("");
+        setEventWhere("");
+        setTextOverlays([]);
+        setCustomSounds([]);
+        setCustomSoundUrls({});
+        setAudioMixMode("replace");
+        setClips([]);
+        setActiveIndex(0);
+        setElapsed(0);
+        setSchemaOk(true);
+        setStatus("Started fresh");
+        {
+          const next = new URLSearchParams(params);
+          next.delete("fresh");
+          if (mode === "invitation") next.set("mode", "invitation");
+          else next.delete("mode");
+          next.delete("template");
+          setSearchParams(next, { replace: true });
+        }
+        setHydrated(true);
+        return;
+      }
+
       const draft = loadDraft();
       const base = draft ?? defaultDraft(paramTheme.id);
       if (!draft && params.get("theme")) {
@@ -1093,15 +1159,28 @@ export function Create() {
     });
   };
 
-  const resetProject = async () => {
+  const resetProject = async (opts?: {
+    mode?: ProjectMode;
+    statusMsg?: string;
+    /** Theme to keep after wipe (defaults to current themeId). */
+    keepThemeId?: string;
+  }) => {
     setPlaying(false);
     clearAdvanceTimer();
-    for (const c of clips) revokeUrl(c.objectUrl);
+    for (const url of [...objectUrlsRef.current]) {
+      URL.revokeObjectURL(url);
+    }
+    objectUrlsRef.current.clear();
     await clearAllBlobs();
     clearDraft();
-    const d = defaultDraft(themeId);
-    setTitle(d.title);
+    clearLastExport();
+    const mode = opts?.mode ?? projectMode;
+    const tid = opts?.keepThemeId ?? themeId;
+    const d = defaultDraft(tid);
+    setProjectMode(mode);
+    setTitle(mode === "invitation" ? "You're invited!" : d.title);
     setAspect(d.aspect);
+    setThemeId(tid);
     setTemplateId(undefined);
     setTransitionOverride(null);
     setAudioTrackRef(d.audioTrackRef);
@@ -1116,19 +1195,60 @@ export function Create() {
     setExportDestination("custom");
     setShareId(undefined);
     setSharePassword(false);
+    setHostName("");
+    setGuestName("");
+    setEventName("");
+    setEventType("");
+    setEventWhen("");
+    setEventWhere("");
     setTextOverlays([]);
     setEditingOverlayId(null);
     setCustomSounds([]);
     setCustomSoundUrls({});
     setAudioMixMode("replace");
-    setTransitionOverride(null);
     setGapMenuIndex(null);
     stopPreview();
     setClips([]);
     setActiveIndex(0);
     setElapsed(0);
-    setStatus("Draft cleared");
+    setSchemaOk(true);
+    setStatus(opts?.statusMsg ?? "Draft cleared");
   };
+
+  // ?fresh=1 while Create is already mounted (Home CTA without remount)
+  useEffect(() => {
+    if (params.get("fresh") !== "1") {
+      // Clear mount-hydrate flag once URL no longer has fresh
+      freshHandledRef.current = false;
+      return;
+    }
+    if (!hydrated) return;
+    if (freshHandledRef.current) {
+      freshHandledRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const mode: ProjectMode =
+        params.get("mode") === "invitation" ? "invitation" : "voyage";
+      await resetProject({
+        mode,
+        statusMsg: "Started fresh",
+        keepThemeId: paramTheme.id,
+      });
+      if (cancelled) return;
+      const next = new URLSearchParams(params);
+      next.delete("fresh");
+      if (mode === "invitation") next.set("mode", "invitation");
+      else next.delete("mode");
+      next.delete("template");
+      setSearchParams(next, { replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.get("fresh"), hydrated]);
 
   const cancelExport = () => {
     exportAbortRef.current?.abort();
@@ -1227,6 +1347,14 @@ export function Create() {
       });
       const name = exportFilename(title, preset, result.extension);
       downloadBlob(result.blob, name);
+      setLastExport({
+        blob: result.blob,
+        filename: name,
+        mimeType: result.mimeType,
+        shareId,
+        title: title.trim() || (projectMode === "invitation" ? "You're invited!" : "Untitled voyage"),
+        createdAt: Date.now(),
+      });
       const skipNote =
         result.skippedVideos.length > 0
           ? ` · skipped ${result.skippedVideos.length} video clip(s)`
@@ -1370,6 +1498,101 @@ export function Create() {
     navigate(`/v/${share.id}`);
   };
 
+  const shareToWhatsApp = async () => {
+    const draft: DraftState = {
+      title,
+      mode: projectMode,
+      aspect,
+      themeId,
+      themeVersion: theme.version,
+      templateId,
+      templateVersion: templateId
+        ? getTemplateById(templateId)?.version
+        : undefined,
+      audioTrackRef,
+      beatSync,
+      ducking,
+      textStyle,
+      textTransition,
+      captionStyle,
+      captionText,
+      watermark,
+      durationTargetSec,
+      exportDestination,
+      shareId,
+      sharePassword,
+      hostName,
+      guestName,
+      eventName,
+      eventType,
+      eventWhen,
+      eventWhere,
+      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
+        id,
+        fileName,
+        mimeType,
+        kind,
+        durationSec,
+        mute,
+        transitionOut: transitionOut ?? null,
+      })),
+      textOverlays,
+      customSounds,
+      audioMixMode,
+      transitionOverride,
+      updatedAt: new Date().toISOString(),
+    };
+    const share = ensureShareFromDraft(draft, {
+      themeName: theme.name,
+      themeAccent: theme.palette.accent,
+      themeGradient: theme.gradient,
+      audioName: selectedBeat.name,
+      audioBpm: selectedBeat.bpm,
+    });
+    setShareId(share.id);
+    saveDraft({ ...draft, shareId: share.id });
+
+    const shareUrl = publicShareUrl(share.id);
+    const displayTitle =
+      title.trim() || (projectMode === "invitation" ? "You're invited!" : "Untitled voyage");
+
+    const exp = getLastExport(share.id) ?? getLastExport() ?? null;
+    const file = exp ? blobToShareFile(exp.blob, exp.filename) : null;
+    const textMsg = buildWhatsAppInviteText({
+      title: displayTitle,
+      shareUrl,
+      isInvitation: projectMode === "invitation",
+      attachHint: !file,
+    });
+
+    if (!file) {
+      setStatus(
+        "Tip: Export… first, then Share to WhatsApp — friends need the video file (link media stays on this device).",
+      );
+    }
+
+    const result = await shareInviteToWhatsApp({
+      title: displayTitle,
+      text: textMsg,
+      file,
+    });
+
+    if (result === "shared-file") {
+      setStatus("Shared video via system share — pick WhatsApp");
+    } else if (result === "whatsapp-text") {
+      if (exp) downloadBlob(exp.blob, exp.filename);
+      setStatus(
+        exp
+          ? "Opened WhatsApp — attach the video you just downloaded"
+          : "Opened WhatsApp with invite text — Export… then attach the video for your friend",
+      );
+    } else if (result === "aborted") {
+      setStatus("Share cancelled");
+    } else {
+      setStatus("Could not open WhatsApp share");
+    }
+  };
+
   const runStoryCoach = () => {
     ai.pulse("coach", 1600);
     const suggestion = suggestStoryCopy({
@@ -1500,6 +1723,14 @@ export function Create() {
           )}
           <button type="button" className="btn btn-primary" onClick={openShare}>
             Share
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => void shareToWhatsApp()}
+            title="Share invite via WhatsApp (prefer exported video file)"
+          >
+            WhatsApp
           </button>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { InvitePlayer } from "../components/InvitePlayer";
 import { Logo } from "../components/Logo";
 import { getBeatByRef } from "../data/beats";
 import { getThemeById } from "../data/themes";
+import { exportFilename, getExportPreset } from "../data/exportPresets";
 import { assetUrl } from "../lib/assetUrl";
 import {
   getShareReactions,
@@ -16,6 +17,12 @@ import {
 import { getBlob, loadDraft, saveDraft, type DraftState } from "../lib/draftStore";
 import { rememberEmoji } from "../lib/emoji";
 import {
+  downloadBlob,
+  exportSlideshowWebm,
+  type ExportProgress,
+} from "../lib/exportWebm";
+import { getLastExport, setLastExport } from "../lib/lastExportStore";
+import {
   ensureShareFromDraft,
   formatDuration,
   getShare,
@@ -23,6 +30,11 @@ import {
   updateShare,
   type ShareRecord,
 } from "../lib/shareStore";
+import {
+  blobToShareFile,
+  buildWhatsAppInviteText,
+  shareInviteToWhatsApp,
+} from "../lib/whatsappShare";
 
 function myReactKey(id: string) {
   return `voyajes.share.myreact.${id}`;
@@ -126,6 +138,9 @@ export function Share() {
   const [shareReactions, setShareReactions] = useState<ShareReactionMap>({});
   const [myReacts, setMyReacts] = useState<string[]>([]);
   const [titleEdit, setTitleEdit] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [whatsappBusy, setWhatsappBusy] = useState(false);
 
   // Resolve share: /v/:id or bootstrap from draft when visiting /share → redirected here
   useEffect(() => {
@@ -311,6 +326,169 @@ export function Share() {
     setStatus("Title updated (emoji OK)");
   }, [record, titleEdit]);
 
+  const exportShareVideo = useCallback(async (): Promise<{
+    blob: Blob;
+    filename: string;
+    mimeType: string;
+  } | null> => {
+    if (!record) return null;
+    const playback = record.playback;
+    const metas = playback?.clips ?? [];
+    if (metas.length === 0) {
+      setStatus("No clips to export — add media in Compose first.");
+      return null;
+    }
+
+    const theme =
+      getThemeById(playback?.themeId ?? record.themeId) ??
+      getThemeById("theme.ocean-pop");
+    if (!theme) {
+      setStatus("Theme missing — cannot export");
+      return null;
+    }
+
+    setExporting(true);
+    setExportProgress({
+      phase: "prepare",
+      ratio: 0,
+      clipIndex: 0,
+      clipCount: metas.length,
+      message: "Preparing export…",
+    });
+    setStatus("Exporting video…");
+
+    const objectUrls: string[] = [];
+    try {
+      const live = [];
+      for (const meta of metas) {
+        const blob = await getBlob(meta.id);
+        if (!blob) continue;
+        const objectUrl = URL.createObjectURL(blob);
+        objectUrls.push(objectUrl);
+        live.push({
+          id: meta.id,
+          kind: meta.kind,
+          objectUrl,
+          fileName: meta.fileName,
+          durationSec: meta.durationSec,
+          transitionOut: meta.transitionOut,
+        });
+      }
+      if (live.length === 0) {
+        setStatus(
+          "Clips not found on this device (IndexedDB). Export from Compose on the phone that created them.",
+        );
+        return null;
+      }
+
+      const beat = getBeatByRef(playback?.audioTrackRef ?? record.audioTrackRef);
+      const audioOpts = beat?.previewUrl
+        ? {
+            previewUrl: beat.previewUrl,
+            beatName: beat.name,
+            ducking: playback?.ducking ?? true,
+          }
+        : undefined;
+
+      const preset = getExportPreset("custom");
+      const result = await exportSlideshowWebm({
+        clips: live,
+        theme,
+        title: record.title,
+        aspect: playback?.aspect ?? "9:16",
+        transition: playback?.transitionOverride ?? theme.transition,
+        textOverlays: playback?.textOverlays,
+        captionText: playback?.captionText,
+        captionStyle: playback?.captionStyle,
+        textStyle: playback?.textStyle,
+        shortEdge: preset.shortEdge,
+        watermark: playback?.watermark ?? false,
+        burnTitle: false,
+        mode: record.mode,
+        invitation: record.invitation ?? playback?.invitation,
+        audio: audioOpts,
+        onProgress: (p) => {
+          setExportProgress(p);
+          setStatus(p.message);
+        },
+      });
+
+      const name = exportFilename(record.title, preset, result.extension);
+      downloadBlob(result.blob, name);
+      setLastExport({
+        blob: result.blob,
+        filename: name,
+        mimeType: result.mimeType,
+        shareId: record.id,
+        title: record.title,
+        createdAt: Date.now(),
+      });
+      setStatus(
+        `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB) — ready for WhatsApp`,
+      );
+      return { blob: result.blob, filename: name, mimeType: result.mimeType };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Export failed";
+      setStatus(msg);
+      return null;
+    } finally {
+      for (const u of objectUrls) URL.revokeObjectURL(u);
+      setExporting(false);
+      setExportProgress(null);
+    }
+  }, [record]);
+
+  const shareToWhatsApp = useCallback(async () => {
+    if (!record) return;
+    setWhatsappBusy(true);
+    try {
+      let exp = getLastExport(record.id) ?? getLastExport();
+      if (!exp) {
+        const exported = await exportShareVideo();
+        if (exported) {
+          exp = {
+            blob: exported.blob,
+            filename: exported.filename,
+            mimeType: exported.mimeType,
+            shareId: record.id,
+            title: record.title,
+            createdAt: Date.now(),
+          };
+        }
+      }
+
+      const file = exp ? blobToShareFile(exp.blob, exp.filename) : null;
+      const textMsg = buildWhatsAppInviteText({
+        title: record.title,
+        shareUrl: publicShareUrl(record.id),
+        isInvitation: record.mode === "invitation",
+        attachHint: !file,
+      });
+
+      const result = await shareInviteToWhatsApp({
+        title: record.title,
+        text: textMsg,
+        file,
+      });
+
+      if (result === "shared-file") {
+        setStatus("Shared video via system share — pick WhatsApp");
+      } else if (result === "whatsapp-text") {
+        if (exp) downloadBlob(exp.blob, exp.filename);
+        setStatus(
+          exp
+            ? "Opened WhatsApp — attach the video you just downloaded"
+            : "Opened WhatsApp with text — Export video first so your friend can watch",
+        );
+      } else if (result === "aborted") {
+        setStatus("Share cancelled");
+      } else {
+        setStatus("Could not open WhatsApp");
+      }
+    } finally {
+      setWhatsappBusy(false);
+    }
+  }, [record, exportShareVideo]);
 
   // Open Graph–style document meta for invitation / voyage shares
   useEffect(() => {
@@ -388,7 +566,7 @@ export function Share() {
           <p className="muted" style={{ marginTop: 0 }}>
             Compose a draft first — then open Share to get a public link.
           </p>
-          <Link to="/create" className="btn btn-primary" style={{ marginTop: 16 }}>
+          <Link to="/create?fresh=1" className="btn btn-primary" style={{ marginTop: 16 }}>
             Go to Compose
           </Link>
         </div>
@@ -479,9 +657,20 @@ export function Share() {
           <span className="invite-footer-sep" aria-hidden>
             ·
           </span>
-          <Link to="/create?mode=invitation" className="invite-footer-link">
+          <Link to="/create?mode=invitation&fresh=1" className="invite-footer-link">
             Create your own
           </Link>
+          <span className="invite-footer-sep" aria-hidden>
+            ·
+          </span>
+          <button
+            type="button"
+            className="invite-footer-link"
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", font: "inherit" }}
+            onClick={() => void shareToWhatsApp()}
+          >
+            WhatsApp
+          </button>
           <span className="invite-footer-sep" aria-hidden>
             ·
           </span>
@@ -662,26 +851,54 @@ export function Share() {
             </div>
 
             <div className="share-actions">
-              <button type="button" className="btn btn-primary" onClick={() => void copy()}>
-                {copied ? "Copied!" : "Copy link"}
-              </button>
+              {isInvitation && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={exporting || whatsappBusy}
+                  onClick={() => void shareToWhatsApp()}
+                  title="Export if needed, then share video to WhatsApp"
+                >
+                  {whatsappBusy || exporting
+                    ? exporting
+                      ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
+                      : "Sharing…"
+                    : "Share to WhatsApp"}
+                </button>
+              )}
               <button
                 type="button"
-                className="btn btn-ghost"
-                disabled
-                title="Video encode not wired yet"
+                className={isInvitation ? "btn btn-ghost" : "btn btn-primary"}
+                disabled={exporting}
+                onClick={() => void exportShareVideo()}
+                title="Encode WebM/MP4 in the browser from clips on this device"
               >
-                Download
+                {exporting
+                  ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
+                  : "Export video"}
               </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled
-                title="TODO: embed"
-              >
-                Embed
+              <button type="button" className="btn btn-ghost" onClick={() => void copy()}>
+                {copied ? "Copied!" : "Copy invite link"}
               </button>
+              {!isInvitation && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  disabled={exporting || whatsappBusy}
+                  onClick={() => void shareToWhatsApp()}
+                >
+                  Share to WhatsApp
+                </button>
+              )}
             </div>
+
+            {isInvitation && (
+              <p className="muted share-hint" style={{ marginTop: 10 }}>
+                Link works best on this device; for WhatsApp send the exported video.
+                Guest <code>/v/:id</code> playback still needs media in this browser&apos;s
+                IndexedDB until cloud sync.
+              </p>
+            )}
 
             <label className="share-password-toggle">
               <input
@@ -704,8 +921,9 @@ export function Share() {
             )}
 
             <p className="muted share-hint">
-              Instagram &amp; TikTok rank uploads higher — export a file for those
-              feeds; use this link for chats &amp; sites. Encode stays stubbed.
+              {isInvitation
+                ? "Instagram & TikTok want uploads — use Export video. For WhatsApp, Share to WhatsApp (file) is the reliable path for a friend on another phone."
+                : "Instagram & TikTok rank uploads higher — export a file for those feeds; use this link for chats & sites."}
             </p>
 
             {!locked && (

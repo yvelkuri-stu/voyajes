@@ -150,6 +150,18 @@ export type TextCard = z.infer<typeof TextCardSchema>;
 export const ProjectModeSchema = z.enum(["voyage", "invitation"]);
 export type ProjectMode = z.infer<typeof ProjectModeSchema>;
 
+/** Who / what / when / where for invitation shares & export cards */
+export const InvitationMetaSchema = z.object({
+  hostName: z.string().optional(),
+  /** Optional "to: …" invitee label */
+  guestName: z.string().optional(),
+  eventName: z.string().optional(),
+  eventType: z.string().optional(),
+  eventWhen: z.string().optional(),
+  eventWhere: z.string().optional(),
+});
+export type InvitationMeta = z.infer<typeof InvitationMetaSchema>;
+
 export const ShareMetaSchema = z.object({
   title: z.string().optional(),
   public: z.boolean().default(true),
@@ -157,6 +169,7 @@ export const ShareMetaSchema = z.object({
   id: z.string().min(4).optional(),
   /** invitation = guest animated playback, no compose UI */
   mode: ProjectModeSchema.optional(),
+  invitation: InvitationMetaSchema.optional(),
 });
 
 export const ExportMetaSchema = z.object({

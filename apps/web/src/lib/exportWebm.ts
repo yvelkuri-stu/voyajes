@@ -8,12 +8,15 @@
 
 import type {
   Aspect,
+  InvitationMeta,
+  ProjectMode,
   TextPosition,
   TextStyle,
   TextTransition,
   TransitionKind,
 } from "@voyajes/core";
 import type { ThemeCard } from "../data/themes";
+import { buildInviteCardLines } from "./inviteCard";
 
 export type ExportClip = {
   id: string;
@@ -88,6 +91,15 @@ export type ExportWebmOptions = {
   fps?: number;
   /** Soft Voyajes watermark stub (bottom-right) */
   watermark?: boolean;
+  /**
+   * When true, burn project title on every frame (legacy).
+   * Default false — only timed overlays + optional invitation cards.
+   */
+  burnTitle?: boolean;
+  /** voyage vs invitation — invitation gets intro/end cards */
+  mode?: ProjectMode;
+  /** Invitation who/what/when/where for intro/end cards */
+  invitation?: InvitationMeta;
   /** Optional catalog / custom beat to mux into the recording */
   audio?: ExportAudioOptions;
   onProgress?: (p: ExportProgress) => void;
@@ -593,6 +605,63 @@ function drawTitle(
   }
 }
 
+
+function drawInviteCard(
+  ctx: CanvasRenderingContext2D,
+  theme: ThemeCard,
+  w: number,
+  h: number,
+  kind: "intro" | "end",
+  invitation: InvitationMeta | undefined,
+  titleFallback: string,
+  textStyle?: TextStyle,
+) {
+  const lines = buildInviteCardLines(invitation, titleFallback);
+  // Full-bleed gradient card
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, theme.palette.bg);
+  grad.addColorStop(0.45, theme.palette.accent + "99");
+  grad.addColorStop(1, theme.palette.bg);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.fillStyle = theme.palette.text;
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 16;
+
+  const kicker = kind === "intro" ? "INVITATION" : "SEE YOU THERE";
+  ctx.font = `700 ${Math.max(12, Math.round(w * 0.028))}px Inter, system-ui, sans-serif`;
+  ctx.globalAlpha = 0.75;
+  ctx.fillText(kicker, w / 2, h * 0.28);
+  ctx.globalAlpha = 1;
+
+  const style = textStyle ?? "clean-sans";
+  const titleSize = Math.max(28, Math.round(w * 0.07));
+  if (style === "script-soft") {
+    ctx.font = `500 ${titleSize}px "Segoe Script", "Brush Script MT", cursive`;
+  } else if (style === "bold-impact") {
+    ctx.font = `800 ${titleSize}px Sora, system-ui, sans-serif`;
+  } else if (style === "soft-serif") {
+    ctx.font = `600 ${titleSize}px Georgia, "Times New Roman", serif`;
+  } else {
+    ctx.font = `700 ${titleSize}px Sora, system-ui, sans-serif`;
+  }
+  ctx.fillText(lines.headline.slice(0, 48), w / 2, h * 0.44, w * 0.86);
+
+  if (lines.subline) {
+    ctx.font = `500 ${Math.max(18, Math.round(w * 0.045))}px Inter, system-ui, sans-serif`;
+    ctx.fillText(lines.subline.slice(0, 56), w / 2, h * 0.54, w * 0.86);
+  }
+  if (lines.detail) {
+    ctx.globalAlpha = 0.85;
+    ctx.font = `400 ${Math.max(14, Math.round(w * 0.032))}px Inter, system-ui, sans-serif`;
+    ctx.fillText(lines.detail.slice(0, 64), w / 2, h * 0.64, w * 0.86);
+  }
+  ctx.restore();
+}
+
 function drawTextOverlays(
   ctx: CanvasRenderingContext2D,
   overlays: ExportTextOverlay[],
@@ -792,10 +861,17 @@ export async function exportSlideshowWebm(
     shortEdge = 1080,
     fps = 30,
     watermark = false,
+    burnTitle = false,
+    mode = "voyage",
+    invitation,
     audio,
     onProgress,
     signal,
   } = options;
+  const inviteLines = buildInviteCardLines(invitation, title);
+  const useInviteCards = mode === "invitation" && inviteLines.hasContent;
+  const INTRO_SEC = 2.4;
+  const END_SEC = 2.6;
   const defaultTransition = transitionOverride ?? theme.transition;
   const totalDurForText = clips.reduce((sum, c) => sum + c.durationSec, 0);
   const timedOverlays: ExportTextOverlay[] = [
@@ -822,7 +898,8 @@ export async function exportSlideshowWebm(
   assertNotAborted(signal);
 
   const { width, height } = canvasSizeForAspect(aspect, shortEdge);
-  const totalDuration = clips.reduce((s, c) => s + c.durationSec, 0);
+  const clipsDuration = clips.reduce((s, c) => s + c.durationSec, 0);
+  const totalDuration = clipsDuration + (useInviteCards ? INTRO_SEC + END_SEC : 0);
   const skippedVideos: string[] = [];
   let audioMuxed = false;
   let audioWarning: string | undefined;
@@ -980,7 +1057,29 @@ export async function exportSlideshowWebm(
   let elapsedTotal = 0;
 
   try {
-    for (let i = 0; i < clips.length; i++) {
+  
+  // Invitation intro card
+  if (useInviteCards) {
+    onProgress?.({
+      phase: "recording",
+      ratio: 0,
+      clipIndex: 0,
+      clipCount: clips.length,
+      message: "Recording invite intro…",
+    });
+    const introStart = performance.now();
+    while ((performance.now() - introStart) / 1000 < INTRO_SEC) {
+      assertNotAborted(signal);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      drawInviteCard(ctx, theme, width, height, "intro", invitation, title, textStyle);
+      if (watermark) drawWatermark(ctx, theme, width, height);
+      await sleep(1000 / fps, signal);
+    }
+    elapsedTotal += INTRO_SEC;
+  }
+
+  for (let i = 0; i < clips.length; i++) {
       assertNotAborted(signal);
       const clip = clips[i];
       onProgress?.({
@@ -1093,23 +1192,26 @@ export async function exportSlideshowWebm(
         fillThemeGrade(ctx, theme, width, height, 0.45);
         fillVignette(ctx, theme, width, height, 0.7);
         const nowSec = elapsedTotal + (performance.now() - start) / 1000;
-        const hasTimedTitle = timedOverlays.some(
-          (o) =>
-            o.role === "title" &&
-            nowSec >= o.at &&
-            nowSec < o.end &&
-            o.value.trim(),
-        );
-        if (!hasTimedTitle) {
-          drawTitle(
-            ctx,
-            title,
-            theme,
-            width,
-            height,
-            `${clipTransition} · ${theme.motion} · ${i + 1}/${clips.length}`,
-            textStyle,
+        // Only burn title when explicitly requested (legacy) — never "Untitled voyage" by default
+        if (burnTitle && title.trim() && title.trim() !== "Untitled voyage") {
+          const hasTimedTitle = timedOverlays.some(
+            (o) =>
+              o.role === "title" &&
+              nowSec >= o.at &&
+              nowSec < o.end &&
+              o.value.trim(),
           );
+          if (!hasTimedTitle) {
+            drawTitle(
+              ctx,
+              title,
+              theme,
+              width,
+              height,
+              "",
+              textStyle,
+            );
+          }
         }
         drawTextOverlays(
           ctx,
@@ -1147,6 +1249,28 @@ export async function exportSlideshowWebm(
 
       elapsedTotal += clip.durationSec;
     }
+
+
+  // Invitation end card
+  if (useInviteCards) {
+    onProgress?.({
+      phase: "recording",
+      ratio: Math.min(0.98, elapsedTotal / Math.max(totalDuration, 0.01)),
+      clipIndex: clips.length,
+      clipCount: clips.length,
+      message: "Recording invite end card…",
+    });
+    const endStart = performance.now();
+    while ((performance.now() - endStart) / 1000 < END_SEC) {
+      assertNotAborted(signal);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      drawInviteCard(ctx, theme, width, height, "end", invitation, title, textStyle);
+      if (watermark) drawWatermark(ctx, theme, width, height);
+      await sleep(1000 / fps, signal);
+    }
+    elapsedTotal += END_SEC;
+  }
 
     onProgress?.({
       phase: "finalize",

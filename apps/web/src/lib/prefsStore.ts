@@ -78,6 +78,10 @@ export const KIDS_SAFE_TEMPLATE_IDS = [
   "template.blush-story",
   "template.mint-travel",
   "template.lounge-edit",
+  "template.baby-shower-bloom",
+  "template.brunch-breeze",
+  "template.kids-party-pop",
+  "template.candle-wish",
 ] as const;
 
 export const KIDS_SAFE_THEME_IDS = [

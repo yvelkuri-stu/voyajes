@@ -242,6 +242,12 @@ export function Create() {
   const [exportPanelOpen, setExportPanelOpen] = useState(false);
   const [shareId, setShareId] = useState<string | undefined>(undefined);
   const [sharePassword, setSharePassword] = useState(false);
+  const [hostName, setHostName] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [eventName, setEventName] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [eventWhen, setEventWhen] = useState("");
+  const [eventWhere, setEventWhere] = useState("");
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"file" | "metronome" | null>(
     null,
@@ -377,6 +383,12 @@ export function Create() {
       setExportDestination(base.exportDestination);
       setShareId(base.shareId);
       setSharePassword(base.sharePassword === true);
+      setHostName(base.hostName ?? "");
+      setGuestName(base.guestName ?? "");
+      setEventName(base.eventName ?? "");
+      setEventType(base.eventType ?? "");
+      setEventWhen(base.eventWhen ?? "");
+      setEventWhere(base.eventWhere ?? "");
       setTextOverlays(base.textOverlays ?? []);
       setCustomSounds(base.customSounds ?? []);
       setAudioMixMode(base.audioMixMode ?? "replace");
@@ -446,6 +458,12 @@ export function Create() {
       exportDestination,
       shareId,
       sharePassword,
+      hostName,
+      guestName,
+      eventName,
+      eventType,
+      eventWhen,
+      eventWhere,
       clips: clips.map(
         ({
           id,
@@ -493,6 +511,12 @@ export function Create() {
     exportDestination,
     shareId,
     sharePassword,
+    hostName,
+    guestName,
+    eventName,
+    eventType,
+    eventWhen,
+    eventWhere,
     clips,
   ]);
 
@@ -902,9 +926,29 @@ export function Create() {
       if (tpl.durationTargetSec) setDurationTargetSec(tpl.durationTargetSec);
       if (isInvitationTemplate(tpl)) {
         setProjectMode("invitation");
+        syncModeInUrl("invitation");
+        const nextTitle = tpl.defaultTitle || "You're invited!";
         setTitle((prev) =>
-          !prev || prev === "Untitled voyage" ? "You're invited!" : prev,
+          !prev || prev === "Untitled voyage" || prev === "You're invited!"
+            ? nextTitle
+            : prev,
         );
+        const et = tpl.eventType || "";
+        if (et) setEventType((prev) => prev || et);
+        if (et) setEventName((prev) => prev || et);
+        const starters = tpl.defaultOverlays ?? [];
+        if (starters.length) {
+          setTextOverlays((prev) => {
+            if (prev.some((o) => o.value.trim())) return prev;
+            return starters.map((s, i) => ({
+              ...defaultTextOverlay(i * 0.2, 3.5 + i, s.value),
+              role: s.role ?? (i === 0 ? "title" : "caption"),
+              style: tpl.textStyle,
+              animationIn: tpl.textTransition,
+              position: i === 0 ? "center" : "bottom",
+            }));
+          });
+        }
       }
       setTransitionKey((k) => k + 1);
       setStatus(
@@ -914,7 +958,7 @@ export function Create() {
       );
       ai.pulse("template", 1200);
     },
-    [applyBeatSnap, ai],
+    [applyBeatSnap, ai, syncModeInUrl],
   );
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
@@ -1097,6 +1141,19 @@ export function Create() {
         textStyle,
         shortEdge: preset.shortEdge,
         watermark,
+        burnTitle: false,
+        mode: projectMode,
+        invitation:
+          projectMode === "invitation"
+            ? {
+                hostName: hostName.trim() || undefined,
+                guestName: guestName.trim() || undefined,
+                eventName: eventName.trim() || undefined,
+                eventType: eventType.trim() || undefined,
+                eventWhen: eventWhen.trim() || undefined,
+                eventWhere: eventWhere.trim() || undefined,
+              }
+            : undefined,
         audio: audioOpts,
         onProgress: (p) => {
           setExportProgress(p);
@@ -1156,6 +1213,12 @@ export function Create() {
       exportDestination,
       shareId,
       sharePassword,
+      hostName,
+      guestName,
+      eventName,
+      eventType,
+      eventWhen,
+      eventWhere,
       clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
         id,
         fileName,
@@ -1209,6 +1272,12 @@ export function Create() {
       exportDestination,
       shareId,
       sharePassword,
+      hostName,
+      guestName,
+      eventName,
+      eventType,
+      eventWhen,
+      eventWhere,
       clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
         id,
         fileName,
@@ -1788,21 +1857,7 @@ export function Create() {
               }}
             />
 
-            {!activeOverlays.some((o) => o.role === "title") && (
-              <div
-                className={`preview-title text-style-${textStyle} text-tx-${textTransition}`}
-                style={{ color: theme.palette.text }}
-              >
-                {title}
-                <div className={`preview-sub text-style-${captionStyle}`}>
-                  {captionText.trim()
-                    ? captionText
-                    : `${activeTransition} · ${theme.motion} · ${textStyleLabel(textStyle)}${
-                        active ? ` · ${activeIndex + 1}/${clips.length}` : ""
-                      }${durationTargetSec ? ` · target ${durationTargetSec}s` : ""}`}
-                </div>
-              </div>
-            )}
+            {/* Timed text overlays only — title/meta live in chrome below, not on pixels */}
             {activeOverlays.map((o) => (
               <div
                 key={o.id}
@@ -1817,6 +1872,16 @@ export function Create() {
                 Voyajes
               </div>
             )}
+          </div>
+
+          <div className="preview-meta-strip" aria-label="Preview details">
+            <span className="preview-meta-title">{title.trim() || (projectMode === "invitation" ? "You're invited!" : "Untitled voyage")}</span>
+            <span className="preview-meta-bits muted">
+              {activeTransition} · {theme.motion} · {textStyleLabel(textStyle)}
+              {active ? ` · ${activeIndex + 1}/${clips.length}` : ""}
+              {durationTargetSec ? ` · target ${durationTargetSec}s` : ""}
+              {captionText.trim() ? ` · ${captionText.trim()}` : ""}
+            </span>
           </div>
 
           <div
@@ -2017,11 +2082,79 @@ export function Create() {
             ))}
           </div>
 
+
+          {projectMode === "invitation" && (
+            <div className="invite-details-panel" style={{ marginTop: 14, marginBottom: 8 }}>
+              <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 8, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                Invitation details
+              </div>
+              <p className="muted" style={{ fontSize: "0.75rem", margin: "0 0 10px" }}>
+                Shown on guest play &amp; export cards — not burned as a title on every frame.
+              </p>
+              <div className="invite-details-grid">
+                <label>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Host (who's inviting)</span>
+                  <input
+                    value={hostName}
+                    onChange={(e) => setHostName(e.target.value)}
+                    placeholder="Your name"
+                    aria-label="Host name"
+                  />
+                </label>
+                <label>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Guest / to</span>
+                  <input
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="Optional"
+                    aria-label="Guest name"
+                  />
+                </label>
+                <label>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Event type</span>
+                  <input
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    placeholder="Birthday, Wedding…"
+                    aria-label="Event type"
+                  />
+                </label>
+                <label>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Event name</span>
+                  <input
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    placeholder="Maya's Birthday"
+                    aria-label="Event name"
+                  />
+                </label>
+                <label>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>When</span>
+                  <input
+                    value={eventWhen}
+                    onChange={(e) => setEventWhen(e.target.value)}
+                    placeholder="Sat · 4pm"
+                    aria-label="Event when"
+                  />
+                </label>
+                <label>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Where</span>
+                  <input
+                    value={eventWhere}
+                    onChange={(e) => setEventWhere(e.target.value)}
+                    placeholder="Optional place"
+                    aria-label="Event where"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
           <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6 }}>
             {projectMode === "invitation" ? "Invitation templates" : "Templates"}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflow: "auto" }}>
-            {templates.slice(0, projectMode === "invitation" ? 8 : 14).map((tpl) => (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflow: "auto" }}>
+            {templates.slice(0, projectMode === "invitation" ? 16 : 14).map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"

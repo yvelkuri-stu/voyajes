@@ -136,6 +136,15 @@ export interface TemplatePack {
   durationTargetSec?: DurationTargetSec;
   /** voyage (default) vs invitation (guest playback, no edit) */
   mode?: "voyage" | "invitation";
+  /** Event type label for invitation packs (Birthday, Wedding, …) */
+  eventType?: string;
+  /** Prefill title when applying the pack */
+  defaultTitle?: string;
+  /** Starter timed overlays (emoji accents welcome) */
+  defaultOverlays?: Array<{
+    value: string;
+    role?: "title" | "subtitle" | "caption";
+  }>;
 }
 
 export interface AudioBeatPack {

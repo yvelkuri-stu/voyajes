@@ -1,5 +1,5 @@
 import { brand } from "@voyajes/core";
-import type { Aspect, ProjectMode, TextStyle, TextTransition, TransitionKind } from "@voyajes/core";
+import type { Aspect, InvitationMeta, ProjectMode, TextStyle, TextTransition, TransitionKind } from "@voyajes/core";
 import type { DraftClipMeta, DraftState, DraftTextOverlay } from "./draftStore";
 
 const LS_SHARES = "voyajes.shares.v1";
@@ -20,6 +20,7 @@ export type SharePlaybackSnapshot = {
   ducking: boolean;
   watermark: boolean;
   clips: DraftClipMeta[];
+  invitation?: InvitationMeta;
 };
 
 export type ShareRecord = {
@@ -41,6 +42,8 @@ export type ShareRecord = {
   passwordProtected: boolean;
   /** Full playback recipe (theme / transitions / text / clip meta). */
   playback: SharePlaybackSnapshot | null;
+  /** Invitation who/what/when/where (mirrors draft + playback.invitation). */
+  invitation?: InvitationMeta;
   createdAt: string;
   updatedAt: string;
 };
@@ -86,6 +89,19 @@ export function publicShareUrl(id: string): string {
   return `https://${brand.shareHost}/v/${id}`;
 }
 
+
+function normalizeInvitation(raw?: InvitationMeta | null): InvitationMeta | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: InvitationMeta = {};
+  if (typeof raw.hostName === "string" && raw.hostName.trim()) out.hostName = raw.hostName.trim();
+  if (typeof raw.guestName === "string" && raw.guestName.trim()) out.guestName = raw.guestName.trim();
+  if (typeof raw.eventName === "string" && raw.eventName.trim()) out.eventName = raw.eventName.trim();
+  if (typeof raw.eventType === "string" && raw.eventType.trim()) out.eventType = raw.eventType.trim();
+  if (typeof raw.eventWhen === "string" && raw.eventWhen.trim()) out.eventWhen = raw.eventWhen.trim();
+  if (typeof raw.eventWhere === "string" && raw.eventWhere.trim()) out.eventWhere = raw.eventWhere.trim();
+  return Object.keys(out).length ? out : undefined;
+}
+
 function normalizeRecord(raw: Partial<ShareRecord> & { id: string }): ShareRecord {
   return {
     id: raw.id,
@@ -104,6 +120,7 @@ function normalizeRecord(raw: Partial<ShareRecord> & { id: string }): ShareRecor
     posterMime: raw.posterMime ?? null,
     passwordProtected: raw.passwordProtected === true,
     playback: raw.playback ?? null,
+    invitation: normalizeInvitation(raw.invitation ?? raw.playback?.invitation),
     createdAt: raw.createdAt ?? new Date().toISOString(),
     updatedAt: raw.updatedAt ?? new Date().toISOString(),
   };
@@ -160,7 +177,19 @@ export type ShareDraftContext = {
   audioBpm: number;
 };
 
+export function invitationFromDraft(draft: DraftState): InvitationMeta | undefined {
+  return normalizeInvitation({
+    hostName: draft.hostName,
+    guestName: draft.guestName,
+    eventName: draft.eventName,
+    eventType: draft.eventType,
+    eventWhen: draft.eventWhen,
+    eventWhere: draft.eventWhere,
+  });
+}
+
 export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
+  const invitation = invitationFromDraft(draft);
   return {
     aspect: draft.aspect,
     themeId: draft.themeId,
@@ -175,6 +204,7 @@ export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
     ducking: draft.ducking,
     watermark: draft.watermark,
     clips: draft.clips.map((c) => ({ ...c })),
+    ...(invitation ? { invitation } : {}),
   };
 }
 
@@ -205,6 +235,7 @@ export function ensureShareFromDraft(
     posterMime: first?.mimeType ?? null,
     passwordProtected: draft.sharePassword === true,
     playback: playbackFromDraft(draft),
+    invitation: invitationFromDraft(draft),
     createdAt: prev?.createdAt ?? now,
     updatedAt: now,
   };

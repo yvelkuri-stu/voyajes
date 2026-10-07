@@ -81,6 +81,13 @@ export type DraftState = {
   clips: DraftClipMeta[];
   shareId?: string;
   sharePassword?: boolean;
+  /** Invitation who/what/when/where (mode=invitation) */
+  hostName?: string;
+  guestName?: string;
+  eventName?: string;
+  eventType?: string;
+  eventWhen?: string;
+  eventWhere?: string;
   updatedAt: string;
 };
 
@@ -155,6 +162,12 @@ export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
     clips: [],
     shareId: undefined,
     sharePassword: false,
+    hostName: "",
+    guestName: "",
+    eventName: "",
+    eventType: "",
+    eventWhen: "",
+    eventWhere: "",
     updatedAt: new Date().toISOString(),
   };
 }
@@ -298,6 +311,12 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     clips,
     shareId: typeof parsed.shareId === "string" ? parsed.shareId : undefined,
     sharePassword: parsed.sharePassword === true,
+    hostName: typeof parsed.hostName === "string" ? parsed.hostName : "",
+    guestName: typeof parsed.guestName === "string" ? parsed.guestName : "",
+    eventName: typeof parsed.eventName === "string" ? parsed.eventName : "",
+    eventType: typeof parsed.eventType === "string" ? parsed.eventType : "",
+    eventWhen: typeof parsed.eventWhen === "string" ? parsed.eventWhen : "",
+    eventWhere: typeof parsed.eventWhere === "string" ? parsed.eventWhere : "",
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -405,6 +424,18 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       password: draft.sharePassword === true,
       id: draft.shareId,
       mode: draft.mode,
+      ...(draft.mode === "invitation"
+        ? {
+            invitation: {
+              hostName: draft.hostName?.trim() || undefined,
+              guestName: draft.guestName?.trim() || undefined,
+              eventName: draft.eventName?.trim() || undefined,
+              eventType: draft.eventType?.trim() || undefined,
+              eventWhen: draft.eventWhen?.trim() || undefined,
+              eventWhere: draft.eventWhere?.trim() || undefined,
+            },
+          }
+        : {}),
     },
     export: {
       destination: draft.exportDestination,

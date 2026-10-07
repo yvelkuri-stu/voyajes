@@ -51,6 +51,63 @@ function unlockKey(id: string) {
   return `voyajes.share.unlock.${id}`;
 }
 
+
+function GuestEngageDrawer({
+  shareId,
+  shareReactions,
+  myReacts,
+  onReact,
+}: {
+  shareId: string;
+  shareReactions: ShareReactionMap;
+  myReacts: string[];
+  onReact: (emoji: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const count = Object.values(shareReactions).reduce((s, n) => s + n, 0);
+
+  return (
+    <div className={`invite-engage${open ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="invite-engage-chip"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {open ? "Close" : `React & comments${count ? ` · ${count}` : ""}`}
+      </button>
+      {open && (
+        <div className="invite-engage-sheet">
+          <section aria-label="Reactions">
+            <div className="share-react-head">
+              <h3 style={{ margin: "0 0 4px", fontSize: "0.95rem" }}>React</h3>
+              <EmojiPicker onSelect={onReact} label="😀＋" />
+            </div>
+            <QuickReactionBar onSelect={onReact} active={myReacts} />
+            <div className="share-react-counts" style={{ marginTop: 8 }}>
+              {Object.entries(shareReactions)
+                .sort((a, b) => b[1] - a[1])
+                .map(([emoji, n]) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={`comment-react-chip${
+                      myReacts.includes(emoji) ? " is-mine" : ""
+                    }`}
+                    onClick={() => onReact(emoji)}
+                  >
+                    {emoji} <span>{n}</span>
+                  </button>
+                ))}
+            </div>
+          </section>
+          <CommentThread shareId={shareId} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Share() {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
@@ -296,6 +353,20 @@ export function Share() {
     };
   }, [record]);
 
+  // Immersive guest invite: tell Layout to hide app chrome
+  useEffect(() => {
+    const isInviteGuest =
+      !!record && record.mode === "invitation" && !hostView;
+    if (isInviteGuest) {
+      document.body.classList.add("invite-guest");
+    } else {
+      document.body.classList.remove("invite-guest");
+    }
+    return () => {
+      document.body.classList.remove("invite-guest");
+    };
+  }, [record, hostView]);
+
   if (!ready) {
     return (
       <div className="share-page">
@@ -331,45 +402,23 @@ export function Share() {
 
   if (showGuestInvite) {
     return (
-      <div className="share-page invite-page">
-        <div className="invite-hero-label">
-          <span aria-hidden>✉️</span> Invitation
-        </div>
-        <div className="share-header-row" style={{ marginBottom: 12 }}>
-          <div>
-            <h1 className="display share-title" style={{ margin: 0 }}>
-              {record.title}
-            </h1>
-            <p className="muted share-subtitle" style={{ margin: "4px 0 0" }}>
-              {formatDuration(record.durationSec)} · {record.themeName} · ♪ {record.audioName}
-            </p>
-          </div>
-          <Logo size={32} />
-        </div>
-
+      <div className="invite-immersive">
         {!guestPlaying ? (
           <div
-            className="share-poster"
+            className="invite-poster-stage"
             style={{
               background: posterUrl
                 ? undefined
                 : record.themeGradient || "var(--grad-ocean)",
-              maxWidth: 420,
-              margin: "0 auto",
-              borderRadius: 20,
-              overflow: "hidden",
-              position: "relative",
-              aspectRatio: "9 / 16",
-              maxHeight: "70vh",
             }}
           >
             {posterUrl && !isVideoPoster && (
-              <img src={posterUrl} alt="" className="share-poster-media" />
+              <img src={posterUrl} alt="" className="invite-poster-media" />
             )}
             {posterUrl && isVideoPoster && (
               <video
                 src={posterUrl}
-                className="share-poster-media"
+                className="invite-poster-media"
                 muted
                 playsInline
                 autoPlay
@@ -377,98 +426,69 @@ export function Share() {
               />
             )}
             <div
-              className="share-poster-grade"
+              className="invite-poster-grade"
               style={{
                 background: record.themeGradient,
                 mixBlendMode: "soft-light",
-                opacity: posterUrl ? 0.4 : 0.85,
+                opacity: posterUrl ? 0.35 : 0.9,
               }}
             />
-            <button
-              type="button"
-              className="share-play"
-              aria-label="Play invitation"
-              onClick={() => setGuestPlaying(true)}
-            >
-              ▶
-            </button>
-            <div className="share-poster-caption">
-              <div className="share-poster-title">{record.title}</div>
-              <div className="share-poster-meta">
-                Tap play · fullscreen animated invite
-              </div>
+            <div className="invite-poster-vignette" aria-hidden />
+            <div className="invite-poster-copy">
+              {(record.invitation?.hostName || record.invitation?.eventName) && (
+                <p className="invite-poster-who">
+                  {record.invitation?.hostName
+                    ? `${record.invitation.hostName} invites you`
+                    : "You're invited"}
+                  {record.invitation?.eventName
+                    ? ` · ${record.invitation.eventName}`
+                    : record.invitation?.eventType
+                      ? ` · ${record.invitation.eventType}`
+                      : ""}
+                </p>
+              )}
+              <button
+                type="button"
+                className="invite-play-btn"
+                aria-label="Play invitation"
+                onClick={() => setGuestPlaying(true)}
+              >
+                <span className="invite-play-icon" aria-hidden>
+                  ▶
+                </span>
+                Play invite
+              </button>
             </div>
           </div>
         ) : (
-          <InvitePlayer record={record} autoPlay />
+          <div className="invite-playback-stage">
+            <InvitePlayer record={record} autoPlay immersive />
+          </div>
         )}
 
-        <div className="og-card invite-og" aria-label="Link preview">
-          <div
-            className="og-card-thumb"
-            style={{
-              backgroundImage:
-                posterUrl && !isVideoPoster
-                  ? `url(${posterUrl})`
-                  : record.themeGradient,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-          <div className="og-card-body">
-            <div className="og-card-host">{brand.shareHost}</div>
-            <div className="og-card-title">{record.title}</div>
-            <div className="og-card-desc muted">
-              Invitation · {record.themeName} · {record.audioName} · matches host design
-            </div>
-          </div>
-        </div>
+        <GuestEngageDrawer
+          shareId={record.id}
+          shareReactions={shareReactions}
+          myReacts={myReacts}
+          onReact={onShareReact}
+        />
 
-        <div className="share-link-box" title={shareUrl} style={{ marginTop: 12 }}>
-          {shareUrl}
-        </div>
-        <div className="share-actions" style={{ justifyContent: "center" }}>
-          <button type="button" className="btn btn-primary" onClick={() => void copy()}>
-            {copied ? "Copied!" : "Copy invite link"}
-          </button>
-          {!guestPlaying && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setGuestPlaying(true)}
-            >
-              Play invite
-            </button>
-          )}
-        </div>
-
-        <section className="share-react-section" aria-label="Reactions" style={{ marginTop: 20 }}>
-          <div className="share-react-head">
-            <h3 style={{ margin: "0 0 4px", fontSize: "1rem" }}>React</h3>
-            <EmojiPicker onSelect={onShareReact} label="😀＋" />
-          </div>
-          <QuickReactionBar onSelect={onShareReact} active={myReacts} />
-        </section>
-
-        <CommentThread shareId={record.id} />
-
-        <p className="muted invite-guest-note">
-          Playback uses the host’s theme, transitions, audio &amp; text.
-          Media loads from this browser’s draft store until cloud sync ships.
-        </p>
-        <p style={{ textAlign: "center", marginTop: 16 }}>
-          <Link
-            to={`/v/${record.id}?host=1`}
-            className="muted"
-            style={{ fontSize: "0.85rem" }}
-          >
-            Host controls →
+        <footer className="invite-discreet-footer">
+          <Logo size={22} />
+          <span className="invite-footer-mark">Voyajes</span>
+          <span className="invite-footer-sep" aria-hidden>
+            ·
+          </span>
+          <Link to="/create?mode=invitation" className="invite-footer-link">
+            Create your own
           </Link>
-          {" · "}
-          <Link to="/create?mode=invitation" className="muted" style={{ fontSize: "0.85rem" }}>
-            Create your own invite
+          <span className="invite-footer-sep" aria-hidden>
+            ·
+          </span>
+          <Link to={`/v/${record.id}?host=1`} className="invite-footer-link">
+            Host
           </Link>
-        </p>
+        </footer>
       </div>
     );
   }
@@ -773,6 +793,24 @@ export function Share() {
             <dd>{formatDuration(record.durationSec)}</dd>
             <dt>Mode</dt>
             <dd>{isInvitation ? "Invitation" : "Voyage"}</dd>
+            {isInvitation && record.invitation?.hostName && (
+              <>
+                <dt>Host</dt>
+                <dd>{record.invitation.hostName}</dd>
+              </>
+            )}
+            {isInvitation && record.invitation?.eventName && (
+              <>
+                <dt>Event</dt>
+                <dd>{record.invitation.eventName}</dd>
+              </>
+            )}
+            {isInvitation && record.invitation?.eventWhen && (
+              <>
+                <dt>When</dt>
+                <dd>{record.invitation.eventWhen}</dd>
+              </>
+            )}
             <dt>Visibility</dt>
             <dd>{passwordOn ? "Password" : "Public link"}</dd>
           </dl>

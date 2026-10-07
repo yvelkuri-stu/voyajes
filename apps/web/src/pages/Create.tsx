@@ -111,6 +111,11 @@ import {
   buildWhatsAppInviteText,
   shareInviteToWhatsApp,
 } from "../lib/whatsappShare";
+import {
+  consumeStartFresh,
+  peekStartFresh,
+  type FreshMode,
+} from "../lib/startFresh";
 
 type LiveClip = DraftClipMeta & { objectUrl: string };
 
@@ -150,7 +155,9 @@ export function Create() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const advanceTimer = useRef<number | null>(null);
   const objectUrlsRef = useRef<Set<string>>(new Set());
-  /** Prevent remount-effect from double-wiping after mount hydrate handled ?fresh=1 */
+  /** While true, draft autosave must not write (avoids race during fresh wipe). */
+  const persistPausedRef = useRef(false);
+  /** Prevent remount-effect from double-wiping after mount hydrate handled fresh. */
   const freshHandledRef = useRef(false);
 
   const paramTemplate = getTemplateById(params.get("template") ?? "");
@@ -336,25 +343,39 @@ export function Create() {
     return url;
   }, []);
 
-  // Hydrate from localStorage + IndexedDB (or start fresh when ?fresh=1)
+  // Hydrate from localStorage + IndexedDB (or start fresh when ?fresh=1 / session flag)
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const wantFresh = params.get("fresh") === "1";
+      const sessionFresh = peekStartFresh();
+      const wantFresh = params.get("fresh") === "1" || sessionFresh != null;
       if (wantFresh) {
         freshHandledRef.current = true;
+        persistPausedRef.current = true;
         await clearAllBlobs();
         clearDraft();
         clearLastExport();
-        if (cancelled) return;
+        if (cancelled) {
+          persistPausedRef.current = false;
+          return;
+        }
+        const modeFromSession: FreshMode | null = sessionFresh;
+        consumeStartFresh();
         const mode: ProjectMode =
-          params.get("mode") === "invitation" || paramTemplate?.mode === "invitation"
+          modeFromSession === "invitation" ||
+          params.get("mode") === "invitation" ||
+          paramTemplate?.mode === "invitation"
             ? "invitation"
-            : "voyage";
+            : modeFromSession === "voyage"
+              ? "voyage"
+              : params.get("mode") === "invitation"
+                ? "invitation"
+                : "voyage";
         const tid = paramTheme.id;
         const d = defaultDraft(tid);
+        const freshTitle = mode === "invitation" ? "You're invited!" : d.title;
         setProjectMode(mode);
-        setTitle(mode === "invitation" ? "You're invited!" : d.title);
+        setTitle(freshTitle);
         setAspect(d.aspect);
         setThemeId(tid);
         setTemplateId(undefined);
@@ -394,6 +415,21 @@ export function Create() {
           next.delete("template");
           setSearchParams(next, { replace: true });
         }
+        // Flush React state, then persist empty default once before resuming autosave.
+        await new Promise<void>((r) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => r())),
+        );
+        if (cancelled) {
+          persistPausedRef.current = false;
+          return;
+        }
+        saveDraft({
+          ...d,
+          mode,
+          title: freshTitle,
+          themeId: tid,
+        });
+        persistPausedRef.current = false;
         setHydrated(true);
         return;
       }
@@ -505,7 +541,7 @@ export function Create() {
 
   // Persist draft whenever project fields change
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || persistPausedRef.current) return;
     const draft: DraftState = {
       title,
       mode: projectMode,
@@ -1165,6 +1201,7 @@ export function Create() {
     /** Theme to keep after wipe (defaults to current themeId). */
     keepThemeId?: string;
   }) => {
+    persistPausedRef.current = true;
     setPlaying(false);
     clearAdvanceTimer();
     for (const url of [...objectUrlsRef.current]) {
@@ -1177,8 +1214,9 @@ export function Create() {
     const mode = opts?.mode ?? projectMode;
     const tid = opts?.keepThemeId ?? themeId;
     const d = defaultDraft(tid);
+    const freshTitle = mode === "invitation" ? "You're invited!" : d.title;
     setProjectMode(mode);
-    setTitle(mode === "invitation" ? "You're invited!" : d.title);
+    setTitle(freshTitle);
     setAspect(d.aspect);
     setThemeId(tid);
     setTemplateId(undefined);
@@ -1189,7 +1227,7 @@ export function Create() {
     setTextStyle(d.textStyle);
     setTextTransition(d.textTransition);
     setCaptionStyle(d.captionStyle);
-    setCaptionText(d.captionText ?? "");
+    setCaptionText("");
     setWatermark(false);
     setDurationTargetSec(undefined);
     setExportDestination("custom");
@@ -1213,12 +1251,24 @@ export function Create() {
     setElapsed(0);
     setSchemaOk(true);
     setStatus(opts?.statusMsg ?? "Draft cleared");
+    await new Promise<void>((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => r())),
+    );
+    saveDraft({
+      ...d,
+      mode,
+      title: freshTitle,
+      themeId: tid,
+    });
+    persistPausedRef.current = false;
   };
 
-  // ?fresh=1 while Create is already mounted (Home CTA without remount)
+  // ?fresh=1 or session flag while Create is already mounted (same-route CTA)
   useEffect(() => {
-    if (params.get("fresh") !== "1") {
-      // Clear mount-hydrate flag once URL no longer has fresh
+    const sessionFresh = peekStartFresh();
+    const urlFresh = params.get("fresh") === "1";
+    if (!urlFresh && sessionFresh == null) {
+      // Clear mount-hydrate flag once neither URL nor session says fresh
       freshHandledRef.current = false;
       return;
     }
@@ -1230,7 +1280,14 @@ export function Create() {
     let cancelled = false;
     (async () => {
       const mode: ProjectMode =
-        params.get("mode") === "invitation" ? "invitation" : "voyage";
+        sessionFresh === "invitation" || params.get("mode") === "invitation"
+          ? "invitation"
+          : sessionFresh === "voyage"
+            ? "voyage"
+            : params.get("mode") === "invitation"
+              ? "invitation"
+              : "voyage";
+      consumeStartFresh();
       await resetProject({
         mode,
         statusMsg: "Started fresh",
@@ -1248,7 +1305,7 @@ export function Create() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.get("fresh"), hydrated]);
+  }, [params.get("fresh"), hydrated, params.get("mode")]);
 
   const cancelExport = () => {
     exportAbortRef.current?.abort();
@@ -2344,7 +2401,20 @@ export function Create() {
             WebM with beat mux when supported. Use Export… for YouTube / TikTok / IG
             presets. Cloud encode still TODO — Export JSON for the CLI.
           </p>
-          <div style={{ textAlign: "center", marginTop: 8 }}>
+          <div style={{ textAlign: "center", marginTop: 8, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ padding: "8px 16px", fontSize: "0.85rem" }}
+              onClick={() =>
+                void resetProject({
+                  mode: projectMode,
+                  statusMsg: "Started fresh",
+                })
+              }
+            >
+              Start fresh
+            </button>
             <button type="button" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => void resetProject()}>
               Clear draft
             </button>

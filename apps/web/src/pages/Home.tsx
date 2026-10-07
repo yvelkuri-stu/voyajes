@@ -3,6 +3,7 @@ import { brand } from "@voyajes/core";
 import { getThemes } from "../data/themes";
 import { useAuthSession } from "../hooks/useAuthSession";
 import { usePrefs } from "../hooks/usePrefs";
+import { markStartFresh } from "../lib/startFresh";
 
 const recents = [
   {
@@ -52,7 +53,11 @@ export function Home() {
             robots use.
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Link to="/create?fresh=1" className="btn btn-primary">
+            <Link
+              to="/create?fresh=1"
+              className="btn btn-primary"
+              onClick={() => markStartFresh("voyage")}
+            >
               New story
             </Link>
             <Link
@@ -62,6 +67,7 @@ export function Home() {
                 background: "linear-gradient(135deg, rgba(124,92,255,0.85), rgba(61,220,151,0.55))",
                 boxShadow: "0 0 0 1px rgba(124,92,255,0.35)",
               }}
+              onClick={() => markStartFresh("invitation")}
             >
               New invitation
             </Link>
@@ -167,6 +173,7 @@ export function Home() {
               color: "var(--text-secondary)",
               fontWeight: 600,
             }}
+            onClick={() => markStartFresh("voyage")}
           >
             + New story
           </Link>
@@ -186,6 +193,7 @@ export function Home() {
               fontWeight: 600,
               background: "rgba(124,92,255,0.06)",
             }}
+            onClick={() => markStartFresh("invitation")}
           >
             <span>+ New invitation</span>
             <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 500 }}>

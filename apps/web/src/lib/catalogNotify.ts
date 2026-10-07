@@ -11,7 +11,7 @@ const LS_LAST_SEEN = "voyajes.catalog.lastSeenVersion";
 const LS_NOTIF_PROMPTED = "voyajes.notif.softPrompted";
 const LS_APP_VERSION_SEEN = "voyajes.app.lastSeenVersion";
 
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "0.1.1";
 export const BUNDLED_CATALOG_VERSION = String(
   (manifest as { catalogVersion?: string }).catalogVersion ?? "0",
 );

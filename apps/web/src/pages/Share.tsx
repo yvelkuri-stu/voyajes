@@ -35,6 +35,7 @@ import {
   buildWhatsAppInviteText,
   shareInviteToWhatsApp,
 } from "../lib/whatsappShare";
+import { markStartFresh } from "../lib/startFresh";
 
 function myReactKey(id: string) {
   return `voyajes.share.myreact.${id}`;
@@ -566,7 +567,12 @@ export function Share() {
           <p className="muted" style={{ marginTop: 0 }}>
             Compose a draft first — then open Share to get a public link.
           </p>
-          <Link to="/create?fresh=1" className="btn btn-primary" style={{ marginTop: 16 }}>
+          <Link
+            to="/create?fresh=1"
+            className="btn btn-primary"
+            style={{ marginTop: 16 }}
+            onClick={() => markStartFresh("voyage")}
+          >
             Go to Compose
           </Link>
         </div>
@@ -657,7 +663,11 @@ export function Share() {
           <span className="invite-footer-sep" aria-hidden>
             ·
           </span>
-          <Link to="/create?mode=invitation&fresh=1" className="invite-footer-link">
+          <Link
+            to="/create?mode=invitation&fresh=1"
+            className="invite-footer-link"
+            onClick={() => markStartFresh("invitation")}
+          >
             Create your own
           </Link>
           <span className="invite-footer-sep" aria-hidden>

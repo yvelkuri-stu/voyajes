@@ -76,6 +76,8 @@ export function InvitePlayer({
   const [transitionKey, setTransitionKey] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [mediaMissing, setMediaMissing] = useState(false);
+  /** Autoplay-safe: start muted; user can unmute (browser policies). */
+  const [soundOn, setSoundOn] = useState(false);
   /** -1 intro · 0..n-1 clips · n end card */
   const [phase, setPhase] = useState<"intro" | "clips" | "end">("clips");
 
@@ -267,24 +269,26 @@ export function InvitePlayer({
     return () => window.clearInterval(id);
   }, [playing, phase, activeIndex]);
 
-  // Video element play/pause — retry after user gesture (autoPlay prop)
+  // Video element play/pause — muted-first so autoplay policies allow start
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !active || active.kind !== "video") return;
     if (playing) {
+      // Always mute the element for autoplay; clip mute OR !soundOn keeps it silent
+      v.muted = true;
       void v.play().catch(() => {
         /* autoplay blocked — controls remain */
       });
     } else {
       v.pause();
     }
-  }, [playing, active, activeIndex, transitionKey]);
+  }, [playing, active, activeIndex, transitionKey, soundOn]);
 
-  // Beat audio alongside slideshow
+  // Beat audio alongside slideshow — only after unmute (autoplay policy)
   useEffect(() => {
     previewHandle.current?.stop();
     previewHandle.current = null;
-    if (!playing || !playback) return;
+    if (!playing || !playback || !soundOn) return;
     if (phase === "intro" || phase === "end") {
       // Soft: still play beat under cards
     }
@@ -300,7 +304,7 @@ export function InvitePlayer({
       previewHandle.current?.stop();
       previewHandle.current = null;
     };
-  }, [playing, playback, phase]);
+  }, [playing, playback, phase, soundOn]);
 
   const overlays = playback?.textOverlays ?? [];
   const aspect = playback?.aspect ?? "9:16";
@@ -427,7 +431,7 @@ export function InvitePlayer({
                 <video
                   ref={videoRef}
                   src={active.objectUrl}
-                  muted={active.mute}
+                  muted
                   playsInline
                   loop={false}
                 />
@@ -529,6 +533,23 @@ export function InvitePlayer({
           }}
         >
           {playing ? "Pause" : "Play"}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-ghost${soundOn ? "" : " is-attn"}`}
+          style={{ padding: "8px 14px", minWidth: 108 }}
+          disabled={clips.length === 0 && !showInviteCards}
+          aria-pressed={soundOn}
+          title={soundOn ? "Mute soundtrack" : "Unmute soundtrack (required after autoplay)"}
+          onClick={() => {
+            setSoundOn((on) => {
+              const next = !on;
+              if (next && !playing) startPlayback();
+              return next;
+            });
+          }}
+        >
+          {soundOn ? "Mute" : "Unmute"}
         </button>
         <button
           type="button"

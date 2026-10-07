@@ -3020,6 +3020,20 @@ html.large-targets .btn {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
+/* Autoplay unmute affordance */
+.invite-controls .btn.is-attn {
+  border-color: color-mix(in srgb, var(--accent, #7c5cff) 55%, transparent);
+  background: color-mix(in srgb, var(--accent, #7c5cff) 18%, transparent);
+  animation: voyajes-unmute-pulse 1.6s ease-in-out infinite;
+}
+@keyframes voyajes-unmute-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent, #7c5cff) 0%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #7c5cff) 28%, transparent); }
+}
+.share-autoplay-stage {
+  width: 100%;
+}
+
 /* —— Invitation guest playback —— */
 .invite-page {
   max-width: 720px;

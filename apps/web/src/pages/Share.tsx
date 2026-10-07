@@ -736,6 +736,17 @@ export function Share() {
     };
   }, [record, hostView]);
 
+  // Auto-start guest/share playback once the share is ready & unlocked.
+  // Respects password gate; host view keeps manual play on the share page.
+  // Invitation details still render via InvitePlayer intro/end cards + engage drawer.
+  useEffect(() => {
+    if (!ready || !record) return;
+    const lockedNow = record.passwordProtected && !unlocked;
+    if (lockedNow) return;
+    if (hostView) return;
+    setGuestPlaying(true);
+  }, [ready, record, unlocked, hostView]);
+
   if (!ready) {
     return (
       <div className="share-page">
@@ -964,7 +975,7 @@ export function Share() {
                 </p>
               )}
             </div>
-          ) : (
+          ) : guestPlaying ? null : (
             <div
               className="share-poster"
               style={{
@@ -1012,8 +1023,8 @@ export function Share() {
             </div>
           )}
 
-          {guestPlaying && isInvitation && !locked && (
-            <div style={{ padding: "12px 16px 0" }}>
+          {guestPlaying && !locked && (
+            <div style={{ padding: "12px 16px 0" }} className="share-autoplay-stage">
               <InvitePlayer record={record} autoPlay />
             </div>
           )}

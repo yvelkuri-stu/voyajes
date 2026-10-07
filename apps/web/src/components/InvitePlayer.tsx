@@ -100,6 +100,11 @@ export function InvitePlayer({
       const metas = playback?.clips ?? [];
       const live: LiveClip[] = [];
       for (const meta of metas) {
+        // Portable packs carry media in the URL hash — prefer portableUrl (no IndexedDB).
+        if (meta.portableUrl) {
+          live.push({ ...meta, objectUrl: meta.portableUrl });
+          continue;
+        }
         const blob = await getBlob(meta.id);
         if (cancelled) return;
         if (blob) {
@@ -121,6 +126,8 @@ export function InvitePlayer({
       clearAdvanceTimer();
       previewHandle.current?.stop();
       previewHandle.current = null;
+      // Only revoke blob: URLs we created from IndexedDB — not portable pack URLs
+      // (those are owned by Share.tsx hydration).
       for (const u of objectUrlsRef.current) URL.revokeObjectURL(u);
       objectUrlsRef.current.clear();
     };
@@ -433,7 +440,7 @@ export function InvitePlayer({
               </div>
               <div className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
                 {mediaMissing
-                  ? "Open the invite on the host’s browser (local media) until cloud sync ships."
+                  ? "This link has no embedded media. Ask the host to copy the link again from Share (new links embed photos)."
                   : "The host hasn’t added photos yet."}
               </div>
             </div>

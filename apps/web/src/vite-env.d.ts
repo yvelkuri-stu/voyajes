@@ -15,3 +15,15 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** CompressionStream / DecompressionStream (portable share packs) */
+interface CompressionStream extends GenericTransformStream {}
+interface DecompressionStream extends GenericTransformStream {}
+declare var CompressionStream: {
+  prototype: CompressionStream;
+  new (format: "deflate" | "deflate-raw" | "gzip"): CompressionStream;
+};
+declare var DecompressionStream: {
+  prototype: DecompressionStream;
+  new (format: "deflate" | "deflate-raw" | "gzip"): DecompressionStream;
+};

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { brand } from "@voyajes/core";
 import { CommentThread } from "../components/CommentThread";
@@ -30,6 +30,19 @@ import {
   updateShare,
   type ShareRecord,
 } from "../lib/shareStore";
+import {
+  applyPortableUrlsToRecord,
+  buildPortableShareUrl,
+  cachePortablePack,
+  decodePortablePayload,
+  downloadInvitePackJson,
+  hydratePortablePack,
+  parsePortableHash,
+  readCachedPortablePack,
+  revokeHydratedUrls,
+  type BuildPortableResult,
+  type PortablePackV1,
+} from "../lib/portableShare";
 import {
   blobToShareFile,
   buildWhatsAppInviteText,
@@ -142,14 +155,61 @@ export function Share() {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [whatsappBusy, setWhatsappBusy] = useState(false);
+  const [portableUrl, setPortableUrl] = useState<string | null>(null);
+  const [portableBusy, setPortableBusy] = useState(false);
+  const [portablePack, setPortablePack] = useState<PortablePackV1 | null>(null);
+  const [fromPortableHash, setFromPortableHash] = useState(false);
+  const [portableFlags, setPortableFlags] = useState<BuildPortableResult | null>(null);
+  const portableObjectUrlsRef = useRef<Record<string, string>>({});
 
-  // Resolve share: /v/:id or bootstrap from draft when visiting /share → redirected here
+  // Resolve share: portable hash → localStorage → draft bootstrap
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | null = null;
 
     (async () => {
-      let share = routeId ? getShare(routeId) : null;
+      // 1) Portable pack in URL hash (works in incognito / other devices)
+      const payload = parsePortableHash(window.location.hash);
+      if (payload) {
+        try {
+          let pack = readCachedPortablePack(payload);
+          if (!pack) {
+            pack = await decodePortablePayload(payload);
+            cachePortablePack(payload, pack);
+          }
+          if (cancelled) return;
+          const hydrated = hydratePortablePack(pack);
+          portableObjectUrlsRef.current = hydrated.objectUrls;
+          const withUrls = applyPortableUrlsToRecord(
+            hydrated.record,
+            hydrated.objectUrls,
+          );
+          setFromPortableHash(true);
+          setPortablePack(pack);
+          setRecord(withUrls);
+          setPosterUrl(hydrated.posterUrl);
+          setPasswordOn(withUrls.passwordProtected);
+          setTitleEdit(withUrls.title);
+          setShareReactions(getShareReactions(withUrls.id));
+          setMyReacts(loadMyShareReacts(withUrls.id));
+          try {
+            setUnlocked(
+              !withUrls.passwordProtected ||
+                sessionStorage.getItem(unlockKey(withUrls.id)) === "1",
+            );
+          } catch {
+            setUnlocked(!withUrls.passwordProtected);
+          }
+          setPortableUrl(window.location.href.split("#")[0] + window.location.hash);
+          setReady(true);
+          return;
+        } catch (err) {
+          console.warn("portable pack decode failed", err);
+          // fall through to local / empty
+        }
+      }
+
+      let share = routeId && routeId !== "p" ? getShare(routeId) : null;
       const draft = loadDraft();
 
       if (!share && draft) {
@@ -176,10 +236,12 @@ export function Share() {
 
       if (!share) {
         setRecord(null);
+        setFromPortableHash(false);
         setReady(true);
         return;
       }
 
+      setFromPortableHash(false);
       setRecord(share);
       setPasswordOn(share.passwordProtected);
       setTitleEdit(share.title);
@@ -201,7 +263,6 @@ export function Share() {
           objectUrl = URL.createObjectURL(blob);
           setPosterUrl(objectUrl);
         } else if (blob && blob.type.startsWith("video/")) {
-          // Video poster: use object URL in <video> poster frame via first frame
           objectUrl = URL.createObjectURL(blob);
           setPosterUrl(objectUrl);
         } else {
@@ -216,28 +277,74 @@ export function Share() {
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
+      revokeHydratedUrls(portableObjectUrlsRef.current);
+      portableObjectUrlsRef.current = {};
     };
   }, [routeId, navigate]);
 
-  const shareUrl = useMemo(
-    () => (record ? publicShareUrl(record.id) : `https://${brand.shareHost}/v/…`),
-    [record],
-  );
+  // Host: build portable URL so Copy / WhatsApp embed media
+  useEffect(() => {
+    if (!record || fromPortableHash) return;
+    // Only build when this browser has the share locally (host)
+    if (!getShare(record.id)) return;
+
+    let cancelled = false;
+    setPortableBusy(true);
+    setStatus("Preparing shareable link…");
+    (async () => {
+      try {
+        const result = await buildPortableShareUrl(record, {
+          onProgress: (msg) => {
+            if (!cancelled) setStatus(msg);
+          },
+        });
+        if (cancelled) return;
+        setPortableUrl(result.url);
+        setPortablePack(result.pack);
+        setPortableFlags(result);
+        setStatus(result.status);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn("portable build failed", err);
+        setPortableUrl(publicShareUrl(record.id));
+        setStatus(
+          "Could not embed media in link — local link only. Try Export video for WhatsApp.",
+        );
+      } finally {
+        if (!cancelled) setPortableBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [record, fromPortableHash]);
+
+  const shareUrl = useMemo(() => {
+    if (portableUrl) return portableUrl;
+    if (record) return publicShareUrl(record.id);
+    return `https://${brand.shareHost}/v/…`;
+  }, [record, portableUrl]);
 
   const isVideoPoster =
-    !!record?.posterMime?.startsWith("video/") && !!posterUrl;
+    !fromPortableHash &&
+    !!record?.posterMime?.startsWith("video/") &&
+    !!posterUrl;
 
   const copy = useCallback(async () => {
     if (!record) return;
+    if (portableBusy || !portableUrl) {
+      setStatus("Preparing shareable link… tap Copy again in a moment");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      setStatus("Link copied");
+      setStatus("Shareable link copied — works in any browser");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setStatus("Could not copy — select the link manually");
     }
-  }, [record, shareUrl]);
+  }, [record, shareUrl, portableBusy, portableUrl]);
 
   const persistPassword = useCallback(
     (on: boolean) => {
@@ -458,12 +565,28 @@ export function Share() {
         }
       }
 
+      // Prefer portable URL (hash payload); rebuild if still preparing
+      let link = portableUrl;
+      if (!link && !fromPortableHash) {
+        try {
+          const built = await buildPortableShareUrl(record);
+          link = built.url;
+          setPortableUrl(built.url);
+          setPortablePack(built.pack);
+          setPortableFlags(built);
+        } catch {
+          link = publicShareUrl(record.id);
+        }
+      }
+      if (!link) link = publicShareUrl(record.id);
+
       const file = exp ? blobToShareFile(exp.blob, exp.filename) : null;
       const textMsg = buildWhatsAppInviteText({
         title: record.title,
-        shareUrl: publicShareUrl(record.id),
+        shareUrl: link,
         isInvitation: record.mode === "invitation",
         attachHint: !file,
+        portable: !!portableUrl || link.includes("#vj1."),
       });
 
       const result = await shareInviteToWhatsApp({
@@ -489,7 +612,7 @@ export function Share() {
     } finally {
       setWhatsappBusy(false);
     }
-  }, [record, exportShareVideo]);
+  }, [record, exportShareVideo, portableUrl, fromPortableHash]);
 
   // Open Graph–style document meta for invitation / voyage shares
   useEffect(() => {
@@ -562,15 +685,26 @@ export function Share() {
         <div className="share-empty-card">
           <Logo size={36} />
           <h1 className="display" style={{ margin: "16px 0 8px" }}>
-            No voyage to share yet
+            This link has no invite attached
           </h1>
           <p className="muted" style={{ marginTop: 0 }}>
-            Compose a draft first — then open Share to get a public link.
+            Ask the host to copy the link again from Share — new builds embed the
+            invite in the link so it works in incognito and on other phones.
+          </p>
+          <p className="muted" style={{ fontSize: "0.85rem" }}>
+            Or compose your own voyage below.
           </p>
           <Link
-            to="/create?fresh=1"
+            to="/"
             className="btn btn-primary"
             style={{ marginTop: 16 }}
+          >
+            Voyajes home
+          </Link>
+          <Link
+            to="/create?fresh=1"
+            className="btn btn-ghost"
+            style={{ marginTop: 10, marginLeft: 8 }}
             onClick={() => markStartFresh("voyage")}
           >
             Go to Compose
@@ -857,7 +991,11 @@ export function Share() {
             </div>
 
             <div className="share-link-box" title={shareUrl}>
-              {shareUrl}
+              {portableBusy
+                ? "Preparing shareable link…"
+                : shareUrl.length > 120
+                  ? `${shareUrl.slice(0, 72)}…#vj1.(${Math.round(shareUrl.length / 1024)} KB)`
+                  : shareUrl}
             </div>
 
             <div className="share-actions">
@@ -865,14 +1003,16 @@ export function Share() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={exporting || whatsappBusy}
+                  disabled={exporting || whatsappBusy || portableBusy}
                   onClick={() => void shareToWhatsApp()}
-                  title="Export if needed, then share video to WhatsApp"
+                  title="Share portable invite link (+ video file when available) to WhatsApp"
                 >
-                  {whatsappBusy || exporting
-                    ? exporting
-                      ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
-                      : "Sharing…"
+                  {whatsappBusy || exporting || portableBusy
+                    ? portableBusy
+                      ? "Preparing link…"
+                      : exporting
+                        ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
+                        : "Sharing…"
                     : "Share to WhatsApp"}
                 </button>
               )}
@@ -887,14 +1027,33 @@ export function Share() {
                   ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
                   : "Export video"}
               </button>
-              <button type="button" className="btn btn-ghost" onClick={() => void copy()}>
-                {copied ? "Copied!" : "Copy invite link"}
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={portableBusy && !fromPortableHash}
+                onClick={() => void copy()}
+              >
+                {copied
+                  ? "Copied!"
+                  : portableBusy && !fromPortableHash
+                    ? "Preparing link…"
+                    : "Copy invite link"}
               </button>
+              {!fromPortableHash && portablePack && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => downloadInvitePackJson(portablePack)}
+                  title="Backup if a chat app truncates a long URL"
+                >
+                  Download invite pack
+                </button>
+              )}
               {!isInvitation && (
                 <button
                   type="button"
                   className="btn btn-ghost"
-                  disabled={exporting || whatsappBusy}
+                  disabled={exporting || whatsappBusy || portableBusy}
                   onClick={() => void shareToWhatsApp()}
                 >
                   Share to WhatsApp
@@ -902,13 +1061,16 @@ export function Share() {
               )}
             </div>
 
-            {isInvitation && (
-              <p className="muted share-hint" style={{ marginTop: 10 }}>
-                Link works best on this device; for WhatsApp send the exported video.
-                Guest <code>/v/:id</code> playback still needs media in this browser&apos;s
-                IndexedDB until cloud sync.
-              </p>
-            )}
+            <p className="muted share-hint" style={{ marginTop: 10 }}>
+              Link works in any browser — photos travel with the link. Full video: Export +
+              WhatsApp.
+              {portableFlags?.videosAsStills
+                ? " Video clips become stills in the link."
+                : ""}
+              {portableFlags?.truncated
+                ? " Some clips were omitted to keep the link small."
+                : ""}
+            </p>
 
             <label className="share-password-toggle">
               <input
@@ -932,8 +1094,8 @@ export function Share() {
 
             <p className="muted share-hint">
               {isInvitation
-                ? "Instagram & TikTok want uploads — use Export video. For WhatsApp, Share to WhatsApp (file) is the reliable path for a friend on another phone."
-                : "Instagram & TikTok rank uploads higher — export a file for those feeds; use this link for chats & sites."}
+                ? "Instagram & TikTok want uploads — use Export video. The invite link embeds photos for any browser; some chat apps truncate very long URLs — use Download invite pack or Export as backup."
+                : "Instagram & TikTok rank uploads higher — export a file for those feeds; this link embeds photos for chats & sites."}
             </p>
 
             {!locked && (
@@ -1043,8 +1205,9 @@ export function Share() {
             <dd>{passwordOn ? "Password" : "Public link"}</dd>
           </dl>
           <p className="muted" style={{ fontSize: "0.8rem" }}>
-            Metadata lives in localStorage until cloud sync ships. Same id is
-            reused when you reopen Share from Compose.
+            Host metadata lives in localStorage; the copyable link embeds a portable
+            pack in the URL hash so guests need no local data. Same id is reused when
+            you reopen Share from Compose.
           </p>
         </aside>
       </div>

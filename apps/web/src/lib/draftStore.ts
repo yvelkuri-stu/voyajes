@@ -33,6 +33,11 @@ export type DraftClipMeta = {
   mute: boolean;
   /** Transition into the next clip (filmstrip gap after this clip). */
   transitionOut?: TransitionKind | null;
+  /**
+   * In-memory / portable-pack only — object URL or data URL for guest playback
+   * without IndexedDB. Not persisted to localStorage drafts.
+   */
+  portableUrl?: string;
 };
 
 export type DraftTextOverlay = {

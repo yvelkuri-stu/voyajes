@@ -100,6 +100,7 @@ import {
 } from "../lib/draftStore";
 import { assetUrl } from "../lib/assetUrl";
 import { ensureShareFromDraft, publicShareUrl } from "../lib/shareStore";
+import { buildPortableShareUrl } from "../lib/portableShare";
 import {
   downloadBlob,
   exportSlideshowWebm,
@@ -1609,7 +1610,20 @@ export function Create() {
     setShareId(share.id);
     saveDraft({ ...draft, shareId: share.id });
 
-    const shareUrl = publicShareUrl(share.id);
+    setStatus("Preparing shareable link…");
+    let shareUrl = publicShareUrl(share.id);
+    let portable = false;
+    try {
+      const built = await buildPortableShareUrl(share, {
+        onProgress: (msg) => setStatus(msg),
+      });
+      shareUrl = built.url;
+      portable = true;
+      setStatus(built.status);
+    } catch {
+      setStatus("Could not embed media — sharing local link; prefer Export video.");
+    }
+
     const displayTitle =
       title.trim() || (projectMode === "invitation" ? "You're invited!" : "Untitled voyage");
 
@@ -1620,11 +1634,14 @@ export function Create() {
       shareUrl,
       isInvitation: projectMode === "invitation",
       attachHint: !file,
+      portable,
     });
 
     if (!file) {
       setStatus(
-        "Tip: Export… first, then Share to WhatsApp — friends need the video file (link media stays on this device).",
+        portable
+          ? "Link embeds photos — Export… for full video, then Share to WhatsApp again to attach the file."
+          : "Tip: Export… first, then Share to WhatsApp — friends need the video file.",
       );
     }
 

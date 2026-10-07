@@ -36,8 +36,11 @@ import {
   cachePortablePack,
   decodePortablePayload,
   downloadInvitePackJson,
+  hasPortableHashIntent,
   hydratePortablePack,
+  loadInvitePackFromFile,
   parsePortableHash,
+  PORTABLE_CHAT_WARN_CHARS,
   readCachedPortablePack,
   revokeHydratedUrls,
   type BuildPortableResult,
@@ -159,18 +162,86 @@ export function Share() {
   const [portableBusy, setPortableBusy] = useState(false);
   const [portablePack, setPortablePack] = useState<PortablePackV1 | null>(null);
   const [fromPortableHash, setFromPortableHash] = useState(false);
+  const [portableHashError, setPortableHashError] = useState(false);
   const [portableFlags, setPortableFlags] = useState<BuildPortableResult | null>(null);
   const portableObjectUrlsRef = useRef<Record<string, string>>({});
+  const packFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Resolve share: portable hash → localStorage → draft bootstrap
+  const applyHydratedPack = useCallback((pack: PortablePackV1, keepHashUrl?: string) => {
+    revokeHydratedUrls(portableObjectUrlsRef.current);
+    const hydrated = hydratePortablePack(pack);
+    portableObjectUrlsRef.current = hydrated.objectUrls;
+    const withUrls = applyPortableUrlsToRecord(
+      hydrated.record,
+      hydrated.objectUrls,
+    );
+    setFromPortableHash(true);
+    setPortableHashError(false);
+    setPortablePack(pack);
+    setRecord(withUrls);
+    setPosterUrl(hydrated.posterUrl);
+    setPasswordOn(withUrls.passwordProtected);
+    setTitleEdit(withUrls.title);
+    setShareReactions(getShareReactions(withUrls.id));
+    setMyReacts(loadMyShareReacts(withUrls.id));
+    try {
+      setUnlocked(
+        !withUrls.passwordProtected ||
+          sessionStorage.getItem(unlockKey(withUrls.id)) === "1",
+      );
+    } catch {
+      setUnlocked(!withUrls.passwordProtected);
+    }
+    if (keepHashUrl) {
+      setPortableUrl(keepHashUrl);
+    } else {
+      setPortableUrl(null);
+    }
+    setReady(true);
+  }, []);
+
+  const openInvitePackFile = useCallback(
+    async (file: File) => {
+      try {
+        setStatus("Opening invite pack…");
+        const pack = await loadInvitePackFromFile(file);
+        applyHydratedPack(pack);
+        setStatus("Invite pack loaded");
+      } catch (err) {
+        console.warn("invite pack open failed", err);
+        setStatus(
+          "Could not open that file — use a .voyajes.json invite pack from the host.",
+        );
+        setPortableHashError(true);
+        setRecord(null);
+        setReady(true);
+      }
+    },
+    [applyHydratedPack],
+  );
+
+  // Resolve share: portable hash → localStorage → draft bootstrap (host only)
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | null = null;
 
     (async () => {
+      setPortableHashError(false);
+
       // 1) Portable pack in URL hash (works in incognito / other devices)
+      // Never rewrite / fall through when the URL has portable-hash intent —
+      // a truncated WhatsApp link must NOT bootstrap an unrelated local draft.
+      const hashIntent = hasPortableHashIntent(window.location.hash);
       const payload = parsePortableHash(window.location.hash);
-      if (payload) {
+      if (hashIntent) {
+        if (!payload) {
+          if (cancelled) return;
+          setPortableHashError(true);
+          setFromPortableHash(false);
+          setRecord(null);
+          setReady(true);
+          return;
+        }
         try {
           let pack = readCachedPortablePack(payload);
           if (!pack) {
@@ -178,40 +249,27 @@ export function Share() {
             cachePortablePack(payload, pack);
           }
           if (cancelled) return;
-          const hydrated = hydratePortablePack(pack);
-          portableObjectUrlsRef.current = hydrated.objectUrls;
-          const withUrls = applyPortableUrlsToRecord(
-            hydrated.record,
-            hydrated.objectUrls,
-          );
-          setFromPortableHash(true);
-          setPortablePack(pack);
-          setRecord(withUrls);
-          setPosterUrl(hydrated.posterUrl);
-          setPasswordOn(withUrls.passwordProtected);
-          setTitleEdit(withUrls.title);
-          setShareReactions(getShareReactions(withUrls.id));
-          setMyReacts(loadMyShareReacts(withUrls.id));
-          try {
-            setUnlocked(
-              !withUrls.passwordProtected ||
-                sessionStorage.getItem(unlockKey(withUrls.id)) === "1",
-            );
-          } catch {
-            setUnlocked(!withUrls.passwordProtected);
-          }
-          setPortableUrl(window.location.href.split("#")[0] + window.location.hash);
-          setReady(true);
+          const hashUrl =
+            window.location.href.split("#")[0] + window.location.hash;
+          applyHydratedPack(pack, hashUrl);
           return;
         } catch (err) {
           console.warn("portable pack decode failed", err);
-          // fall through to local / empty
+          if (cancelled) return;
+          // Do NOT loadDraft / ensureShareFromDraft / navigate — keep URL intact
+          setPortableHashError(true);
+          setFromPortableHash(false);
+          setRecord(null);
+          setReady(true);
+          return;
         }
       }
 
       let share = routeId && routeId !== "p" ? getShare(routeId) : null;
       const draft = loadDraft();
 
+      // Host-only: bootstrap from local draft when opening /share or /v/:id
+      // with no portable hash and local ownership / draft present.
       if (!share && draft) {
         const theme = getThemeById(draft.themeId);
         const beat = getBeatByRef(draft.audioTrackRef);
@@ -227,7 +285,9 @@ export function Share() {
           saveDraft(next);
         }
         if (routeId !== share.id) {
-          navigate(`/v/${share.id}`, { replace: true });
+          // Preserve any hash if somehow present (should be none here)
+          const hash = window.location.hash || "";
+          navigate(`/v/${share.id}${hash}`, { replace: true });
           return;
         }
       }
@@ -280,7 +340,7 @@ export function Share() {
       revokeHydratedUrls(portableObjectUrlsRef.current);
       portableObjectUrlsRef.current = {};
     };
-  }, [routeId, navigate]);
+  }, [routeId, navigate, applyHydratedPack]);
 
   // Host: build portable URL so Copy / WhatsApp embed media
   useEffect(() => {
@@ -333,18 +393,25 @@ export function Share() {
   const copy = useCallback(async () => {
     if (!record) return;
     if (portableBusy || !portableUrl) {
-      setStatus("Preparing shareable link… tap Copy again in a moment");
+      setStatus("Preparing shareable link… wait until ready, then Copy");
       return;
     }
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(portableUrl);
       setCopied(true);
-      setStatus("Shareable link copied — works in any browser");
+      const long =
+        !!portableFlags?.chatTruncateRisk ||
+        portableUrl.length > PORTABLE_CHAT_WARN_CHARS;
+      setStatus(
+        long
+          ? "Link copied — it is long; prefer Download invite pack for WhatsApp"
+          : "Shareable link copied — works in any browser",
+      );
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setStatus("Could not copy — select the link manually");
+      setStatus("Could not copy — select the full link in the box below");
     }
-  }, [record, shareUrl, portableBusy, portableUrl]);
+  }, [record, portableBusy, portableUrl, portableFlags]);
 
   const persistPassword = useCallback(
     (on: boolean) => {
@@ -680,35 +747,67 @@ export function Share() {
   }
 
   if (!record) {
+    const truncatedInvite = portableHashError;
     return (
       <div className="share-page share-empty">
         <div className="share-empty-card">
           <Logo size={36} />
           <h1 className="display" style={{ margin: "16px 0 8px" }}>
-            This link has no invite attached
+            {truncatedInvite
+              ? "This invite link was cut off or damaged"
+              : "This link has no invite attached"}
           </h1>
           <p className="muted" style={{ marginTop: 0 }}>
-            Ask the host to copy the link again from Share — new builds embed the
-            invite in the link so it works in incognito and on other phones.
+            {truncatedInvite ? (
+              <>
+                Chat apps often truncate long links. Ask the host to use{" "}
+                <strong>Download invite pack</strong> or{" "}
+                <strong>Export video + WhatsApp</strong>.
+              </>
+            ) : (
+              <>
+                Ask the host to copy the link again from Share — new builds embed
+                the invite in the link so it works in incognito and on other phones.
+              </>
+            )}
           </p>
-          <p className="muted" style={{ fontSize: "0.85rem" }}>
-            Or compose your own voyage below.
-          </p>
-          <Link
-            to="/"
-            className="btn btn-primary"
-            style={{ marginTop: 16 }}
-          >
-            Voyajes home
-          </Link>
-          <Link
-            to="/create?fresh=1"
-            className="btn btn-ghost"
-            style={{ marginTop: 10, marginLeft: 8 }}
-            onClick={() => markStartFresh("voyage")}
-          >
-            Go to Compose
-          </Link>
+          <input
+            ref={packFileInputRef}
+            type="file"
+            accept=".json,.voyajes.json,application/json"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void openInvitePackFile(f);
+              e.target.value = "";
+            }}
+          />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16, justifyContent: "center" }}>
+            <Link to="/" className="btn btn-primary">
+              Home
+            </Link>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => packFileInputRef.current?.click()}
+            >
+              Open invite pack file
+            </button>
+            {!truncatedInvite && (
+              <Link
+                to="/create?fresh=1"
+                className="btn btn-ghost"
+                onClick={() => markStartFresh("voyage")}
+              >
+                Go to Compose
+              </Link>
+            )}
+          </div>
+          {status && (
+            <p className="muted" style={{ fontSize: "0.8rem", marginTop: 12 }}>
+              {status}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -990,12 +1089,25 @@ export function Share() {
               </div>
             </div>
 
-            <div className="share-link-box" title={shareUrl}>
-              {portableBusy
-                ? "Preparing shareable link…"
-                : shareUrl.length > 120
-                  ? `${shareUrl.slice(0, 72)}…#vj1.(${Math.round(shareUrl.length / 1024)} KB)`
-                  : shareUrl}
+            <div className="share-link-box-wrap">
+              <input
+                className="share-link-box"
+                type="text"
+                readOnly
+                value={
+                  portableBusy
+                    ? "Preparing shareable link…"
+                    : portableUrl || shareUrl
+                }
+                aria-label="Full invite link"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              {!portableBusy && portableFlags?.chatTruncateRisk && (
+                <p className="muted share-link-warn" style={{ fontSize: "0.78rem", margin: "8px 0 0" }}>
+                  Link is long — prefer <strong>Download invite pack</strong> for WhatsApp
+                  (chat apps often truncate long links).
+                </p>
+              )}
             </div>
 
             <div className="share-actions">
@@ -1030,21 +1142,25 @@ export function Share() {
               <button
                 type="button"
                 className="btn btn-ghost"
-                disabled={portableBusy && !fromPortableHash}
+                disabled={!fromPortableHash && (portableBusy || !portableUrl)}
                 onClick={() => void copy()}
               >
                 {copied
                   ? "Copied!"
-                  : portableBusy && !fromPortableHash
+                  : !fromPortableHash && (portableBusy || !portableUrl)
                     ? "Preparing link…"
                     : "Copy invite link"}
               </button>
               {!fromPortableHash && portablePack && (
                 <button
                   type="button"
-                  className="btn btn-ghost"
+                  className={
+                    portableFlags?.chatTruncateRisk
+                      ? "btn btn-primary"
+                      : "btn btn-ghost"
+                  }
                   onClick={() => downloadInvitePackJson(portablePack)}
-                  title="Backup if a chat app truncates a long URL"
+                  title="Best for WhatsApp — works when chat apps truncate long URLs"
                 >
                   Download invite pack
                 </button>
@@ -1243,7 +1359,8 @@ export function ShareBootstrap() {
     if (draft.shareId !== share.id) {
       saveDraft({ ...draft, shareId: share.id });
     }
-    navigate(`/v/${share.id}`, { replace: true });
+    const hash = window.location.hash || "";
+    navigate(`/v/${share.id}${hash}`, { replace: true });
   }, [navigate]);
 
   return (

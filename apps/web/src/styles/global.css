@@ -1117,8 +1117,14 @@ button {
   text-overflow: ellipsis;
 }
 
-.share-link-box {
+.share-link-box-wrap {
   margin-top: 14px;
+}
+
+.share-link-box {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
   border-radius: 12px;
   background:
@@ -1129,6 +1135,22 @@ button {
   font-size: 0.8rem;
   word-break: break-all;
   color: var(--text-primary);
+  /* Full URL in value — do not visually truncate so select-copy gets everything */
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+input.share-link-box {
+  cursor: text;
+  outline: none;
+}
+
+input.share-link-box:focus {
+  border-color: var(--accent, #7c5cff);
+}
+
+.share-link-warn {
+  line-height: 1.35;
 }
 
 .share-actions {

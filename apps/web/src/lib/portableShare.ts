@@ -12,8 +12,15 @@ import {
 } from "./shareStore";
 
 export const PORTABLE_HASH_PREFIX = "vj1.";
-/** Soft cap for URL hash payload (chars). WhatsApp/SMS may truncate sooner. */
+/** Soft cap for URL hash payload (chars). Browser-safe upper bound. */
 export const PORTABLE_MAX_CHARS = 1_800_000;
+/**
+ * Soft warn threshold — chat apps (WhatsApp etc.) often truncate long URLs.
+ * Prefer invite pack download above this size.
+ */
+export const PORTABLE_CHAT_WARN_CHARS = 10_000;
+/** Prefer at most this many photos in a portable link for short URLs. */
+export const PORTABLE_MAX_CLIPS_PREFERRED = 4;
 const SESSION_CACHE_PREFIX = "voyajes.portable.cache.v1:";
 
 export type PortableMediaEntry = {
@@ -45,6 +52,8 @@ export type BuildPortableResult = {
   truncated: boolean;
   videosAsStills: boolean;
   droppedClips: number;
+  /** True when payload exceeds chat-app safe length — prefer invite pack */
+  chatTruncateRisk: boolean;
   /** Human status for host UI */
   status: string;
 };
@@ -131,6 +140,14 @@ export function parsePortableHash(hash: string): string | null {
   if (!h.startsWith(PORTABLE_HASH_PREFIX)) return null;
   const payload = h.slice(PORTABLE_HASH_PREFIX.length);
   return payload.length > 0 ? payload : null;
+}
+
+/** True if the URL hash looks like a portable invite (#vj1.…), even if truncated/empty. */
+export function hasPortableHashIntent(
+  hash = typeof location !== "undefined" ? location.hash : "",
+): boolean {
+  const h = hash.startsWith("#") ? hash.slice(1) : hash;
+  return h.startsWith(PORTABLE_HASH_PREFIX);
 }
 
 export function portableHashFromLocation(
@@ -235,8 +252,8 @@ async function videoBlobToPosterJpeg(
 
 type QualityPreset = { maxEdge: number; quality: number; label: "high" | "compact" };
 
-const QUALITY_HIGH: QualityPreset = { maxEdge: 960, quality: 0.7, label: "high" };
-const QUALITY_COMPACT: QualityPreset = { maxEdge: 720, quality: 0.55, label: "compact" };
+const QUALITY_HIGH: QualityPreset = { maxEdge: 720, quality: 0.6, label: "high" };
+const QUALITY_COMPACT: QualityPreset = { maxEdge: 640, quality: 0.5, label: "compact" };
 
 async function encodeClipMedia(
   blob: Blob,
@@ -260,7 +277,16 @@ async function encodeClipMedia(
 
 function stripShareForPack(record: ShareRecord): ShareRecord {
   // Deep-ish clone; keep playback recipe; media travels in `media` map
-  return JSON.parse(JSON.stringify(record)) as ShareRecord;
+  const share = JSON.parse(JSON.stringify(record)) as ShareRecord;
+  // Always carry full invitation meta on pack.share (who/what/when/where)
+  const inv = record.invitation ?? record.playback?.invitation;
+  if (inv) {
+    share.invitation = { ...inv };
+    if (share.playback) {
+      share.playback = { ...share.playback, invitation: { ...inv } };
+    }
+  }
+  return share;
 }
 
 async function buildPackAtQuality(
@@ -334,17 +360,33 @@ export async function buildPortableShareUrl(
   const clipCount = record.playback?.clips?.length ?? record.clipCount;
 
   notify("Preparing shareable link…");
-  let pack = await buildPackAtQuality(record, QUALITY_HIGH, clipCount || 99);
+  // Aggressively cap clips so WhatsApp/SMS have a chance; invitation meta always kept.
+  const preferredMax = Math.min(
+    clipCount || PORTABLE_MAX_CLIPS_PREFERRED,
+    PORTABLE_MAX_CLIPS_PREFERRED,
+  );
+  let pack = await buildPackAtQuality(record, QUALITY_HIGH, preferredMax || 1);
   let encoded = await encodePayload(pack);
 
-  if (encoded.length > PORTABLE_MAX_CHARS) {
+  if (encoded.length > PORTABLE_CHAT_WARN_CHARS || encoded.length > PORTABLE_MAX_CHARS) {
     notify("Link large — compressing photos…");
-    pack = await buildPackAtQuality(record, QUALITY_COMPACT, clipCount || 99);
+    pack = await buildPackAtQuality(record, QUALITY_COMPACT, preferredMax || 1);
     encoded = await encodePayload(pack);
   }
 
   let dropped = pack.flags?.droppedClips ?? 0;
   let maxKeep = Math.max(1, (pack.share.playback?.clips?.length ?? 1) - 1);
+  // Shrink until under chat-warn when possible (down to 2 clips), then hard-cap.
+  while (
+    (encoded.length > PORTABLE_CHAT_WARN_CHARS || encoded.length > PORTABLE_MAX_CHARS) &&
+    maxKeep >= 2
+  ) {
+    notify(`Link still large — embedding first ${maxKeep} clip${maxKeep === 1 ? "" : "s"}…`);
+    pack = await buildPackAtQuality(record, QUALITY_COMPACT, maxKeep);
+    encoded = await encodePayload(pack);
+    dropped = pack.flags?.droppedClips ?? dropped;
+    maxKeep -= 1;
+  }
   while (encoded.length > PORTABLE_MAX_CHARS && maxKeep >= 1) {
     notify(`Link still large — embedding first ${maxKeep} clip${maxKeep === 1 ? "" : "s"}…`);
     pack = await buildPackAtQuality(record, QUALITY_COMPACT, maxKeep);
@@ -357,10 +399,14 @@ export async function buildPortableShareUrl(
     !!pack.flags?.truncated || encoded.length > PORTABLE_MAX_CHARS || dropped > 0;
   const videosAsStills = !!pack.flags?.videosAsStills;
   const url = buildPortableUrl(record.id, encoded);
+  const chatRisk = encoded.length > PORTABLE_CHAT_WARN_CHARS;
 
   let status =
     "Link works in any browser — photos travel with the link. Full video: Export + WhatsApp.";
-  if (videosAsStills && truncated) {
+  if (chatRisk) {
+    status =
+      "Link is long — prefer Download invite pack for WhatsApp (chat apps often truncate long links).";
+  } else if (videosAsStills && truncated) {
     status =
       "Link ready (photos + video stills; some clips omitted). Export video for the full cut.";
   } else if (videosAsStills) {
@@ -369,9 +415,6 @@ export async function buildPortableShareUrl(
   } else if (truncated) {
     status =
       "Link ready (truncated for size). Export video or download invite pack for the rest.";
-  } else if (encoded.length > 500_000) {
-    status =
-      "Link ready (large). Some apps truncate long URLs — also download invite pack or Export video.";
   }
 
   return {
@@ -381,6 +424,7 @@ export async function buildPortableShareUrl(
     truncated,
     videosAsStills,
     droppedClips: dropped,
+    chatTruncateRisk: chatRisk,
     status,
   };
 }
@@ -466,6 +510,16 @@ export function applyPortableUrlsToRecord(
   });
   const playback: SharePlaybackSnapshot = { ...record.playback, clips };
   return { ...record, playback };
+}
+
+/** Parse a guest-opened .voyajes.json / invite pack file. */
+export async function loadInvitePackFromFile(file: File): Promise<PortablePackV1> {
+  const text = await file.text();
+  const pack = JSON.parse(text) as PortablePackV1;
+  if (!pack || pack.v !== 1 || !pack.share || typeof pack.media !== "object") {
+    throw new Error("Invalid invite pack file");
+  }
+  return pack;
 }
 
 export function downloadInvitePackJson(pack: PortablePackV1, filename?: string): void {

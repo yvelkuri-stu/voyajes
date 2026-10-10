@@ -3,6 +3,11 @@
  */
 import {
   clampTransitionSec,
+  themeLayerFor,
+  layoutTimeline,
+  requestedTransitionSec,
+  type TimelineLayout,
+  type TransitionKind,
   type ClipAnimation,
   type Easing,
   type GradePreset,
@@ -43,29 +48,27 @@ export function transitionEasingInto(
   return spec?.easing ?? project?.easing;
 }
 
-/** Theme layer — derived grade + default animation for each theme. */
+/** Theme layer — derived grade + default animation (shared with CLI via core). */
 export function themeLayer(theme: Pick<ThemeCard, "id" | "motion" | "photoMotion" | "tags">): {
   grade: GradePreset;
   animation: ClipAnimation;
 } {
-  const id = theme.id;
-  const mood = (theme.tags ?? []).join(" ");
-  let grade: GradePreset = "vivid";
-  if (/noir|mono|classic/.test(id + mood)) grade = "mono";
-  else if (/film|vintage|retro|nostalg/.test(id + mood)) grade = "film";
-  else if (/sunset|golden|warm|desert|cozy|autumn/.test(id + mood)) grade = "warm";
-  else if (/ocean|arctic|cool|ice|winter|blue/.test(id + mood)) grade = "cool";
-  else if (/neon|night|party|club|cyber/.test(id + mood)) grade = "neon";
-  else if (/dream|pastel|soft|wedding|love|bloom/.test(id + mood)) grade = "dreamy";
-  else if (/cinema|epic|travel|road/.test(id + mood)) grade = "teal-orange";
-  // Theme default animation = gentle motion on photos (applied to images only).
-  const animation: ClipAnimation =
-    theme.photoMotion === "off"
-      ? {}
-      : theme.photoMotion === "bold"
-        ? { emphasis: "ken-burns" }
-        : theme.motion === "snappy"
-          ? { emphasis: "ken-burns-out" }
-          : { emphasis: "ken-burns" };
-  return { grade, animation };
+  return themeLayerFor(theme);
+}
+
+/** Overlapping layout (xfade semantics) shared with the CLI. */
+export function computeLayout(
+  clips: { durationSec: number; transitionOut?: TransitionKind | null; transitionSpec?: TransitionSpec }[],
+  globalKind: TransitionKind,
+  projectSpec: TransitionSpec | undefined,
+  theme: Pick<ThemeCard, "transitionDurationMs">,
+): TimelineLayout {
+  return layoutTimeline(clips, (gi) =>
+    requestedTransitionSec(
+      clips[gi].transitionOut ?? globalKind,
+      clips[gi].transitionSpec,
+      projectSpec,
+      theme.transitionDurationMs,
+    ),
+  );
 }

@@ -140,7 +140,8 @@ import {
 } from "../components/editor/Inspector";
 import { AnimatedLayer } from "../components/editor/AnimatedLayer";
 import { useHistory } from "../hooks/useHistory";
-import { themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
+import { computeLayout, themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
+import { TimelineAudioPlayer, type ResolvedAudioClip } from "../lib/timelineAudio";
 import {
   clipStarts,
   easingCss,
@@ -148,6 +149,14 @@ import {
   keyframesAt,
   locateTime,
   upsertKeyframe,
+  clampSpeed,
+  sourceTimeAt,
+  framesAt,
+  duckWindows,
+  effectiveAudioClips,
+  SPEED_PRESETS,
+  type AudioClip,
+  type TimelineLayout,
   type ClipAnimation,
   type GradePreset,
   type Keyframe,
@@ -182,6 +191,8 @@ type EditorSnapshot = {
   audioTrackRef: string;
   beatSync: BeatSync;
   aspect: Aspect;
+  audioClips: AudioClip[] | undefined;
+  autoDuck: boolean | undefined;
 };
 
 function keyframesAtSafe(keys: Keyframe[] | undefined, t: number) {
@@ -350,6 +361,7 @@ export function Create() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const layoutRef = useRef<TimelineLayout>({ starts: [], tx: [], total: 0 });
   const elapsedRef = useRef(0);
   elapsedRef.current = elapsed;
   const [dragOver, setDragOver] = useState(false);
@@ -382,6 +394,8 @@ export function Create() {
   const [selection, setSelection] = useState<TLSelection>(null);
   const [appliedChip, setAppliedChip] = useState<{ label: string; snap: EditorSnapshot | null } | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [audioClips, setAudioClips] = useState<AudioClip[] | undefined>(undefined);
+  const [autoDuck, setAutoDuck] = useState<boolean | undefined>(undefined);
   const historyRef = useRef<{
     checkpoint: () => EditorSnapshot | null;
     restore: (s: EditorSnapshot) => void;
@@ -415,21 +429,18 @@ export function Create() {
       packRef: "audio.ocean-drift-084@1.0.0",
     };
 
-  const totalDuration = useMemo(
-    () => clips.reduce((sum, c) => sum + c.durationSec, 0),
-    [clips],
+  // Overlapping (xfade) layout — identical math to WebM/GIF export and CLI
+  const layout = useMemo(
+    () => computeLayout(clips, globalTransition, projectTxSpec, theme),
+    [clips, globalTransition, projectTxSpec, theme],
   );
+  const totalDuration = layout.total;
 
   clipsRef.current = clips;
+  layoutRef.current = layout;
   const minimalist = prefs.minimalistMode;
 
-  const trackElapsed = useMemo(() => {
-    let before = 0;
-    for (let i = 0; i < activeIndex && i < clips.length; i++) {
-      before += clips[i].durationSec;
-    }
-    return before + elapsed;
-  }, [activeIndex, clips, elapsed]);
+  const trackElapsed = (layout.starts[activeIndex] ?? 0) + elapsed;
 
   const revokeUrl = useCallback((url: string) => {
     URL.revokeObjectURL(url);
@@ -606,6 +617,8 @@ export function Create() {
       setGrade(base.grade);
       setDefaultAnimation(base.defaultAnimation);
       setProjectTxSpec(base.transitionSpec);
+      setAudioClips(base.audioClips);
+      setAutoDuck(base.autoDuck);
       if (base.transitionOverride) {
         setTransitionOverride(base.transitionOverride);
       } else if (paramTemplate) {
@@ -670,6 +683,8 @@ export function Create() {
       grade,
       defaultAnimation,
       transitionSpec: projectTxSpec,
+      audioClips,
+      autoDuck,
       watermark,
       durationTargetSec,
       exportDestination,
@@ -708,6 +723,8 @@ export function Create() {
     grade,
     defaultAnimation,
     projectTxSpec,
+    audioClips,
+    autoDuck,
     watermark,
     durationTargetSec,
     exportDestination,
@@ -770,10 +787,15 @@ export function Create() {
     const tickStart =
       performance.now() - Math.min(elapsedRef.current, clip.durationSec) * 1000;
 
+    // Next clip starts `tx` seconds before this one ends (overlap)
+    const holdSec =
+      activeIndex < clips.length - 1
+        ? clip.durationSec - (layoutRef.current.tx[activeIndex] ?? 0)
+        : clip.durationSec;
     const tick = () => {
       const t = (performance.now() - tickStart) / 1000;
       setElapsed(Math.min(t, clip.durationSec));
-      if (t < clip.durationSec) {
+      if (t < holdSec) {
         advanceTimer.current = window.setTimeout(tick, 50);
       } else {
         const next = (activeIndex + 1) % clips.length;
@@ -790,7 +812,8 @@ export function Create() {
     const clip = clips[activeIndex];
     const el = videoRef.current;
     if (!clip || clip.kind !== "video" || !el) return;
-    el.currentTime = (clip.inSec ?? 0) + elapsedRef.current;
+    el.playbackRate = clampSpeed(clip.speed);
+    el.currentTime = sourceTimeAt(clip, elapsedRef.current);
     if (playing) {
       void el.play().catch(() => {
         /* autoplay may fail without gesture; Play button covers it */
@@ -883,6 +906,9 @@ export function Create() {
 
   const selectBeat = useCallback(
     (beat: BeatCard) => {
+      setAudioClips((prev) =>
+        prev ? prev.map((a) => (a.ref === audioTrackRef ? { ...a, ref: beat.packRef, label: beat.name } : a)) : prev,
+      );
       setAudioTrackRef(beat.packRef);
       if (beatSync !== "off") {
         applyBeatSnap(beatSync, beat.bpm, true);
@@ -891,7 +917,7 @@ export function Create() {
         setStatus(`Beat · ${beat.name}`);
       }
     },
-    [applyBeatSnap, beatSync],
+    [applyBeatSnap, beatSync, audioTrackRef],
   );
 
   const togglePreview = useCallback(
@@ -1575,9 +1601,15 @@ export function Create() {
           transitionSpec: c.transitionSpec,
           animation: animFor(c),
           keyframes: c.keyframes,
+          speed: c.speed,
+          reverse: c.reverse,
+          mute: c.mute,
         })),
         grade: effectiveGrade,
         transitionSpec: projectTxSpec,
+        audioClips: resolvedAudio,
+        ducks,
+        duckLevel: 0.3,
         theme,
         title,
         aspect,
@@ -1679,9 +1711,15 @@ export function Create() {
           transitionSpec: c.transitionSpec,
           animation: animFor(c),
           keyframes: c.keyframes,
+          speed: c.speed,
+          reverse: c.reverse,
+          mute: c.mute,
         })),
         grade: effectiveGrade,
         transitionSpec: projectTxSpec,
+        audioClips: resolvedAudio,
+        ducks,
+        duckLevel: 0.3,
         theme,
         title,
         aspect,
@@ -1789,6 +1827,8 @@ export function Create() {
       grade,
       defaultAnimation,
       transitionSpec: projectTxSpec,
+      audioClips,
+      autoDuck,
       updatedAt: new Date().toISOString(),
     };
     const project = toVoyajesProject(draft);
@@ -1843,6 +1883,8 @@ export function Create() {
       grade,
       defaultAnimation,
       transitionSpec: projectTxSpec,
+      audioClips,
+      autoDuck,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -1895,6 +1937,8 @@ export function Create() {
       grade,
       defaultAnimation,
       transitionSpec: projectTxSpec,
+      audioClips,
+      autoDuck,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -2071,7 +2115,99 @@ export function Create() {
       c.animation ?? (c.kind === "image" ? effectiveAnim : { ...effectiveAnim, emphasis: undefined }),
     [effectiveAnim],
   );
-  const starts = useMemo(() => clipStarts(clips), [clips]);
+  const starts = layout.starts;
+
+  // ───────── audio track (v3) ─────────
+  const autoDuckOn = autoDuck ?? ducking;
+  const effAudio = useMemo(
+    () =>
+      effectiveAudioClips(
+        { track: audioTrackRef, mixMode: audioMixMode, ducking, clips: audioClips },
+        totalDuration,
+        selectedBeat.packRef,
+      ),
+    [audioTrackRef, audioMixMode, ducking, audioClips, totalDuration, selectedBeat.packRef],
+  );
+  const audioUrlFor = useCallback(
+    (ref: string): string | undefined => {
+      if (isCustomTrackRef(ref)) {
+        const id = customIdFromTrackRef(ref);
+        return id ? customSoundUrls[id] || customSounds.find((x) => x.id === id)?.url : undefined;
+      }
+      return getBeatByRef(ref)?.previewUrl;
+    },
+    [customSoundUrls, customSounds],
+  );
+  const audioLabelFor = useCallback(
+    (ref: string) =>
+      isCustomTrackRef(ref)
+        ? customSounds.find((x) => x.id === customIdFromTrackRef(ref))?.name ?? "Custom sound"
+        : getBeatByRef(ref)?.name ?? ref,
+    [customSounds],
+  );
+  const resolvedAudio: ResolvedAudioClip[] = useMemo(
+    () => effAudio.map((a) => ({ ...a, url: audioUrlFor(a.ref) })),
+    [effAudio, audioUrlFor],
+  );
+  const ducks = useMemo(
+    () => (autoDuckOn ? duckWindows(clips, layout) : []),
+    [autoDuckOn, clips, layout],
+  );
+  /** First edit of the audio track turns the implicit bed into real clips. */
+  const editAudio = useCallback(
+    (fn: (list: AudioClip[]) => AudioClip[]) => {
+      setAudioClips((prev) => fn(prev ?? effAudio.map((a) => ({ ...a, label: audioLabelFor(a.ref) }))));
+    },
+    [effAudio, audioLabelFor],
+  );
+  const patchAudio = useCallback(
+    (id: string, patch: Partial<AudioClip>) => editAudio((l) => l.map((a) => (a.id === id ? { ...a, ...patch } : a))),
+    [editAudio],
+  );
+
+  // Synced preview audio while the timeline plays
+  const audioPlayerRef = useRef<TimelineAudioPlayer | null>(null);
+  const playheadRef = useRef(0);
+  playheadRef.current = (layout.starts[activeIndex] ?? 0) + elapsed;
+  const audioKey = JSON.stringify([resolvedAudio.map((a) => [a.url, a.at, a.inSec, a.durationSec, a.volume, a.fadeInSec, a.fadeOutSec, a.loop]), ducks]);
+  useEffect(() => {
+    if (!audioPlayerRef.current) audioPlayerRef.current = new TimelineAudioPlayer();
+    const pl = audioPlayerRef.current;
+    if (!playing) {
+      pl.stop();
+      return;
+    }
+    previewHandle.current?.stop();
+    previewHandle.current = null;
+    void pl.play(resolvedAudio, playheadRef.current, ducks, 0.3);
+    return () => pl.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, audioKey]);
+  // Restart audio when playback wraps back to the start
+  const wrapRef = useRef(activeIndex);
+  useEffect(() => {
+    if (playing && activeIndex === 0 && wrapRef.current !== 0 && clips.length > 1) {
+      void audioPlayerRef.current?.play(resolvedAudio, 0, ducks, 0.3);
+    }
+    wrapRef.current = activeIndex;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
+  useEffect(() => () => audioPlayerRef.current?.stop(), []);
+
+  const selAudio =
+    selection?.type === "audio" && selection.id ? effAudio.find((a) => a.id === selection.id) : undefined;
+
+  const addAudioAtPlayhead = useCallback(() => {
+    const at = Math.round(((layout.starts[activeIndex] ?? 0) + elapsed) * 100) / 100;
+    const id = `aud-${Math.random().toString(36).slice(2, 8)}`;
+    const dur = Math.max(2, Math.min(8, Math.max(2, totalDuration - at)));
+    editAudio((l) => [
+      ...l,
+      { id, ref: audioTrackRef, at, durationSec: Math.round(dur * 100) / 100, volume: 0.8, fadeInSec: 0.3, fadeOutSec: 0.6, loop: true, label: audioLabelFor(audioTrackRef) },
+    ]);
+    setSelection({ type: "audio", id });
+    setInspectorOpen(true);
+  }, [layout, activeIndex, elapsed, totalDuration, editAudio, audioTrackRef, audioLabelFor]);
 
   const snapshot: EditorSnapshot = useMemo(
     () => ({
@@ -2088,8 +2224,10 @@ export function Create() {
       audioTrackRef,
       beatSync,
       aspect,
+      audioClips,
+      autoDuck,
     }),
-    [clips, textOverlays, themeId, templateId, transitionOverride, grade, defaultAnimation, projectTxSpec, textStyle, textTransition, audioTrackRef, beatSync, aspect],
+    [clips, textOverlays, themeId, templateId, transitionOverride, grade, defaultAnimation, projectTxSpec, textStyle, textTransition, audioTrackRef, beatSync, aspect, audioClips, autoDuck],
   );
   const history = useHistory<EditorSnapshot>(
     snapshot,
@@ -2107,6 +2245,8 @@ export function Create() {
       setAudioTrackRef(sn.audioTrackRef);
       setBeatSync(sn.beatSync);
       setAspect(sn.aspect);
+      setAudioClips(sn.audioClips);
+      setAutoDuck(sn.autoDuck);
       setActiveIndex((ai) => Math.min(ai, Math.max(0, sn.clips.length - 1)));
     },
     hydrated,
@@ -2124,11 +2264,11 @@ export function Create() {
     (t: number) => {
       if (clips.length === 0) return;
       setPlaying(false);
-      const { index, local } = locateTime(clips, t);
-      setActiveIndex(index);
-      setElapsed(local);
+      const f = framesAt(layout, clips, t);
+      setActiveIndex(f.index);
+      setElapsed(f.local);
     },
-    [clips],
+    [clips, layout],
   );
 
   // Paused scrubbing drives the video frame
@@ -2137,7 +2277,7 @@ export function Create() {
     const clip = clips[activeIndex];
     const el = videoRef.current;
     if (!clip || clip.kind !== "video" || !el) return;
-    const want = (clip.inSec ?? 0) + elapsed;
+    const want = sourceTimeAt(clip, elapsed);
     if (Math.abs(el.currentTime - want) > 0.05) el.currentTime = want;
   }, [elapsed, playing, activeIndex, clips]);
 
@@ -2157,9 +2297,10 @@ export function Create() {
             const d = next.inSec !== undefined ? next.durationSec : next.durationSec;
             return { ...c, durationSec: Math.round(Math.min(60, Math.max(0.3, d)) * 100) / 100 };
           }
-          const source = c.sourceSec ?? origin.inSec + origin.durationSec;
+          const sp = clampSpeed(c.speed);
+          const source = c.sourceSec ?? origin.inSec + origin.durationSec * sp;
           const inSec = Math.max(0, Math.min(source - 0.3, next.inSec ?? c.inSec ?? 0));
-          const dur = Math.max(0.3, Math.min(source - inSec, next.durationSec));
+          const dur = Math.max(0.3, Math.min((source - inSec) / sp, next.durationSec));
           return {
             ...c,
             sourceSec: source,
@@ -2210,6 +2351,28 @@ export function Create() {
   }, []);
 
   const splitAtPlayhead = useCallback(() => {
+    if (selAudio) {
+      const t = (layout.starts[activeIndex] ?? 0) + elapsed;
+      const local = t - selAudio.at;
+      if (local < 0.2 || local > selAudio.durationSec - 0.2) {
+        setCoachHint("Move the playhead inside the audio clip to split");
+        return;
+      }
+      const id = `aud-${Math.random().toString(36).slice(2, 8)}`;
+      editAudio((l) =>
+        l.flatMap((a) =>
+          a.id !== selAudio.id
+            ? [a]
+            : [
+                { ...a, durationSec: Math.round(local * 100) / 100, fadeOutSec: 0 },
+                { ...a, id, at: Math.round(t * 100) / 100, inSec: Math.round(((a.inSec ?? 0) + local) * 100) / 100, durationSec: Math.round((a.durationSec - local) * 100) / 100, fadeInSec: 0 },
+              ],
+        ),
+      );
+      setSelection({ type: "audio", id });
+      setCoachHint("Split audio at playhead");
+      return;
+    }
     const idx = activeIndex;
     const c = clips[idx];
     if (!c) return;
@@ -2232,7 +2395,7 @@ export function Create() {
     const second: LiveClip = {
       ...c,
       id: newId,
-      inSec: c.kind === "video" ? Math.round(((c.inSec ?? 0) + local) * 100) / 100 : undefined,
+      inSec: c.kind === "video" ? Math.round(sourceTimeAt(c, local) * 100) / 100 : undefined,
       durationSec: Math.round((c.durationSec - local) * 100) / 100,
       keyframes: keys.filter((k) => k.t > local).map((k) => ({ ...k, t: Math.round((k.t - local) * 100) / 100 })),
       animation: c.animation ? { ...c.animation, in: undefined } : undefined,
@@ -2242,9 +2405,16 @@ export function Create() {
     setActiveIndex(idx + 1);
     setElapsed(0);
     setCoachHint("Split at playhead");
-  }, [activeIndex, clips, elapsed, copyBlob]);
+  }, [activeIndex, clips, elapsed, copyBlob, selAudio, layout, editAudio]);
 
   const duplicateSelected = useCallback(() => {
+    if (selAudio) {
+      const id = `aud-${Math.random().toString(36).slice(2, 8)}`;
+      editAudio((l) => [...l, { ...selAudio, id, at: Math.round((selAudio.at + selAudio.durationSec) * 100) / 100 }]);
+      setSelection({ type: "audio", id });
+      setCoachHint("Duplicated audio");
+      return;
+    }
     if (selClip) {
       const newId = newClipId();
       void copyBlob(selClip.id, newId);
@@ -2262,9 +2432,15 @@ export function Create() {
       setSelection({ type: "text", id: copy.id });
       setCoachHint("Duplicated text");
     }
-  }, [selClip, selText, copyBlob]);
+  }, [selClip, selText, copyBlob, selAudio, editAudio]);
 
   const deleteSelected = useCallback(() => {
+    if (selAudio) {
+      editAudio((l) => l.filter((a) => a.id !== selAudio.id));
+      setSelection(null);
+      setCoachHint("Audio clip deleted · Ctrl/Cmd+Z to undo");
+      return;
+    }
     if (selClip) {
       // Keep blob + URL alive so Undo can bring the clip back.
       setClips((prev) => prev.filter((c) => c.id !== selClip.id));
@@ -2281,7 +2457,7 @@ export function Create() {
       patchClip(id, { transitionOut: null, transitionSpec: undefined });
       setCoachHint("Transition reset to theme default");
     }
-  }, [selClip, selText, selGap, clips, patchClip]);
+  }, [selClip, selText, selGap, clips, patchClip, selAudio, editAudio]);
 
   const addKeyframeAtPlayhead = useCallback(() => {
     if (selClip) {
@@ -2388,7 +2564,9 @@ export function Create() {
     return () => window.clearTimeout(id);
   }, [appliedChip]);
 
-  const activeTxSec = transitionSecInto(clips, activeIndex, projectTxSpec, theme);
+  const activeTxSec = activeIndex > 0 ? layout.tx[activeIndex - 1] ?? 0 : 0;
+  const prevIdx = activeIndex > 0 && elapsed < activeTxSec ? activeIndex - 1 : -1;
+  const prevClip = prevIdx >= 0 ? clips[prevIdx] : undefined;
   const activeTxEasing = transitionEasingInto(clips, activeIndex, projectTxSpec);
 
   const active = clips[activeIndex];
@@ -2995,13 +3173,45 @@ export function Create() {
                 <span>{transitionLabel(transitionFlash.kind)}</span>
               </div>
             )}
+            {active && prevClip && (
+              <div key={`prev-${prevClip.id}`} className="preview-media preview-media-under">
+                <AnimatedLayer
+                  animation={animFor(prevClip)}
+                  keyframes={prevClip.keyframes}
+                  durationSec={prevClip.durationSec}
+                  localSec={prevClip.durationSec - activeTxSec + elapsed}
+                  playing={playing}
+                  reverse={prevClip.reverse}
+                  resetKey={`prev-${prevClip.id}`}
+                  filter={gradeCss}
+                >
+                  {prevClip.kind === "image" ? (
+                    <img src={prevClip.objectUrl} alt="" draggable={false} />
+                  ) : (
+                    <video
+                      src={prevClip.objectUrl}
+                      muted
+                      playsInline
+                      autoPlay={playing}
+                      onLoadedMetadata={(e) => {
+                        e.currentTarget.playbackRate = clampSpeed(prevClip.speed);
+                        e.currentTarget.currentTime = sourceTimeAt(prevClip, prevClip.durationSec - activeTxSec + elapsedRef.current);
+                      }}
+                    />
+                  )}
+                </AnimatedLayer>
+              </div>
+            )}
             {active ? (
               <div
                 key={`${active.id}-${transitionKey}`}
                 className={`preview-media ${transitionClass} ${kenBurns}`}
                 style={
                   {
-                    "--tx-ms": `${Math.round(activeTxSec * 1000)}ms`,
+                    "--tx-ms": `${Math.round(Math.max(0.05, activeTxSec) * 1000)}ms`,
+                    ...(playing
+                      ? {}
+                      : { animationDelay: `-${elapsed.toFixed(3)}s`, animationPlayState: "paused" }),
                     "--tx-ease": activeTxEasing
                       ? easingCss(activeTxEasing)
                       : theme.motion === "snappy"
@@ -3018,6 +3228,7 @@ export function Create() {
                   durationSec={active.durationSec}
                   localSec={elapsed}
                   playing={playing}
+                  reverse={active.reverse}
                   resetKey={`${active.id}-${transitionKey}`}
                   filter={gradeCss}
                 >
@@ -3031,7 +3242,8 @@ export function Create() {
                       playsInline
                       loop={false}
                       onLoadedMetadata={(e) => {
-                        e.currentTarget.currentTime = (active.inSec ?? 0) + elapsedRef.current;
+                        e.currentTarget.playbackRate = clampSpeed(active.speed);
+                        e.currentTarget.currentTime = sourceTimeAt(active, elapsedRef.current);
                       }}
                     />
                   )}
@@ -3192,8 +3404,11 @@ export function Create() {
 
           <Timeline
             clips={clips}
+            starts={layout.starts}
             texts={textOverlays}
-            audioLabel={selectedBeat.name}
+            audio={resolvedAudio.map((a) => ({ ...a, label: a.label ?? audioLabelFor(a.ref) }))}
+            onAudioChange={(id, patch) => patchAudio(id, patch)}
+            onAddAudio={addAudioAtPlayhead}
             totalDuration={totalDuration}
             playhead={playhead}
             playing={playing}
@@ -3206,7 +3421,7 @@ export function Create() {
                 icon: transitionIcon(k),
                 label: transitionLabel(k),
                 custom: Boolean(clips[i]?.transitionOut || clips[i]?.transitionSpec),
-                sec: transitionSecInto(clips, i + 1, projectTxSpec, theme),
+                sec: layout.tx[i] ?? 0,
               };
             }}
             onSelect={(sel) => {
@@ -3251,7 +3466,7 @@ export function Create() {
                     : selGap >= 0
                       ? `Transition ${selGap + 1} → ${selGap + 2}`
                       : selection?.type === "audio"
-                        ? "Audio"
+                        ? selAudio ? "Audio clip" : "Audio"
                         : "Project look"}
               </span>
               <span className="vj-insp-sub muted">
@@ -3262,7 +3477,7 @@ export function Create() {
                     : selGap >= 0
                       ? "pick · duration · easing"
                       : selection?.type === "audio"
-                        ? "beat · sync"
+                        ? "sound · volume · fades · ducking"
                         : "grade · default motion · transitions"}
               </span>
               <span aria-hidden className="vj-insp-caret">{inspectorOpen ? "▾" : "▸"}</span>
@@ -3324,6 +3539,40 @@ export function Create() {
                         )}
                       </div>
                     </InspectorSection>
+                    {selClip.kind === "video" ? (
+                      <InspectorSection title={`Speed · ${clampSpeed(selClip.speed)}×`} hint="slow-mo ↔ fast" compact={minimalist}>
+                        <div className="vj-insp-chips">
+                          {SPEED_PRESETS.map((sp) => (
+                            <button
+                              key={sp}
+                              type="button"
+                              className={`vj-chip${clampSpeed(selClip.speed) === sp ? " active" : ""}`}
+                              onClick={() => {
+                                const old = clampSpeed(selClip.speed);
+                                // keep the same source range → timeline length scales
+                                const src = selClip.durationSec * old;
+                                const bound = selClip.sourceSec ? (selClip.sourceSec - (selClip.inSec ?? 0)) : src;
+                                const dur = Math.max(0.3, Math.min(src, bound) / sp);
+                                patchClip(selClip.id, { speed: sp === 1 ? undefined : sp, durationSec: Math.round(dur * 100) / 100 });
+                              }}
+                            >
+                              {sp < 1 ? "🐢" : sp > 1 ? "⚡" : "•"} {sp}×
+                            </button>
+                          ))}
+                        </div>
+                      </InspectorSection>
+                    ) : (
+                      <InspectorSection title="Motion direction" hint="play the photo's motion backwards" compact={minimalist}>
+                        <div className="vj-insp-chips">
+                          <button type="button" className={`vj-chip${selClip.reverse ? "" : " active"}`} onClick={() => patchClip(selClip.id, { reverse: undefined })}>
+                            ▶ Forward
+                          </button>
+                          <button type="button" className={`vj-chip${selClip.reverse ? " active" : ""}`} onClick={() => patchClip(selClip.id, { reverse: true })}>
+                            ⟲ Reverse
+                          </button>
+                        </div>
+                      </InspectorSection>
+                    )}
                     <AnimationPicker
                       value={selClip.animation ?? animFor(selClip)}
                       onChange={(a) => patchClip(selClip.id, { animation: a })}
@@ -3427,28 +3676,82 @@ export function Create() {
                 )}
 
                 {selection?.type === "audio" && (
-                  <InspectorSection title={`♪ ${selectedBeat.name}`} hint={`${selectedBeat.bpm} BPM`} compact={minimalist}>
-                    <div className="vj-insp-chips">
-                      {BEAT_SYNC_MODES.map((m) => (
-                        <button key={m} type="button" className={`vj-chip${beatSync === m ? " active" : ""}`} onClick={() => setBeatSyncMode(m)}>
-                          Sync {m}
+                  <>
+                    {selAudio && (
+                      <InspectorSection title={`♪ ${selAudio.label ?? audioLabelFor(selAudio.ref)}`} hint={`${selAudio.at.toFixed(1)}s → ${(selAudio.at + selAudio.durationSec).toFixed(1)}s`} compact={minimalist}>
+                        <label className="vj-insp-row">
+                          <span>Sound</span>
+                          <select
+                            value={selAudio.ref}
+                            onChange={(e) => patchAudio(selAudio.id, { ref: e.target.value, label: audioLabelFor(e.target.value), inSec: 0 })}
+                          >
+                            {beats.map((b) => (
+                              <option key={b.id} value={b.packRef}>{b.name}</option>
+                            ))}
+                            {customSounds.map((cs) => (
+                              <option key={cs.id} value={`custom:${cs.id}`}>{cs.name}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <div className="vj-insp-kf-grid">
+                          <label className="vj-insp-row">
+                            <span>Volume</span>
+                            <input type="range" min={0} max={1.5} step={0.05} value={selAudio.volume ?? 1} onChange={(e) => patchAudio(selAudio.id, { volume: Number(e.target.value) })} />
+                            <span className="vj-insp-val">{Math.round((selAudio.volume ?? 1) * 100)}%</span>
+                          </label>
+                          <label className="vj-insp-row">
+                            <span>Fade in</span>
+                            <input type="range" min={0} max={Math.min(5, selAudio.durationSec / 2)} step={0.1} value={selAudio.fadeInSec ?? 0} onChange={(e) => patchAudio(selAudio.id, { fadeInSec: Number(e.target.value) })} />
+                            <span className="vj-insp-val">{(selAudio.fadeInSec ?? 0).toFixed(1)}s</span>
+                          </label>
+                          <label className="vj-insp-row">
+                            <span>Fade out</span>
+                            <input type="range" min={0} max={Math.min(5, selAudio.durationSec / 2)} step={0.1} value={selAudio.fadeOutSec ?? 0} onChange={(e) => patchAudio(selAudio.id, { fadeOutSec: Number(e.target.value) })} />
+                            <span className="vj-insp-val">{(selAudio.fadeOutSec ?? 0).toFixed(1)}s</span>
+                          </label>
+                          <label className="vj-insp-row">
+                            <span>Length</span>
+                            <input type="number" min={0.3} step={0.1} value={selAudio.durationSec} onChange={(e) => patchAudio(selAudio.id, { durationSec: Math.max(0.3, Number(e.target.value) || selAudio.durationSec) })} />
+                          </label>
+                        </div>
+                        <div className="vj-insp-chips">
+                          <button type="button" className={`vj-chip${selAudio.loop !== false ? " active" : ""}`} onClick={() => patchAudio(selAudio.id, { loop: selAudio.loop === false ? true : false })}>
+                            🔁 Loop {selAudio.loop !== false ? "on" : "off"}
+                          </button>
+                        </div>
+                      </InspectorSection>
+                    )}
+                    <InspectorSection title="Mix" hint={`${selectedBeat.bpm} BPM`} compact={minimalist}>
+                      <div className="vj-insp-chips">
+                        <button
+                          type="button"
+                          className={`vj-chip${autoDuckOn ? " active" : ""}`}
+                          onClick={() => setAutoDuck(!autoDuckOn)}
+                          title="Lower music while unmuted video clips play"
+                        >
+                          🦆 Auto-duck {autoDuckOn ? "on" : "off"}
                         </button>
-                      ))}
-                      <button type="button" className={`vj-chip${ducking ? " active" : ""}`} onClick={() => setDucking((d) => !d)}>
-                        Ducking {ducking ? "on" : "off"}
+                        {BEAT_SYNC_MODES.map((m) => (
+                          <button key={m} type="button" className={`vj-chip${beatSync === m ? " active" : ""}`} onClick={() => setBeatSyncMode(m)}>
+                            Sync {m}
+                          </button>
+                        ))}
+                      </div>
+                      {!minimalist && (
+                        <p className="vj-insp-hint">Auto-duck dips music under videos set to 🔊 Sound. Drag ◗ dots on an audio clip to shape fades.</p>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-ghost vj-insp-wide"
+                        onClick={() => {
+                          if (minimalist) setMiniSheet("audio");
+                          else audioPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                      >
+                        Music library…
                       </button>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-ghost vj-insp-wide"
-                      onClick={() => {
-                        if (minimalist) setMiniSheet("audio");
-                        else audioPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                    >
-                      Change music…
-                    </button>
-                  </InspectorSection>
+                    </InspectorSection>
+                  </>
                 )}
 
                 {!selClip && !selText && selGap < 0 && selection?.type !== "audio" && (

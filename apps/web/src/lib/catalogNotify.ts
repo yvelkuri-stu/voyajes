@@ -13,7 +13,7 @@ const LS_APP_VERSION_SEEN = "voyajes.app.lastSeenVersion";
 const LS_APP_TOASTED = "voyajes.app.toastedVersion";
 const LS_CATALOG_TOASTED = "voyajes.catalog.toastedVersion";
 
-export const APP_VERSION = "0.3.0";
+export const APP_VERSION = "0.4.0";
 export const BUNDLED_CATALOG_VERSION = String(
   (manifest as { catalogVersion?: string }).catalogVersion ?? "0",
 );

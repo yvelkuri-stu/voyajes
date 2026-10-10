@@ -23,7 +23,10 @@ import {
   type ExportProgress,
   type ExportTextOverlay,
   type ExportTimelineOptions,
+  drawClipLayer,
 } from "./exportWebm";
+import { framesAt, sourceTimeAt } from "@voyajes/core";
+import { computeLayout } from "./timelineRender";
 import { applyTransformToCanvas, ease, gradeFilter, layerTransformAt } from "@voyajes/core";
 import { transitionEasingInto, transitionSecInto } from "./timelineRender";
 
@@ -659,7 +662,8 @@ export async function exportSlideshowGif(
   const END_SEC = 2.0;
   const defaultTransition = transitionOverride ?? theme.transition;
 
-  const clipsDuration = clips.reduce((s, c) => s + c.durationSec, 0);
+  const layout = computeLayout(clips, defaultTransition, projectTxSpec, theme);
+  const clipsDuration = layout.total;
   const fullDuration =
     clipsDuration + (useInviteCards ? INTRO_SEC + END_SEC : 0);
   const trimmed = fullDuration > maxDurationSec;
@@ -746,12 +750,13 @@ export async function exportSlideshowGif(
       }
     }
     const startSec = cursor;
-    const endSec = cursor + clip.durationSec;
+    const startOverlap = (useInviteCards ? INTRO_SEC : 0) + layout.starts[i];
+    const endSec = startOverlap + clip.durationSec;
     loaded.push({
       clip,
       image,
       video,
-      startSec,
+      startSec: startOverlap,
       endSec,
       transitionIn: i === 0 ? "cut" : clips[i - 1]?.transitionOut ?? defaultTransition,
       txSec: transitionSecInto(clips, i, projectTxSpec, theme) || txSec,
@@ -788,108 +793,54 @@ export async function exportSlideshowGif(
     }
 
     const mediaTime = useInviteCards ? timeSec - INTRO_SEC : timeSec;
-    let active = loaded[0];
-    for (const L of loaded) {
-      const localStart = L.startSec - (useInviteCards ? INTRO_SEC : 0);
-      const localEnd = L.endSec - (useInviteCards ? INTRO_SEC : 0);
-      if (mediaTime >= localStart && mediaTime < localEnd) {
-        active = L;
-        break;
+    const f = framesAt(layout, clips, Math.max(0, mediaTime));
+    const seekVideo = async (L: Loaded, local: number) => {
+      const v = L.video;
+      if (!v) return;
+      const dur = v.duration || 0;
+      let vt = sourceTimeAt(L.clip, local);
+      if (dur > 0) vt = Math.min(vt % Math.max(dur, 0.1), Math.max(0, dur - 0.05));
+      if (Math.abs(v.currentTime - vt) > 0.04) {
+        v.currentTime = vt;
+        await new Promise<void>((resolve) => {
+          const done = () => resolve();
+          v.addEventListener("seeked", done, { once: true });
+          window.setTimeout(done, 120);
+        });
       }
-      if (mediaTime >= localStart) active = L;
-    }
-
-    const localStart = active.startSec - (useInviteCards ? INTRO_SEC : 0);
-    const hold = Math.max(0.01, active.endSec - active.startSec);
-    const localT = Math.min(1, Math.max(0, (mediaTime - localStart) / hold));
-    const enterT = ease(
-      active.easing ?? "linear",
-      Math.min(1, Math.max(0, (mediaTime - localStart) / active.txSec)),
-    );
-    const tx = transitionOpacity(active.transitionIn, enterT);
-    const clipAnim = active.clip.animation ?? defaultAnimation;
-    const ken =
-      active.clip.kind === "image" && !clipAnim?.emphasis
-        ? kenBurnsAt(theme.photoMotion, localT)
-        : { scale: 1, ox: 0, oy: 0 };
-
-    ctx.save();
-    ctx.globalAlpha = tx.opacity;
-    if (tx.translateX || tx.translateY || tx.skewX || tx.scale !== 1) {
-      ctx.translate(
-        tx.translateX * width + (width * (1 - tx.scale)) / 2,
-        tx.translateY * height + (height * (1 - tx.scale)) / 2,
-      );
-      if (tx.scale !== 1) ctx.scale(tx.scale, tx.scale);
-      if (tx.skewX) {
-        ctx.transform(1, 0, Math.tan((tx.skewX * Math.PI) / 180), 1, 0, 0);
-      }
-    }
-    const lt = layerTransformAt(
-      clipAnim,
-      active.clip.keyframes,
-      Math.max(0, mediaTime - localStart),
-      hold,
-    );
-    applyTransformToCanvas(ctx, lt, width, height);
-    {
-      const parts: string[] = [];
-      if (gradeCss !== "none") parts.push(gradeCss);
-      if (tx.brightness !== 1) parts.push(`brightness(${tx.brightness})`);
-      const b = tx.blur + lt.blur;
-      if (b) parts.push(`blur(${b}px)`);
-      if (parts.length) ctx.filter = parts.join(" ");
-    }
-
-    if (active.image) {
-      drawCover(
-        ctx,
-        active.image,
-        active.image.naturalWidth,
-        active.image.naturalHeight,
-        width,
-        height,
-        ken.scale,
-        ken.ox,
-        ken.oy,
-      );
-    } else if (active.video) {
+    };
+    const drawL = async (k: number, local: number, tx: { kind: TransitionKind; p: number } | null) => {
+      const L = loaded[k];
+      if (!L) return;
       try {
-        const vt = Math.min(
-          (active.clip.inSec ?? 0) +
-            Math.max(0, (mediaTime - localStart) % Math.max(active.video.duration || hold, 0.1)),
-          Math.max(0, (active.video.duration || hold) - 0.05),
-        );
-        if (Math.abs(active.video.currentTime - vt) > 0.04) {
-          active.video.currentTime = vt;
-          await new Promise<void>((resolve) => {
-            const done = () => resolve();
-            active.video!.addEventListener("seeked", done, { once: true });
-            window.setTimeout(done, 120);
-          });
-        }
+        await seekVideo(L, local);
       } catch {
         /* draw whatever frame is ready */
       }
-      const vw = active.video.videoWidth || width;
-      const vh = active.video.videoHeight || height;
-      if (vw > 0 && vh > 0) {
-        drawCover(ctx, active.video, vw, vh, width, height, 1, 0, 0);
-      } else {
-        drawPlaceholder(ctx, width, height, theme, active.clip.fileName);
-      }
-    } else {
-      drawPlaceholder(
-        ctx,
+      drawClipLayer(ctx, {
+        clip: L.clip,
+        image: L.image,
+        video: L.video,
+        local,
         width,
         height,
         theme,
-        active.clip.kind === "video"
-          ? `Video skipped · ${active.clip.fileName}`
-          : active.clip.fileName,
-      );
-    }
-    ctx.restore();
+        gradeCss,
+        anim: L.clip.animation ?? defaultAnimation,
+        tx,
+      });
+    };
+    if (f.prev) await drawL(f.prev.index, f.prev.local, null);
+    await drawL(
+      f.index,
+      f.local,
+      f.prev
+        ? {
+            kind: loaded[f.index].transitionIn,
+            p: ease(loaded[f.index].easing ?? "linear", f.progress),
+          }
+        : null,
+    );
 
     fillThemeGrade(ctx, theme, width, height, 0.45);
     fillVignette(ctx, theme, width, height, 0.7);

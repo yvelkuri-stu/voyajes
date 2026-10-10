@@ -26,7 +26,15 @@ import {
   type Keyframe,
   type TransitionSpec,
 } from "@voyajes/core";
-import { transitionEasingInto, transitionSecInto } from "./timelineRender";
+import { computeLayout, transitionEasingInto } from "./timelineRender";
+import {
+  framesAt,
+  motionTime,
+  sourceTimeAt,
+  clampSpeed,
+  type TimelineLayout,
+} from "@voyajes/core";
+import { scheduleAudio, type ResolvedAudioClip } from "./timelineAudio";
 import { assetUrl } from "./assetUrl";
 import { buildInviteCardLines } from "./inviteCard";
 
@@ -40,6 +48,10 @@ export type ExportClip = {
   transitionOut?: TransitionKind | null;
   /** v2 timeline fields */
   inSec?: number;
+  speed?: number;
+  reverse?: boolean;
+  /** false = include this video's own audio (and duck music under it) */
+  mute?: boolean;
   transitionSpec?: TransitionSpec;
   animation?: ClipAnimation;
   keyframes?: Keyframe[];
@@ -62,6 +74,10 @@ export type ExportTextOverlay = {
 
 /** v2 timeline options shared by WebM + GIF export */
 export type ExportTimelineOptions = {
+  /** v3 audio track clips (resolved URLs). When set, replaces `audio`. */
+  audioClips?: ResolvedAudioClip[];
+  ducks?: [number, number][];
+  duckLevel?: number;
   grade?: GradePreset;
   defaultAnimation?: ClipAnimation;
   transitionSpec?: TransitionSpec;
@@ -955,6 +971,59 @@ function drawPlaceholder(
   ctx.fillText(label.slice(0, 40), w / 2, h / 2, w * 0.8);
 }
 
+/** Draw one clip layer (with optional incoming-transition effect). Shared by WebM + GIF. */
+export function drawClipLayer(
+  ctx: CanvasRenderingContext2D,
+  o: {
+    clip: ExportClip;
+    image: HTMLImageElement | null;
+    video: HTMLVideoElement | null;
+    local: number;
+    width: number;
+    height: number;
+    theme: ThemeCard;
+    gradeCss: string;
+    anim?: ClipAnimation;
+    tx: { kind: TransitionKind; p: number } | null;
+  },
+) {
+  const { clip, image, video, local, width, height, theme } = o;
+  const txv = o.tx ? transitionOpacity(o.tx.kind, o.tx.p) : null;
+  ctx.save();
+  if (txv) {
+    ctx.globalAlpha = txv.opacity;
+    if (txv.translateX || txv.translateY || txv.skewX || txv.scale !== 1) {
+      ctx.translate(
+        txv.translateX * width + (width * (1 - txv.scale)) / 2,
+        txv.translateY * height + (height * (1 - txv.scale)) / 2,
+      );
+      if (txv.scale !== 1) ctx.scale(txv.scale, txv.scale);
+      if (txv.skewX) ctx.transform(1, 0, Math.tan((txv.skewX * Math.PI) / 180), 1, 0, 0);
+    }
+  }
+  const mt = motionTime(clip, local);
+  const lt = layerTransformAt(o.anim, clip.keyframes, mt, clip.durationSec);
+  applyTransformToCanvas(ctx, lt, width, height);
+  const parts: string[] = [];
+  if (o.gradeCss !== "none") parts.push(o.gradeCss);
+  if (txv && txv.brightness !== 1) parts.push(`brightness(${txv.brightness})`);
+  const b = (txv?.blur ?? 0) + lt.blur;
+  if (b) parts.push(`blur(${b}px)`);
+  if (parts.length) ctx.filter = parts.join(" ");
+  const ken =
+    clip.kind === "image" && !o.anim?.emphasis
+      ? kenBurnsAt(theme.photoMotion, mt / Math.max(0.01, clip.durationSec))
+      : { scale: 1, ox: 0, oy: 0 };
+  if (image) {
+    drawCover(ctx, image, image.naturalWidth, image.naturalHeight, width, height, ken.scale, ken.ox, ken.oy);
+  } else if (video && video.videoWidth > 0) {
+    drawCover(ctx, video, video.videoWidth, video.videoHeight, width, height, 1, 0, 0);
+  } else {
+    drawPlaceholder(ctx, width, height, theme, clip.kind === "video" ? `Video · ${clip.fileName}` : clip.fileName);
+  }
+  ctx.restore();
+}
+
 /**
  * Record the slideshow to a video Blob. Runs in near real-time (MediaRecorder).
  */
@@ -1015,7 +1084,8 @@ export async function exportSlideshowWebm(
   assertNotAborted(signal);
 
   const { width, height } = canvasSizeForAspect(aspect, shortEdge);
-  const clipsDuration = clips.reduce((s, c) => s + c.durationSec, 0);
+  const layout: TimelineLayout = computeLayout(clips, defaultTransition, projectTxSpec, theme);
+  const clipsDuration = layout.total;
   const totalDuration = clipsDuration + (useInviteCards ? INTRO_SEC + END_SEC : 0);
   const skippedVideos: string[] = [];
   let audioMuxed = false;
@@ -1030,8 +1100,31 @@ export async function exportSlideshowWebm(
     message: "Preparing export…",
   });
 
+  // v3 audio track: our own context so unmuted video audio can be mixed in
+  let tlAudio: { ctx: AudioContext; dest: MediaStreamAudioDestinationNode } | null = null;
+  if (options.audioClips && (options.audioClips.length || clips.some((c) => c.kind === "video" && c.mute === false))) {
+    const AC =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (AC) {
+      const actx = new AC();
+      try {
+        await actx.resume();
+      } catch {
+        /* user gesture already happened */
+      }
+      tlAudio = { ctx: actx, dest: actx.createMediaStreamDestination() };
+      beatAudio = {
+        stream: tlAudio.dest.stream,
+        stop: () => {
+          void actx.close().catch(() => undefined);
+        },
+      } as CapturedBeatAudio;
+      audioMuxed = true;
+    }
+  }
   const wantAudio =
-    Boolean(audio?.previewUrl) && audio?.mute !== true;
+    !tlAudio && !options.audioClips && Boolean(audio?.previewUrl) && audio?.mute !== true;
 
   if (wantAudio && audio?.previewUrl) {
     onProgress?.({
@@ -1198,188 +1291,152 @@ export async function exportSlideshowWebm(
     elapsedTotal += INTRO_SEC;
   }
 
-  for (let i = 0; i < clips.length; i++) {
-      assertNotAborted(signal);
-      const clip = clips[i];
-      onProgress?.({
-        phase: "recording",
-        ratio: totalDuration > 0 ? elapsedTotal / totalDuration : 0,
-        clipIndex: i,
-        clipCount: clips.length,
-        message: `Recording clip ${i + 1}/${clips.length}…`,
-      });
-
-      const holdMs = Math.max(400, clip.durationSec * 1000);
-      const clipTxMs = transitionSecInto(clips, i, projectTxSpec, theme) * 1000;
-      const clipEasing = transitionEasingInto(clips, i, projectTxSpec);
-      const clipAnim = clip.animation ?? defaultAnimation;
-      const start = performance.now();
-      const clipTransition: TransitionKind =
-        i === 0
-          ? "cut"
-          : clips[i - 1]?.transitionOut ?? defaultTransition;
-
+  // ── Timeline (overlapping transitions, speed, reverse motion) ──
+  onProgress?.({
+    phase: "recording",
+    ratio: totalDuration > 0 ? elapsedTotal / totalDuration : 0,
+    clipIndex: 0,
+    clipCount: clips.length,
+    message: "Preparing media…",
+  });
+  const srcs: { image: HTMLImageElement | null; video: HTMLVideoElement | null; started: boolean; done: boolean }[] = [];
+  for (const clip of clips) {
+    assertNotAborted(signal);
+    if (clip.kind === "image") {
       let image: HTMLImageElement | null = null;
-      let video: HTMLVideoElement | null = null;
-      let drawVideo = false;
-
-      if (clip.kind === "image") {
+      try {
         image = await loadImage(clip.objectUrl, signal);
-      } else {
-        try {
-          video = document.createElement("video");
-          video.muted = true;
-          video.playsInline = true;
-          video.preload = "auto";
-          video.src = clip.objectUrl;
-          await waitVideoReady(video, signal);
-          video.currentTime = clip.inSec ?? 0;
-          await video.play().catch(() => {
-            /* draw still frame if play blocked */
-          });
-          drawVideo = true;
-        } catch (err) {
-          if (err instanceof DOMException && err.name === "AbortError") throw err;
-          skippedVideos.push(clip.fileName);
-          video = null;
-          drawVideo = false;
-        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") throw err;
+        skippedVideos.push(clip.fileName);
       }
-
-      while (performance.now() - start < holdMs) {
-        assertNotAborted(signal);
-        const localT = (performance.now() - start) / holdMs;
-        const enterT = ease(
-          clipEasing ?? "linear",
-          Math.min(1, (performance.now() - start) / Math.max(1, clipTxMs || txMs)),
-        );
-        const tx = transitionOpacity(clipTransition, enterT);
-        const ken =
-          clip.kind === "image" && !clipAnim?.emphasis
-            ? kenBurnsAt(theme.photoMotion, localT)
-            : { scale: 1, ox: 0, oy: 0 };
-
-        ctx.save();
-        ctx.fillStyle = theme.palette.bg;
-        ctx.fillRect(0, 0, width, height);
-
-        ctx.save();
-        ctx.globalAlpha = tx.opacity;
-        if (tx.translateX || tx.translateY || tx.skewX || tx.scale !== 1) {
-          ctx.translate(
-            tx.translateX * width + (width * (1 - tx.scale)) / 2,
-            tx.translateY * height + (height * (1 - tx.scale)) / 2,
-          );
-          if (tx.scale !== 1) {
-            ctx.scale(tx.scale, tx.scale);
-          }
-          if (tx.skewX) {
-            ctx.transform(1, 0, Math.tan((tx.skewX * Math.PI) / 180), 1, 0, 0);
+      srcs.push({ image, video: null, started: false, done: false });
+    } else {
+      try {
+        const video = document.createElement("video");
+        const withSound = Boolean(tlAudio && clip.mute === false);
+        video.muted = !withSound;
+        video.playsInline = true;
+        video.preload = "auto";
+        video.src = clip.objectUrl;
+        await waitVideoReady(video, signal);
+        video.currentTime = clip.inSec ?? 0;
+        if (withSound && tlAudio) {
+          try {
+            const node = tlAudio.ctx.createMediaElementSource(video);
+            node.connect(tlAudio.dest);
+          } catch {
+            /* CORS / already connected — skip clip audio */
           }
         }
-        const clipLocalSec = (performance.now() - start) / 1000;
-        const lt = layerTransformAt(clipAnim, clip.keyframes, clipLocalSec, clip.durationSec);
-        applyTransformToCanvas(ctx, lt, width, height);
-        {
-          const parts: string[] = [];
-          if (gradeCss !== "none") parts.push(gradeCss);
-          if (tx.brightness !== 1) parts.push(`brightness(${tx.brightness})`);
-          const b = tx.blur + lt.blur;
-          if (b) parts.push(`blur(${b}px)`);
-          if (parts.length) ctx.filter = parts.join(" ");
-        }
-
-        if (image) {
-          drawCover(
-            ctx,
-            image,
-            image.naturalWidth,
-            image.naturalHeight,
-            width,
-            height,
-            ken.scale,
-            ken.ox,
-            ken.oy,
-          );
-        } else if (drawVideo && video) {
-          const vw = video.videoWidth || width;
-          const vh = video.videoHeight || height;
-          if (vw > 0 && vh > 0) {
-            drawCover(ctx, video, vw, vh, width, height, 1, 0, 0);
-          } else {
-            drawPlaceholder(ctx, width, height, theme, clip.fileName);
-          }
-        } else {
-          drawPlaceholder(
-            ctx,
-            width,
-            height,
-            theme,
-            clip.kind === "video" ? `Video skipped · ${clip.fileName}` : clip.fileName,
-          );
-        }
-        ctx.restore();
-
-        fillThemeGrade(ctx, theme, width, height, 0.45);
-        fillVignette(ctx, theme, width, height, 0.7);
-        const nowSec = elapsedTotal + (performance.now() - start) / 1000;
-        // Only burn title when explicitly requested (legacy) — never "Untitled voyage" by default
-        if (burnTitle && title.trim() && title.trim() !== "Untitled voyage") {
-          const hasTimedTitle = timedOverlays.some(
-            (o) =>
-              o.role === "title" &&
-              nowSec >= o.at &&
-              nowSec < o.end &&
-              o.value.trim(),
-          );
-          if (!hasTimedTitle) {
-            drawTitle(
-              ctx,
-              title,
-              theme,
-              width,
-              height,
-              "",
-              textStyle,
-            );
-          }
-        }
-        drawTextOverlays(
-          ctx,
-          timedOverlays,
-          theme,
-          width,
-          height,
-          nowSec,
-        );
-        if (watermark) {
-          drawWatermark(ctx, theme, width, height, watermarkLogo);
-        }
-        ctx.restore();
-
-        const nowElapsed = elapsedTotal + (performance.now() - start) / 1000;
-        onProgress?.({
-          phase: "recording",
-          ratio: totalDuration > 0 ? Math.min(0.99, nowElapsed / totalDuration) : 0,
-          clipIndex: i,
-          clipCount: clips.length,
-          message: `Recording ${i + 1}/${clips.length} · ${Math.round(
-            (nowElapsed / Math.max(totalDuration, 0.01)) * 100,
-          )}%`,
-        });
-
-        // Pace roughly to fps without starving the recorder
-        await sleep(1000 / fps, signal);
+        srcs.push({ image: null, video, started: false, done: false });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") throw err;
+        skippedVideos.push(clip.fileName);
+        srcs.push({ image: null, video: null, started: false, done: false });
       }
-
-      if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
-      }
-
-      elapsedTotal += clip.durationSec;
     }
+  }
+
+  let stopTlAudio: (() => void) | null = null;
+  if (tlAudio && options.audioClips?.length) {
+    stopTlAudio = await scheduleAudio(
+      tlAudio.ctx,
+      tlAudio.dest,
+      options.audioClips,
+      0,
+      options.ducks ?? [],
+      options.duckLevel ?? 0.3,
+      tlAudio.ctx.currentTime + 0.02,
+    );
+  }
+
+  const mediaStart = performance.now();
+  const introOffset = elapsedTotal;
+  for (;;) {
+    assertNotAborted(signal);
+    const tl = (performance.now() - mediaStart) / 1000;
+    if (tl >= layout.total) break;
+    const f = framesAt(layout, clips, tl);
+
+    // Drive videos inside their windows
+    clips.forEach((c, k) => {
+      const v = srcs[k]?.video;
+      if (!v) return;
+      const s0 = layout.starts[k];
+      const e0 = s0 + c.durationSec;
+      if (tl >= s0 - 0.03 && tl < e0 && !srcs[k].started) {
+        srcs[k].started = true;
+        v.playbackRate = clampSpeed(c.speed);
+        v.currentTime = sourceTimeAt(c, Math.max(0, tl - s0));
+        void v.play().catch(() => undefined);
+      } else if (tl >= e0 && !srcs[k].done) {
+        srcs[k].done = true;
+        v.pause();
+      }
+    });
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = theme.palette.bg;
+    ctx.fillRect(0, 0, width, height);
+    const drawK = (k: number, local: number, tx: { kind: TransitionKind; p: number } | null) =>
+      drawClipLayer(ctx, {
+        clip: clips[k],
+        image: srcs[k]?.image ?? null,
+        video: srcs[k]?.started ? srcs[k].video : null,
+        local,
+        width,
+        height,
+        theme,
+        gradeCss,
+        anim: clips[k].animation ?? defaultAnimation,
+        tx,
+      });
+    if (f.prev) drawK(f.prev.index, f.prev.local, null);
+    drawK(
+      f.index,
+      f.local,
+      f.prev
+        ? {
+            kind: clips[f.prev.index].transitionOut ?? defaultTransition,
+            p: ease(transitionEasingInto(clips, f.index, projectTxSpec) ?? "linear", f.progress),
+          }
+        : null,
+    );
+
+    fillThemeGrade(ctx, theme, width, height, 0.45);
+    fillVignette(ctx, theme, width, height, 0.7);
+    const nowSec = introOffset + tl;
+    if (burnTitle && title.trim() && title.trim() !== "Untitled voyage") {
+      const hasTimedTitle = timedOverlays.some(
+        (o) => o.role === "title" && nowSec >= o.at && nowSec < o.end && o.value.trim(),
+      );
+      if (!hasTimedTitle) drawTitle(ctx, title, theme, width, height, "", textStyle);
+    }
+    drawTextOverlays(ctx, timedOverlays, theme, width, height, nowSec);
+    if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
+
+    const nowElapsed = introOffset + tl;
+    onProgress?.({
+      phase: "recording",
+      ratio: totalDuration > 0 ? Math.min(0.99, nowElapsed / totalDuration) : 0,
+      clipIndex: f.index,
+      clipCount: clips.length,
+      message: `Recording ${f.index + 1}/${clips.length} · ${Math.round(
+        (nowElapsed / Math.max(totalDuration, 0.01)) * 100,
+      )}%`,
+    });
+    await sleep(1000 / fps, signal);
+  }
+  stopTlAudio?.();
+  for (const sx of srcs) {
+    if (sx.video) {
+      sx.video.pause();
+      sx.video.removeAttribute("src");
+      sx.video.load();
+    }
+  }
+  elapsedTotal += layout.total;
 
 
   // Invitation end card

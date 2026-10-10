@@ -405,7 +405,7 @@ export function locateTime(
   return { index: clips.length - 1, local: 0 };
 }
 
-export const CURRENT_SCHEMA = 2 as const;
+export const CURRENT_SCHEMA = 3 as const;
 
 /**
  * Upgrade any older project JSON (schema 1 or missing) to schema 2.
@@ -416,7 +416,12 @@ export function migrateProject(data: unknown): unknown {
   if (!data || typeof data !== "object") return data;
   const p = { ...(data as Record<string, unknown>) };
   const v = typeof p.schema === "number" ? p.schema : 1;
-  if (v >= 2) return p;
+  if (v >= 3) return p;
+  if (v === 2) {
+    // v2 → v3 is additive (speed/reverse/audio clips optional)
+    p.schema = 3;
+    return p;
+  }
   const media = Array.isArray(p.media) ? (p.media as Record<string, unknown>[]).map((m) => ({ ...m })) : [];
   const edges = Array.isArray(p.transitionEdges)
     ? (p.transitionEdges as { afterIndex: number; kind: string }[])
@@ -427,6 +432,321 @@ export function migrateProject(data: unknown): unknown {
     }
   }
   p.media = media;
-  p.schema = 2;
+  p.schema = 3;
   return p;
+}
+
+// ───────────── v3 (phase 2): overlap layout, speed, audio clips ─────────────
+
+export const SPEED_MIN = 0.25;
+export const SPEED_MAX = 4;
+export const SPEED_PRESETS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
+
+export function clampSpeed(s: number | undefined): number {
+  if (!s || !Number.isFinite(s)) return 1;
+  return Math.min(SPEED_MAX, Math.max(SPEED_MIN, s));
+}
+
+/** Source seconds consumed by a clip on the timeline (video). */
+export function sourceSpan(clip: { durationSec: number; speed?: number }): number {
+  return clip.durationSec * clampSpeed(clip.speed);
+}
+
+/** Source media time for a timeline-local time (video). */
+export function sourceTimeAt(
+  clip: { inSec?: number; speed?: number },
+  localSec: number,
+): number {
+  return (clip.inSec ?? 0) + Math.max(0, localSec) * clampSpeed(clip.speed);
+}
+
+/** Time fed into animation/keyframes (reverse = photos-as-motion played backwards). */
+export function motionTime(
+  clip: { durationSec: number; reverse?: boolean },
+  localSec: number,
+): number {
+  return clip.reverse ? Math.max(0, clip.durationSec - localSec) : localSec;
+}
+
+/**
+ * Requested transition seconds for the gap after a clip.
+ * Same rule in web preview, WebM/GIF export and CLI.
+ */
+export function requestedTransitionSec(
+  kind: string,
+  clipSpec: TransitionSpec | undefined,
+  projectSpec: TransitionSpec | undefined,
+  themeMs: number,
+): number {
+  if (kind === "cut") return 0;
+  const raw =
+    clipSpec?.durationSec ??
+    projectSpec?.durationSec ??
+    Math.min(TRANSITION_MAX_SEC, Math.max(0.12, themeMs / 1000));
+  return clampTransitionSec(raw);
+}
+
+export type TimelineLayout = {
+  /** timeline start of each clip */
+  starts: number[];
+  /** actual overlap seconds of the gap after clip i (last = 0) */
+  tx: number[];
+  total: number;
+};
+
+/**
+ * Overlapping layout (xfade semantics): clip i+1 starts `tx[i]` seconds
+ * before clip i ends. Overlaps are capped at half of either neighbour so
+ * no three clips ever overlap.
+ */
+export function layoutTimeline(
+  clips: { durationSec: number }[],
+  requested: (gapIndex: number) => number,
+): TimelineLayout {
+  const starts: number[] = [];
+  const tx: number[] = [];
+  let t = 0;
+  for (let i = 0; i < clips.length; i++) {
+    starts.push(t);
+    const d = clips[i].durationSec;
+    let o = 0;
+    if (i < clips.length - 1) {
+      const r = requested(i);
+      if (r > 0) o = Math.max(0.05, Math.min(r, d * 0.5, clips[i + 1].durationSec * 0.5));
+    }
+    tx.push(o);
+    t += d - o;
+  }
+  const last = clips.length ? starts[clips.length - 1] + clips[clips.length - 1].durationSec : 0;
+  return { starts, tx, total: last };
+}
+
+/** Clips visible at time t: the incoming (top) and optionally outgoing (under) clip. */
+export function framesAt(
+  layout: TimelineLayout,
+  clips: { durationSec: number }[],
+  t: number,
+): { index: number; local: number; prev?: { index: number; local: number }; progress: number } {
+  if (clips.length === 0) return { index: 0, local: 0, progress: 1 };
+  let i = 0;
+  for (let k = 0; k < clips.length; k++) if (layout.starts[k] <= t + 1e-9) i = k;
+  const local = Math.max(0, Math.min(clips[i].durationSec, t - layout.starts[i]));
+  if (i > 0) {
+    const o = layout.tx[i - 1];
+    if (o > 0 && local < o) {
+      const pl = t - layout.starts[i - 1];
+      return { index: i, local, prev: { index: i - 1, local: pl }, progress: local / o };
+    }
+  }
+  return { index: i, local, progress: 1 };
+}
+
+export const AudioClipSchema = z.object({
+  id: z.string().min(1),
+  /** catalog pack ref (audio.x@1.0.0) or custom:<id> */
+  ref: z.string().min(1),
+  /** timeline start (s) */
+  at: z.number().nonnegative(),
+  /** offset into the source (s); source loops when shorter */
+  inSec: z.number().nonnegative().optional(),
+  durationSec: z.number().positive(),
+  volume: z.number().min(0).max(2).optional(),
+  fadeInSec: z.number().nonnegative().max(10).optional(),
+  fadeOutSec: z.number().nonnegative().max(10).optional(),
+  /** false = play the source once (silence after it ends) */
+  loop: z.boolean().optional(),
+  label: z.string().optional(),
+});
+export type AudioClip = z.infer<typeof AudioClipSchema>;
+
+export const DUCK_RAMP_SEC = 0.25;
+
+/** Windows where video-clip audio (unmuted) is audible → music ducks. */
+export function duckWindows(
+  clips: { kind?: string; mute?: boolean; durationSec: number }[],
+  layout: TimelineLayout,
+): [number, number][] {
+  const out: [number, number][] = [];
+  clips.forEach((c, i) => {
+    if (c.kind === "video" && c.mute === false) {
+      const s = layout.starts[i];
+      const e = s + c.durationSec;
+      const last = out[out.length - 1];
+      if (last && s <= last[1] + 0.05) last[1] = Math.max(last[1], e);
+      else out.push([s, e]);
+    }
+  });
+  return out;
+}
+
+/**
+ * Piecewise-linear gain envelope for an audio clip in *timeline* seconds:
+ * volume × fade in/out × ducking. Shared by WebAudio scheduling and ffmpeg.
+ */
+export function audioEnvelope(
+  clip: Pick<AudioClip, "at" | "durationSec" | "volume" | "fadeInSec" | "fadeOutSec">,
+  ducks: [number, number][] = [],
+  duckLevel = 0.3,
+): { t: number; g: number }[] {
+  const a = clip.at;
+  const b = clip.at + clip.durationSec;
+  const vol = clip.volume ?? 1;
+  const fi = Math.min(clip.fadeInSec ?? 0, clip.durationSec / 2);
+  const fo = Math.min(clip.fadeOutSec ?? 0, clip.durationSec / 2);
+  const times = new Set<number>([a, b]);
+  if (fi > 0) times.add(a + fi);
+  if (fo > 0) times.add(b - fo);
+  for (const [s, e] of ducks) {
+    for (const x of [s - DUCK_RAMP_SEC, s, e, e + DUCK_RAMP_SEC]) if (x > a && x < b) times.add(x);
+  }
+  const gainAt = (t: number) => {
+    let g = vol;
+    if (fi > 0 && t < a + fi) g *= Math.max(0, (t - a) / fi);
+    if (fo > 0 && t > b - fo) g *= Math.max(0, (b - t) / fo);
+    for (const [s, e] of ducks) {
+      let d = 1;
+      if (t >= s && t <= e) d = duckLevel;
+      else if (t > s - DUCK_RAMP_SEC && t < s) d = 1 - (1 - duckLevel) * ((t - (s - DUCK_RAMP_SEC)) / DUCK_RAMP_SEC);
+      else if (t > e && t < e + DUCK_RAMP_SEC) d = duckLevel + (1 - duckLevel) * ((t - e) / DUCK_RAMP_SEC);
+      g *= d;
+    }
+    return g;
+  };
+  return [...times]
+    .sort((x, y) => x - y)
+    .map((t) => ({ t: Math.round(t * 1000) / 1000, g: Math.round(gainAt(t) * 10000) / 10000 }));
+}
+
+/** Gain at any timeline time from an envelope (linear interpolation). */
+export function envelopeAt(env: { t: number; g: number }[], t: number): number {
+  if (env.length === 0) return 1;
+  if (t <= env[0].t) return env[0].g;
+  for (let i = 1; i < env.length; i++) {
+    if (t <= env[i].t) {
+      const a = env[i - 1];
+      const b = env[i];
+      const span = Math.max(1e-6, b.t - a.t);
+      return a.g + (b.g - a.g) * ((t - a.t) / span);
+    }
+  }
+  return env[env.length - 1].g;
+}
+
+/** Sample a layer transform for CLI expression building. */
+export function sampleLayer(
+  anim: ClipAnimation | undefined,
+  keys: Keyframe[] | undefined,
+  durationSec: number,
+  fps = 12,
+  reverse = false,
+): { t: number; tr: Transform2D }[] {
+  const out: { t: number; tr: Transform2D }[] = [];
+  const n = Math.max(2, Math.ceil(durationSec * fps) + 1);
+  for (let i = 0; i < n; i++) {
+    const t = Math.min(durationSec, (i / (n - 1)) * durationSec);
+    const mt = reverse ? durationSec - t : t;
+    out.push({ t, tr: layerTransformAt(anim, keys, mt, durationSec) });
+  }
+  return out;
+}
+
+/** True when a sampled property never changes (lets the CLI skip filters). */
+export function isConstant(samples: { tr: Transform2D }[], key: keyof Transform2D, eps = 1e-4): boolean {
+  const v0 = samples[0]?.tr[key] ?? 0;
+  return samples.every((s) => Math.abs(s.tr[key] - v0) < eps);
+}
+
+/** ffmpeg piecewise-linear expression of variable `tv` from samples. */
+export function piecewiseExpr(
+  samples: { t: number; v: number }[],
+  tv = "t",
+): string {
+  if (samples.length === 0) return "0";
+  const f = (n: number) => (Math.round(n * 10000) / 10000).toString();
+  let expr = f(samples[samples.length - 1].v);
+  for (let i = samples.length - 2; i >= 0; i--) {
+    const a = samples[i];
+    const b = samples[i + 1];
+    const span = Math.max(1e-6, b.t - a.t);
+    const slope = (b.v - a.v) / span;
+    const seg = Math.abs(slope) < 1e-9 ? f(a.v) : `${f(a.v)}+(${tv}-${f(a.t)})*${f(slope)}`;
+    expr = `if(lt(${tv}\\,${f(b.t)})\\,${seg}\\,${expr})`;
+  }
+  return expr;
+}
+
+/**
+ * Audio clips actually played: explicit `audio.clips`, else the legacy bed
+ * (selected track looping under the whole film, optional mix underlay).
+ */
+export function effectiveAudioClips(
+  audio:
+    | {
+        track?: string;
+        mixMode?: "replace" | "mix";
+        ducking?: boolean;
+        clips?: AudioClip[];
+        customSounds?: { id: string }[];
+      }
+    | undefined,
+  totalSec: number,
+  catalogFallbackRef?: string,
+): AudioClip[] {
+  if (!audio) return [];
+  // An explicit array (even empty) means the user edited the audio track.
+  if (Array.isArray(audio.clips)) return audio.clips;
+  const out: AudioClip[] = [];
+  const dur = Math.max(0.1, totalSec);
+  if (audio.track) {
+    out.push({
+      id: "bed",
+      ref: audio.track,
+      at: 0,
+      durationSec: dur,
+      volume: audio.ducking === false ? 0.85 : 0.7,
+      fadeOutSec: Math.min(1, dur / 4),
+      loop: true,
+    });
+    if (audio.mixMode === "mix" && audio.track.startsWith("custom:") && catalogFallbackRef) {
+      out.push({ id: "bed-mix", ref: catalogFallbackRef, at: 0, durationSec: dur, volume: 0.45, loop: true });
+    }
+  }
+  return out;
+}
+
+/** Theme layer (shared web + CLI): derived grade + default photo motion. */
+export function themeLayerFor(theme: {
+  id: string;
+  motion?: string;
+  photoMotion?: "gentle" | "bold" | "off";
+  tags?: string[];
+}): { grade: GradePreset; animation: ClipAnimation } {
+  const key = theme.id + " " + (theme.tags ?? []).join(" ");
+  let grade: GradePreset = "vivid";
+  if (/noir|mono|classic/.test(key)) grade = "mono";
+  else if (/film|vintage|retro|nostalg/.test(key)) grade = "film";
+  else if (/sunset|golden|warm|desert|cozy|autumn/.test(key)) grade = "warm";
+  else if (/ocean|arctic|cool|ice|winter|blue/.test(key)) grade = "cool";
+  else if (/neon|night|party|club|cyber/.test(key)) grade = "neon";
+  else if (/dream|pastel|soft|wedding|love|bloom/.test(key)) grade = "dreamy";
+  else if (/cinema|epic|travel|road/.test(key)) grade = "teal-orange";
+  const animation: ClipAnimation =
+    theme.photoMotion === "off"
+      ? {}
+      : theme.photoMotion === "bold"
+        ? { emphasis: "ken-burns" }
+        : theme.motion === "snappy"
+          ? { emphasis: "ken-burns-out" }
+          : { emphasis: "ken-burns" };
+  return { grade, animation };
+}
+
+/** Animation actually applied to a clip (theme motion = photos only). */
+export function clipAnimationFor(
+  clip: { kind?: string; animation?: ClipAnimation },
+  projectDefault: ClipAnimation | undefined,
+): ClipAnimation | undefined {
+  if (clip.animation) return clip.animation;
+  if (!projectDefault) return undefined;
+  return clip.kind === "video" ? { ...projectDefault, emphasis: undefined } : projectDefault;
 }

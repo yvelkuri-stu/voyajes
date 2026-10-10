@@ -14,6 +14,7 @@ import type {
   VoyajesProject,
 } from "@voyajes/core";
 import {
+  AudioClipSchema,
   ClipAnimationSchema,
   GradePresetSchema,
   KeyframeSchema,
@@ -22,7 +23,7 @@ import {
   packRef,
   safeParseProject,
 } from "@voyajes/core";
-import type { ClipAnimation, GradePreset, Keyframe, TransitionSpec } from "@voyajes/core";
+import type { AudioClip, ClipAnimation, GradePreset, Keyframe, TransitionSpec } from "@voyajes/core";
 import type { TransitionKind } from "@voyajes/core";
 
 const LS_DRAFT = "voyajes.draft.v1";
@@ -47,6 +48,10 @@ export type DraftClipMeta = {
    * without IndexedDB. Not persisted to localStorage drafts.
    */
   portableUrl?: string;
+  /** v3: playback speed 0.25–4 (video) */
+  speed?: number;
+  /** v3: reverse motion (animation/keyframes) — photos-as-motion */
+  reverse?: boolean;
   /** v2 timeline: full source length (video) for trim bounds */
   sourceSec?: number;
   /** v2 timeline: trim in-point (video source seconds) */
@@ -118,6 +123,10 @@ export type DraftState = {
   defaultAnimation?: ClipAnimation;
   /** v2: project-wide transition duration/easing */
   transitionSpec?: TransitionSpec;
+  /** v3: explicit audio clips (empty/undefined = legacy looping bed) */
+  audioClips?: AudioClip[];
+  /** v3: duck music under unmuted video audio (default = ducking) */
+  autoDuck?: boolean;
   updatedAt: string;
 };
 
@@ -261,9 +270,12 @@ function pickLayerFields(raw: { animation?: unknown; keyframes?: unknown }) {
 }
 
 function pickTimelineFields(c: Partial<DraftClipMeta>) {
-  const out: Pick<DraftClipMeta, "inSec" | "sourceSec" | "transitionSpec" | "animation" | "keyframes"> =
+  const out: Pick<DraftClipMeta, "inSec" | "sourceSec" | "speed" | "reverse" | "transitionSpec" | "animation" | "keyframes"> =
     pickLayerFields(c);
   if (typeof c.inSec === "number" && Number.isFinite(c.inSec) && c.inSec > 0) out.inSec = c.inSec;
+  if (typeof c.speed === "number" && Number.isFinite(c.speed) && c.speed !== 1)
+    out.speed = Math.min(4, Math.max(0.25, c.speed));
+  if (c.reverse === true) out.reverse = true;
   if (typeof c.sourceSec === "number" && Number.isFinite(c.sourceSec) && c.sourceSec > 0)
     out.sourceSec = c.sourceSec;
   const t = TransitionSpecSchema.safeParse(c.transitionSpec);
@@ -366,6 +378,10 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     transitionSpec: TransitionSpecSchema.safeParse(parsed.transitionSpec).success
       ? parsed.transitionSpec
       : undefined,
+    audioClips: AudioClipSchema.array().safeParse(parsed.audioClips).success
+      ? parsed.audioClips
+      : undefined,
+    autoDuck: typeof parsed.autoDuck === "boolean" ? parsed.autoDuck : undefined,
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -440,7 +456,7 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
     .filter((e): e is { afterIndex: number; kind: TransitionKindSchemaType } => Boolean(e));
 
   const project: VoyajesProject = {
-    schema: 2,
+    schema: 3,
     title: draft.title.trim() || "Untitled voyage",
     aspect: draft.aspect,
     theme: packRef(draft.themeId, draft.themeVersion),
@@ -455,6 +471,8 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       ...(c.transitionOut ? { transitionOut: c.transitionOut } : {}),
       ...(c.transitionSpec ? { transitionSpec: c.transitionSpec } : {}),
       ...(c.inSec ? { inSec: c.inSec } : {}),
+      ...(c.speed && c.speed !== 1 ? { speed: c.speed } : {}),
+      ...(c.reverse ? { reverse: true } : {}),
       ...(c.animation ? { animation: c.animation } : {}),
       ...(c.keyframes?.length ? { keyframes: c.keyframes } : {}),
     })),
@@ -471,6 +489,8 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       ducking: draft.ducking,
       mixMode: draft.audioMixMode,
       customSounds: draft.customSounds.length ? draft.customSounds : undefined,
+      ...(Array.isArray(draft.audioClips) ? { clips: draft.audioClips } : {}),
+      ...(typeof draft.autoDuck === "boolean" ? { autoDuck: draft.autoDuck } : {}),
     },
     text: [...legacyText, ...overlays],
     textStyle: draft.textStyle,

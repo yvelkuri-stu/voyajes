@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import * as T from "../dist/index.js";
 import {
   safeParseProject,
   parseProject,
@@ -25,9 +26,9 @@ const v1 = {
 
 test("v1 projects migrate to v2 and still parse", () => {
   const p = parseProject(v1);
-  assert.equal(p.schema, 2);
+  assert.equal(p.schema, 3);
   assert.equal(p.media[0].transitionOut, "whip");
-  assert.equal(migrateProject({ ...v1, schema: 2 }).schema, 2);
+  assert.equal(migrateProject({ ...v1, schema: 2 }).schema, 3);
 });
 
 test("v2 timeline fields validate", () => {
@@ -105,4 +106,47 @@ test("grades + clamps", () => {
   assert.match(gradeFilter("mono"), /grayscale/);
   assert.equal(clampTransitionSec(5), 2);
   assert.equal(clampTransitionSec(0.05), 0.2);
+});
+
+test("layoutTimeline overlaps like xfade and caps at half clip", () => {
+  const L = T.layoutTimeline([{ durationSec: 2 }, { durationSec: 2 }, { durationSec: 1 }], (i) => (i === 0 ? 0.8 : 2));
+  assert.deepEqual(L.starts.map((x) => +x.toFixed(3)), [0, 1.2, 2.7]);
+  assert.equal(+L.total.toFixed(3), 3.7);
+  const cut = T.layoutTimeline([{ durationSec: 2 }, { durationSec: 2 }], () => 0);
+  assert.equal(cut.total, 4);
+});
+
+test("framesAt returns outgoing + incoming during overlap", () => {
+  const clips = [{ durationSec: 2 }, { durationSec: 2 }];
+  const L = T.layoutTimeline(clips, () => 1);
+  const f = T.framesAt(L, clips, 1.5);
+  assert.equal(f.index, 1);
+  assert.equal(f.prev.index, 0);
+  assert.ok(Math.abs(f.progress - 0.5) < 1e-9);
+  assert.equal(T.framesAt(L, clips, 2.5).prev, undefined);
+});
+
+test("audioEnvelope applies volume, fades and ducking", () => {
+  const env = T.audioEnvelope({ at: 0, durationSec: 10, volume: 0.8, fadeInSec: 1, fadeOutSec: 2 }, [[4, 6]], 0.25);
+  assert.equal(T.envelopeAt(env, 0), 0);
+  assert.ok(Math.abs(T.envelopeAt(env, 2) - 0.8) < 1e-6);
+  assert.ok(Math.abs(T.envelopeAt(env, 5) - 0.2) < 1e-6);
+  assert.ok(Math.abs(T.envelopeAt(env, 10)) < 1e-6);
+});
+
+test("speed + reverse helpers", () => {
+  assert.equal(T.sourceTimeAt({ inSec: 1, speed: 2 }, 1.5), 4);
+  assert.equal(T.clampSpeed(9), 4);
+  assert.equal(T.motionTime({ durationSec: 3, reverse: true }, 1), 2);
+});
+
+test("piecewiseExpr builds nested ffmpeg if()", () => {
+  const e = T.piecewiseExpr([{ t: 0, v: 1 }, { t: 1, v: 2 }]);
+  assert.match(e, /^if\(lt\(t\\,1\)/);
+});
+
+test("migrate v2 → v3 and empty audio clips mean silence", () => {
+  assert.equal(T.migrateProject({ schema: 2, media: [] }).schema, 3);
+  assert.deepEqual(T.effectiveAudioClips({ track: "audio.x@1", clips: [] }, 5), []);
+  assert.equal(T.effectiveAudioClips({ track: "audio.x@1" }, 5).length, 1);
 });

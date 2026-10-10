@@ -28,7 +28,25 @@ import type {
   TransitionKind,
   VoyajesProject,
 } from "@voyajes/core";
-import { gradeFfmpeg, parsePackRef, TRANSITION_KINDS } from "@voyajes/core";
+import {
+  audioEnvelope,
+  clampSpeed,
+  clipAnimationFor,
+  duckWindows,
+  effectiveAudioClips,
+  gradeFfmpeg,
+  isConstant,
+  layoutTimeline,
+  parsePackRef,
+  piecewiseExpr,
+  requestedTransitionSec,
+  sampleLayer,
+  themeLayerFor,
+  TRANSITION_KINDS,
+  type ClipAnimation,
+  type Keyframe,
+  type TimelineLayout,
+} from "@voyajes/core";
 import { defaultImageDuration, snapDurationToBeat } from "./beatSync.js";
 
 export type RenderQuality = "720p" | "1080p" | "4k";
@@ -319,6 +337,12 @@ type PreparedClip = {
   inSec?: number;
   /** v2: per-edge transition duration (gap after this clip) */
   txSec?: number;
+  speed: number;
+  reverse?: boolean;
+  mute: boolean;
+  animation?: ClipAnimation;
+  keyframes?: Keyframe[];
+  transitionSpec?: import("@voyajes/core").TransitionSpec;
 };
 
 function prepareClips(
@@ -343,21 +367,23 @@ function prepareClips(
       m.durationSec ??
       (kind === "image" ? defaultImageDuration(theme.motion) : 4);
 
-    if (kind === "image" && beatSync !== "off") {
+    // Only snap when the project didn't pin a duration (web snaps at import time)
+    if (kind === "image" && beatSync !== "off" && m.durationSec == null) {
       duration = snapDurationToBeat(duration, bpm, beatSync);
     }
-    const minHold = Math.max(
-      0.8,
-      (theme.transitionDurationMs / 1000) * 2 + 0.2,
-    );
-    duration = Math.max(duration, minHold);
+    const layerDefault = project.defaultAnimation ?? themeLayerFor(theme).animation;
     clips.push({
       absPath: abs,
       kind,
       durationSec: duration,
       transitionOut: m.transitionOut,
       inSec: kind === "video" && m.inSec ? m.inSec : undefined,
-      txSec: m.transitionSpec?.durationSec ?? project.transitionSpec?.durationSec,
+      speed: clampSpeed(m.speed),
+      reverse: m.reverse,
+      mute: m.mute !== false,
+      animation: clipAnimationFor({ kind, animation: m.animation }, layerDefault),
+      keyframes: m.keyframes,
+      transitionSpec: m.transitionSpec,
     });
   }
   // Explicit transitionEdges win over media[].transitionOut when both set
@@ -384,6 +410,52 @@ function runFfmpeg(
   };
 }
 
+/**
+ * Clip animation + keyframes → ffmpeg (per-frame scale/rotate/overlay/alpha
+ * expressions sampled from the same core math the web uses).
+ */
+function motionFilters(
+  c: PreparedClip,
+  W: number,
+  H: number,
+  fps: number,
+  bg: string,
+  i: number,
+): { parts: string[]; out: string } | null {
+  if (!c.animation && !c.keyframes?.length) return null;
+  const samples = sampleLayer(c.animation, c.keyframes, c.durationSec, 12, c.reverse);
+  const still = (["x", "y", "scale", "rotation", "opacity"] as const).every((k) =>
+    isConstant(samples, k),
+  );
+  const s0 = samples[0].tr;
+  if (still && s0.x === 0 && s0.y === 0 && s0.scale === 1 && s0.rotation === 0 && s0.opacity === 1) {
+    return null;
+  }
+  const ex = (key: "x" | "y" | "scale" | "rotation" | "opacity") =>
+    piecewiseExpr(samples.map((q) => ({ t: q.t, v: q.tr[key] })));
+  const parts: string[] = [];
+  let cur = `m${i}`;
+  if (!isConstant(samples, "rotation") || s0.rotation !== 0) {
+    parts.push(`[${cur}]rotate=a=(${ex("rotation")})*PI/180:c=none:ow=${W}:oh=${H}[r${i}]`);
+    cur = `r${i}`;
+  }
+  if (!isConstant(samples, "opacity") || s0.opacity !== 1) {
+    parts.push(
+      `[${cur}]geq=r=r(X\\,Y):g=g(X\\,Y):b=b(X\\,Y):a=alpha(X\\,Y)*max(0\\,min(1\\,${piecewiseExpr(samples.map((q) => ({ t: q.t, v: q.tr.opacity })), "T")}))[o${i}]`,
+    );
+    cur = `o${i}`;
+  }
+  const sx = ex("scale");
+  parts.push(
+    `[${cur}]scale=w=trunc(${W}*(${sx})/2)*2:h=trunc(${H}*(${sx})/2)*2:eval=frame[s${i}]`,
+  );
+  parts.push(`color=c=${bg}:s=${W}x${H}:r=${fps}:d=${c.durationSec.toFixed(3)},format=rgba[b${i}]`);
+  parts.push(
+    `[b${i}][s${i}]overlay=x=(main_w-overlay_w)/2+(${ex("x")})*${W}:y=(main_h-overlay_h)/2+(${ex("y")})*${H}:eval=frame:shortest=1[a${i}]`,
+  );
+  return { parts, out: `a${i}` };
+}
+
 function buildVideoFilters(
   clips: PreparedClip[],
   theme: ThemePack,
@@ -402,59 +474,54 @@ function buildVideoFilters(
     position?: string;
   }>,
   projectGrade?: import("@voyajes/core").GradePreset,
+  layout: TimelineLayout = layoutTimeline(clips, () => txSec),
 ): { filterComplex: string; outputLabel: string; totalDuration: number } {
   const grade =
     gradeFilter(theme.palette.grade) +
-    (projectGrade && gradeFfmpeg(projectGrade) ? `,${gradeFfmpeg(projectGrade)}` : "");
+    (gradeFfmpeg(projectGrade ?? themeLayerFor(theme).grade)
+      ? `,${gradeFfmpeg(projectGrade ?? themeLayerFor(theme).grade)}`
+      : "");
   const parts: string[] = [];
+  const bg = (theme.palette.bg || "#0b0d12").replace("#", "0x");
 
   for (let i = 0; i < clips.length; i++) {
-    parts.push(
-      `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=increase,` +
-        `crop=${width}:${height},setsar=1,fps=${fps},format=yuv420p,${grade}[v${i}]`,
-    );
+    const c = clips[i];
+    const speed = c.kind === "video" && c.speed !== 1 ? `setpts=(PTS-STARTPTS)/${c.speed},` : "";
+    const base =
+      `[${i}:v]${speed}scale=${width}:${height}:force_original_aspect_ratio=increase,` +
+      `crop=${width}:${height},setsar=1,fps=${fps},format=yuv420p,${grade}`;
+    const motion = motionFilters(c, width, height, fps, bg, i);
+    if (motion) {
+      parts.push(`${base},format=rgba[m${i}]`);
+      parts.push(...motion.parts);
+      parts.push(`[${motion.out}]fps=${fps},format=yuv420p,setsar=1[v${i}]`);
+    } else {
+      parts.push(`${base}[v${i}]`);
+    }
   }
 
   let composed = "v0";
-  let totalDuration = clips.reduce((s, c) => s + c.durationSec, 0);
+  const totalDuration = layout.total;
 
   if (clips.length > 1) {
-    if (useXfade) {
-      let prev = "v0";
-      let cumulative = clips[0].durationSec;
-      let overlap = 0;
-      for (let i = 1; i < clips.length; i++) {
-        const out = i === clips.length - 1 ? "vx" : `xf${i}`;
-        // Per-edge transition object duration (timeline v2), clamped to clip lengths
-        const edgeSec = Math.max(
-          0.1,
-          Math.min(
-            clips[i - 1].txSec ?? txSec,
-            clips[i - 1].durationSec * 0.8,
-            clips[i].durationSec * 0.8,
-          ),
-        );
-        overlap += edgeSec;
-        const offset = Math.max(0, cumulative - edgeSec);
-        const edgeKind =
-          clips[i - 1].transitionOut ??
-          defaultTransition ??
-          theme.transition;
-        const name = xfadeName(edgeKind);
+    let prev = "v0";
+    for (let i = 1; i < clips.length; i++) {
+      const out = i === clips.length - 1 ? "vx" : `xf${i}`;
+      const o = layout.tx[i - 1];
+      if (o <= 0) {
+        parts.push(`[${prev}][v${i}]concat=n=2:v=1:a=0[${out}]`);
+      } else {
+        const edgeKind = clips[i - 1].transitionOut ?? defaultTransition ?? theme.transition;
         parts.push(
-          `[${prev}][v${i}]xfade=transition=${name}:duration=${edgeSec.toFixed(3)}:offset=${offset.toFixed(3)}[${out}]`,
+          `[${prev}][v${i}]xfade=transition=${xfadeName(edgeKind)}:duration=${o.toFixed(3)}:offset=${layout.starts[i].toFixed(3)}[${out}]`,
         );
-        cumulative = offset + clips[i].durationSec;
-        prev = out;
       }
-      composed = "vx";
-      totalDuration -= overlap;
-    } else {
-      const concatIn = clips.map((_, i) => `[v${i}]`).join("");
-      parts.push(`${concatIn}concat=n=${clips.length}:v=1:a=0[vx]`);
-      composed = "vx";
+      prev = out;
     }
+    composed = "vx";
   }
+  void txSec;
+  void useXfade;
 
   let label = composed;
   let layer = 0;
@@ -583,6 +650,14 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
     Math.max(0.12, theme.transitionDurationMs / 1000),
   );
   const defaultTransition = opts.project.transition ?? theme.transition;
+  const layout = layoutTimeline(clips, (gi) =>
+    requestedTransitionSec(
+      clips[gi].transitionOut ?? defaultTransition,
+      clips[gi].transitionSpec,
+      opts.project.transitionSpec,
+      theme.transitionDurationMs,
+    ),
+  );
   const anyEdgeTransition = clips.some(
     (c) => c.transitionOut && c.transitionOut !== "cut",
   );
@@ -618,7 +693,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
     );
   }
   const ducking = opts.project.audio?.ducking !== false;
-  const audioVolume = ducking ? 0.72 : 0.9;
+  void ducking;
 
   try {
     const inputArgs: string[] = ["-y", "-hide_banner", "-loglevel", "error"];
@@ -634,14 +709,61 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
         );
       } else {
         if (c.inSec) inputArgs.push("-ss", String(c.inSec));
-        inputArgs.push("-t", String(c.durationSec), "-i", c.absPath);
+        inputArgs.push("-t", (c.durationSec * c.speed).toFixed(3), "-i", c.absPath);
       }
     }
 
     let audioInputIndex = -1;
-    if (audioFile) {
+    // v3 audio track: explicit clips (or the legacy looping bed) with
+    // volume, fades and auto-ducking under unmuted video — same envelope as web.
+    const resolveAudioRef = (ref: string): string | null => {
+      if (ref.startsWith("custom:")) {
+        const id = ref.slice("custom:".length);
+        const cs = opts.project.audio?.customSounds?.find((x) => x.id === id);
+        const pth = cs?.path ?? (cs?.url && !cs.url.startsWith("http") ? cs.url : undefined);
+        if (pth) {
+          const abs = resolveMediaPath(pth, projectDir);
+          if (existsSync(abs)) return abs;
+        }
+        return null;
+      }
+      if (ref === beatRef && audioFile) return audioFile;
+      const b = findBeat(opts.catalog, ref);
+      return b ? resolveBeatAudioFile(opts.catalogRoot, b.previewUrl, b.id) : null;
+    };
+    const audioClips = effectiveAudioClips(
+      { ...opts.project.audio, track: beatRef },
+      layout.total,
+      beat ? `${beat.id}@${beat.version}` : undefined,
+    );
+    const autoDuck = opts.project.audio?.autoDuck ?? opts.project.audio?.ducking !== false;
+    const ducks = autoDuck ? duckWindows(clips, layout) : [];
+    const duckLevel = opts.project.audio?.duckLevel ?? 0.3;
+    const audioParts: string[] = [];
+    let audioInputs = 0;
+    for (const ac of audioClips) {
+      const file = resolveAudioRef(ac.ref);
+      if (!file) continue;
+      const idx = clips.length + audioInputs;
+      if (ac.loop !== false) inputArgs.push("-stream_loop", "-1");
+      inputArgs.push("-i", file);
+      const env = audioEnvelope(ac, ducks, duckLevel).map((e) => ({ t: e.t - ac.at, v: e.g }));
+      const delayMs = Math.round(ac.at * 1000);
+      audioParts.push(
+        `[${idx}:a]atrim=start=${(ac.inSec ?? 0).toFixed(3)}:duration=${ac.durationSec.toFixed(3)},asetpts=PTS-STARTPTS,` +
+          `aformat=sample_rates=48000:channel_layouts=stereo,` +
+          `volume=eval=frame:volume=${piecewiseExpr(env)},adelay=${delayMs}|${delayMs}[au${audioInputs}]`,
+      );
+      audioInputs++;
+    }
+    if (audioInputs > 0) {
       audioInputIndex = clips.length;
-      inputArgs.push("-stream_loop", "-1", "-i", audioFile);
+      const ins = Array.from({ length: audioInputs }, (_, k) => `[au${k}]`).join("");
+      audioParts.push(
+        audioInputs > 1
+          ? `${ins}amix=inputs=${audioInputs}:normalize=0:duration=longest[aout]`
+          : `${ins}anull[aout]`,
+      );
     }
 
     const encodeArgs: string[] = [];
@@ -703,25 +825,14 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
         defaultTransition,
         overlays,
         opts.project.grade,
+        layout,
       );
       writeFileSync(join(work, withTitle ? "filter.txt" : "filter-notitle.txt"), built.filterComplex + "\n");
 
-      const mapArgs = [
-        "-filter_complex",
-        built.filterComplex,
-        "-map",
-        `[${built.outputLabel}]`,
-      ];
+      const fc = audioInputIndex >= 0 ? `${built.filterComplex};${audioParts.join(";")}` : built.filterComplex;
+      const mapArgs = ["-filter_complex", fc, "-map", `[${built.outputLabel}]`];
       if (audioInputIndex >= 0) {
-        mapArgs.push(
-          "-map",
-          `${audioInputIndex}:a:0`,
-          "-filter:a",
-          `volume=${audioVolume}`,
-          "-t",
-          String(built.totalDuration),
-          "-shortest",
-        );
+        mapArgs.push("-map", "[aout]", "-t", String(built.totalDuration));
       } else {
         mapArgs.push("-t", String(built.totalDuration));
       }
@@ -765,7 +876,8 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
     };
   } finally {
     try {
-      rmSync(work, { recursive: true, force: true });
+      if (!process.env.VOYAJES_KEEP_WORK) rmSync(work, { recursive: true, force: true });
+      else console.error(`work dir kept: ${work}`);
     } catch {
       /* ignore */
     }

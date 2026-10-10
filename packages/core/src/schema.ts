@@ -6,6 +6,7 @@ import {
   KeyframeSchema,
   TransitionSpecSchema,
   migrateProject,
+  AudioClipSchema,
 } from "./timeline.js";
 
 export const AspectSchema = z.enum(["9:16", "16:9", "1:1", "4:5"]);
@@ -116,6 +117,10 @@ export const MediaClipSchema = z.object({
   animation: ClipAnimationSchema.optional(),
   /** v2: clip-local keyframes (position/scale/rotation/opacity) */
   keyframes: z.array(KeyframeSchema).optional(),
+  /** v3: playback speed (video source rate) 0.25–4 */
+  speed: z.number().min(0.25).max(4).optional(),
+  /** v3: play motion (animation/keyframes) backwards — photos-as-motion */
+  reverse: z.boolean().optional(),
 });
 
 /**
@@ -153,6 +158,11 @@ export const AudioTrackSchema = z.object({
   /** replace catalog beat with custom, or mix custom under/alongside catalog */
   mixMode: AudioMixModeSchema.optional().default("replace"),
   customSounds: z.array(CustomSoundSchema).optional(),
+  /** v3: explicit audio clips on the audio track (else: one looping bed) */
+  clips: z.array(AudioClipSchema).optional(),
+  /** v3: duck music under unmuted video audio */
+  autoDuck: z.boolean().optional(),
+  duckLevel: z.number().min(0).max(1).optional(),
 });
 
 export const TextCardSchema = z.object({
@@ -208,7 +218,7 @@ export const ExportMetaSchema = z.object({
 /** Voyajes project file — shared by GUI and CLI */
 export const VoyajesProjectSchema = z.object({
   /** 1 = legacy, 2 = timeline model (parse() migrates 1 → 2) */
-  schema: z.union([z.literal(1), z.literal(2)]),
+  schema: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   title: z.string().min(1),
   aspect: AspectSchema.default("9:16"),
   theme: PackRefSchema,

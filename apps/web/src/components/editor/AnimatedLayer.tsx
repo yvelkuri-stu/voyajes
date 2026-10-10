@@ -16,6 +16,8 @@ type Props = {
   resetKey?: string | number;
   className?: string;
   style?: CSSProperties;
+  /** play motion backwards (photos-as-motion reverse) */
+  reverse?: boolean;
   /** extra CSS filter (color grade) */
   filter?: string;
   children: ReactNode;
@@ -33,7 +35,8 @@ export function AnimatedLayer(p: Props) {
   const paint = (t: number) => {
     const el = ref.current;
     if (!el) return;
-    const tr = layerTransformAt(p.animation, p.keyframes, t, p.durationSec);
+    const mt = p.reverse ? Math.max(0, p.durationSec - t) : t;
+    const tr = layerTransformAt(p.animation, p.keyframes, mt, p.durationSec);
     el.style.transform = transformCss(tr);
     el.style.opacity = String(Math.max(0, Math.min(1, tr.opacity)));
     const parts: string[] = [];
@@ -56,13 +59,13 @@ export function AnimatedLayer(p: Props) {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.playing, p.resetKey, p.animation, p.keyframes, p.durationSec, p.filter]);
+  }, [p.playing, p.resetKey, p.animation, p.keyframes, p.durationSec, p.filter, p.reverse]);
 
   // While paused, follow scrubbing
   useEffect(() => {
     if (!p.playing) paint(p.localSec);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.localSec, p.playing]);
+  }, [p.localSec, p.playing, p.reverse, p.animation, p.keyframes]);
 
   return (
     <div ref={ref} className={`vj-anim-layer ${p.className ?? ""}`} style={p.style}>

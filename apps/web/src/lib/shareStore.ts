@@ -25,6 +25,8 @@ export type SharePlaybackSnapshot = {
   grade?: DraftState["grade"];
   defaultAnimation?: DraftState["defaultAnimation"];
   transitionSpec?: DraftState["transitionSpec"];
+  audioClips?: DraftState["audioClips"];
+  autoDuck?: boolean;
 };
 
 export type ShareRecord = {
@@ -212,6 +214,8 @@ export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
     ...(draft.grade ? { grade: draft.grade } : {}),
     ...(draft.defaultAnimation ? { defaultAnimation: draft.defaultAnimation } : {}),
     ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
+    ...(Array.isArray(draft.audioClips) ? { audioClips: draft.audioClips } : {}),
+    ...(typeof draft.autoDuck === "boolean" ? { autoDuck: draft.autoDuck } : {}),
   };
 }
 

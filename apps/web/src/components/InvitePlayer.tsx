@@ -1,5 +1,6 @@
 import { AnimatedLayer } from "./editor/AnimatedLayer";
-import { themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
+import { computeLayout, themeLayer, transitionEasingInto } from "../lib/timelineRender";
+import { clampSpeed, sourceTimeAt } from "@voyajes/core";
 import { easingCss, gradeFilter, type ClipAnimation } from "@voyajes/core";
 import {
   useCallback,
@@ -148,15 +149,25 @@ export function InvitePlayer({
   const shareGrade = gradeFilter(playback?.grade ?? layer.grade);
   const animFor = (c: { kind: "image" | "video"; animation?: ClipAnimation }) =>
     c.animation ?? (c.kind === "image" ? effAnim : { ...effAnim, emphasis: undefined });
-  const txSec = transitionSecInto(clips, activeIndex, playback?.transitionSpec, theme);
+  const tlLayout = useMemo(
+    () => computeLayout(clips, globalTransition, playback?.transitionSpec, theme),
+    [clips, globalTransition, playback?.transitionSpec, theme],
+  );
+  const txSec = activeIndex > 0 ? Math.max(0.05, tlLayout.tx[activeIndex - 1] ?? 0) : 0.4;
+  // Outgoing clip stays underneath during the overlap (true crossfade)
+  const [underIdx, setUnderIdx] = useState(-1);
+  useEffect(() => {
+    if (underIdx < 0) return;
+    const ms = (tlLayout.tx[underIdx] ?? 0) * 1000 + 60;
+    const t = window.setTimeout(() => setUnderIdx(-1), ms);
+    return () => window.clearTimeout(t);
+  }, [underIdx, tlLayout]);
+  const under = phase === "clips" && underIdx >= 0 && underIdx === activeIndex - 1 ? clips[underIdx] : undefined;
   const txEase = transitionEasingInto(clips, activeIndex, playback?.transitionSpec);
 
   // Ken Burns comes from the theme-layer animation (AnimatedLayer)
   const kenBurns = "";
-  const clipsDuration = useMemo(
-    () => clips.reduce((sum, c) => sum + c.durationSec, 0),
-    [clips],
-  );
+  const clipsDuration = tlLayout.total;
   const totalDuration =
     clipsDuration +
     (showInviteCards ? INTRO_SEC + END_SEC : 0);
@@ -166,12 +177,9 @@ export function InvitePlayer({
     if (phase === "end") {
       return (showInviteCards ? INTRO_SEC : 0) + clipsDuration + elapsed;
     }
-    let before = showInviteCards ? INTRO_SEC : 0;
-    for (let i = 0; i < activeIndex && i < clips.length; i++) {
-      before += clips[i].durationSec;
-    }
+    const before = (showInviteCards ? INTRO_SEC : 0) + (tlLayout.starts[activeIndex] ?? 0);
     return before + elapsed;
-  }, [phase, activeIndex, clips, elapsed, clipsDuration, showInviteCards]);
+  }, [phase, activeIndex, elapsed, clipsDuration, showInviteCards, tlLayout]);
 
   const goToClip = useCallback(
     (index: number, resetElapsed = true) => {
@@ -236,7 +244,9 @@ export function InvitePlayer({
 
     const clip = clips[activeIndex];
     if (!clip) return;
-    const remaining = Math.max(0.05, clip.durationSec - elapsed) * 1000;
+    const hold =
+      activeIndex < clips.length - 1 ? clip.durationSec - (tlLayout.tx[activeIndex] ?? 0) : clip.durationSec;
+    const remaining = Math.max(0.05, hold - elapsed) * 1000;
     advanceTimer.current = window.setTimeout(() => {
       if (activeIndex >= clips.length - 1) {
         if (showInviteCards) {
@@ -251,6 +261,7 @@ export function InvitePlayer({
         return;
       }
       setElapsed(0);
+      if ((tlLayout.tx[activeIndex] ?? 0) > 0) setUnderIdx(activeIndex);
       goToClip(activeIndex + 1);
     }, remaining);
     return clearAdvanceTimer;
@@ -416,6 +427,36 @@ export function InvitePlayer({
           ) : phase === "end" && showInviteCards ? (
             cardEl("end")
           ) : active ? (
+            <>
+            {under && (
+              <div key={`under-${under.id}`} className="preview-media preview-media-under">
+                <AnimatedLayer
+                  animation={animFor(under)}
+                  keyframes={under.keyframes}
+                  durationSec={under.durationSec}
+                  localSec={Math.max(0, under.durationSec - (tlLayout.tx[underIdx] ?? 0))}
+                  playing={playing}
+                  reverse={under.reverse}
+                  resetKey={`under-${under.id}-${transitionKey}`}
+                  filter={shareGrade}
+                >
+                  {under.kind === "image" ? (
+                    <img src={under.objectUrl} alt="" draggable={false} />
+                  ) : (
+                    <video
+                      src={under.objectUrl}
+                      muted
+                      playsInline
+                      autoPlay
+                      onLoadedMetadata={(e) => {
+                        e.currentTarget.playbackRate = clampSpeed(under.speed);
+                        e.currentTarget.currentTime = sourceTimeAt(under, under.durationSec - (tlLayout.tx[underIdx] ?? 0));
+                      }}
+                    />
+                  )}
+                </AnimatedLayer>
+              </div>
+            )}
             <div
               key={`${active.id}-${transitionKey}`}
               className={`preview-media ${transitionClass} ${kenBurns}`}
@@ -438,6 +479,7 @@ export function InvitePlayer({
                 durationSec={active.durationSec}
                 localSec={0}
                 playing={playing}
+                reverse={active.reverse}
                 resetKey={`${active.id}-${transitionKey}`}
                 filter={shareGrade}
               >
@@ -451,12 +493,14 @@ export function InvitePlayer({
                     playsInline
                     loop={false}
                     onLoadedMetadata={(e) => {
+                      e.currentTarget.playbackRate = clampSpeed(active.speed);
                       if (active.inSec) e.currentTarget.currentTime = active.inSec;
                     }}
                   />
                 )}
               </AnimatedLayer>
             </div>
+            </>
           ) : (
             <div className="preview-empty">
               <div className="display" style={{ fontSize: "1.1rem" }}>

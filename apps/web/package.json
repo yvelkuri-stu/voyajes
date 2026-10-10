@@ -1,13 +1,14 @@
 {
   "name": "@voyajes/web",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:mobile": "node scripts/check-mobile-overflow.mjs"
+    "test:mobile": "node scripts/check-mobile-overflow.mjs",
+    "test:share": "node scripts/e2e-share-live.mjs"
   },
   "dependencies": {
     "@voyajes/core": "workspace:*",

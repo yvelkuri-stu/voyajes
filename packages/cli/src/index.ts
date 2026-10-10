@@ -728,8 +728,8 @@ program
       aspect: tpl.aspect ?? "9:16",
       theme: `${tpl.themeId}@${theme?.version ?? "1.0.0"}`,
       template: `${tpl.id}@${tpl.version}`,
-      transition: tpl.transition,
-      textStyle: tpl.textStyle,
+      transition: sample.transition ?? tpl.transition,
+      textStyle: sample.textStyle ?? tpl.textStyle,
       textTransition: tpl.textTransition,
       grade: sample.grade,
       media: sample.clips.map((c: any) => ({

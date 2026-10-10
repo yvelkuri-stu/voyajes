@@ -1317,12 +1317,14 @@ export function Create() {
         })),
       );
       setGrade(sample.grade);
+      if (sample.transition) setTransitionOverride(sample.transition);
+      if (sample.textStyle) setTextStyle(sample.textStyle);
       setTextOverlays(
         sample.text.map((t, i) => ({
           ...defaultTextOverlay(t.at, t.end, fillTokens(t.value, vars).trim() || tpl.name),
           id: `txt-${i}-${Math.random().toString(36).slice(2, 7)}`,
           role: t.role,
-          style: tpl.textStyle,
+          style: sample.textStyle ?? tpl.textStyle,
           animationIn: tpl.textTransition,
           position: t.position as TextPosition,
           ...(t.animation ? { animation: t.animation } : {}),
@@ -2111,7 +2113,8 @@ export function Create() {
     setShareId(share.id);
     saveDraft({ ...draft, shareId: share.id });
     setStatus(`Share ready · ${share.id}`);
-    navigate(`/v/${share.id}`);
+    // Host view: Copy / WhatsApp / invite pack controls + portable link in the address bar
+    navigate(`/v/${share.id}?host=1`);
   };
 
   const shareToWhatsApp = async () => {

@@ -1,5 +1,5 @@
 /** Animated sample preview for a template card (crossfading Ken Burns thumbs). */
-import { samplePreviewUrls } from "../data/samples";
+import { sampleCoverUrl, samplePreviewUrls } from "../data/samples";
 
 export function SamplePreview({ templateId, label }: { templateId: string; label?: string }) {
   const urls = samplePreviewUrls(templateId);
@@ -7,6 +7,8 @@ export function SamplePreview({ templateId, label }: { templateId: string; label
   const per = 1.6;
   return (
     <div className="vj-sample-preview" aria-hidden style={{ ["--n" as string]: urls.length }}>
+      {/* static cover underneath: a real image is always visible */}
+      <img className="vj-sample-cover" src={sampleCoverUrl(templateId) ?? urls[0]} alt="" loading="lazy" draggable={false} />
       {urls.map((u, i) => (
         <img
           key={u}

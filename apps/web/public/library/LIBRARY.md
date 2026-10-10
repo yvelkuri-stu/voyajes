@@ -110,3 +110,25 @@ party (Midnight Metro, Strobe Night, Acid Drop, Pulse Reels) · travel (Travel P
 retro (VHS Party, Swing Retro, Gallery Quiet).
 
 Shared links reference library media and audio **by id** (`lib:<id>`) — they are not embedded, so links stay small.
+
+
+## Gen Z / Gen Alpha template art (2026.10.10.1)
+
+Every template now has **its own three images** (`lib.photo.tpl-<template>-1..3`, 84 total, 640×640 WebP
+≈20–45 KB + 240px thumbs) — the first one is the template's distinct gallery cover. Looks: Y2K holographic
+gradients, liquid chrome, neon grids, RGB-split glitch + scanlines, die-cut stickers (smileys, hearts, stars)
+with white borders + drop shadows, wavy checkerboards, halftone, grainy film + light leaks, plus a word
+sticker per image ("YAY!", "NIGHT MODE", "HAPPY DIWALI", "I DO", "CLASS OF '26", "REC ●"…).
+
+Each sample also pre-selects punchy transitions (whip, glitch, zoom-through "zoom punch", flash, spin,
+heart-wipe), pop / zoom-in / slide-up clip animations and a matching text style.
+
+Generated in code by `scripts/gen_genz_samples.py` (Python + PIL/numpy; reuses motif painters from
+`gen_library_samples.py`). Word stickers are rasterized with SIL Open Font License Google Fonts
+(Luckiest Guy, Bangers, Rubik Mono One, Shrikhand, Monoton, Press Start 2P, Permanent Marker) — OFL
+permits using the fonts to create artwork. No stock photos, no third-party art. The earlier mood
+images (`lib.photo.bday-balloons`, …) stay in the library so v0.5.0/0.5.1 share links keep resolving.
+
+```bash
+python3 scripts/gen_library_samples.py && (cd scripts && python3 gen_genz_samples.py)
+```

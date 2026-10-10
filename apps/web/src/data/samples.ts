@@ -41,6 +41,10 @@ export type TemplateSample = {
   invitation?: { hostName?: string; eventName?: string; eventWhen?: string; eventWhere?: string };
   durationSec: number;
   preview: string[];
+  /** v0.5.2: distinct cover thumb + punchy defaults */
+  cover?: string;
+  textStyle?: import("@voyajes/core").TextStyle;
+  transition?: TransitionKind;
 };
 
 const data = samplesJson as unknown as { samples: Record<string, TemplateSample> };
@@ -48,6 +52,12 @@ const data = samplesJson as unknown as { samples: Record<string, TemplateSample>
 export function getTemplateSample(templateId: string | undefined): TemplateSample | undefined {
   if (!templateId) return undefined;
   return data.samples[templateId];
+}
+
+export function sampleCoverUrl(templateId: string): string | undefined {
+  const s = getTemplateSample(templateId);
+  const c = s?.cover ?? s?.preview[0];
+  return c ? libraryAssetUrl(c) : undefined;
 }
 
 export function samplePreviewUrls(templateId: string): string[] {

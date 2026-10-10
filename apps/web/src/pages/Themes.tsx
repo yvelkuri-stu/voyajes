@@ -1,3 +1,4 @@
+import { SamplePreview } from "../components/SamplePreview";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -303,6 +304,7 @@ export function Themes() {
                       : undefined,
                   }}
                 >
+                  <SamplePreview templateId={t.id} />
                   <div
                     className="theme-card-preview"
                     style={{ ["--theme-grad" as string]: t.gradient }}

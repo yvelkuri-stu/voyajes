@@ -56,7 +56,7 @@ export type PortablePackV1 = {
     droppedClips?: number;
     /** A user-uploaded sound was too big for the link (invite pack / export has it) */
     audioOmitted?: boolean;
-    quality?: "high" | "compact";
+    quality?: "high" | "compact" | "small" | "tiny";
   };
 };
 
@@ -265,10 +265,14 @@ async function videoBlobToPosterJpeg(
   }
 }
 
-type QualityPreset = { maxEdge: number; quality: number; label: "high" | "compact" };
+type QualityPreset = { maxEdge: number; quality: number; label: "high" | "compact" | "small" | "tiny" };
 
 const QUALITY_HIGH: QualityPreset = { maxEdge: 720, quality: 0.6, label: "high" };
 const QUALITY_COMPACT: QualityPreset = { maxEdge: 640, quality: 0.5, label: "compact" };
+const QUALITY_SMALL: QualityPreset = { maxEdge: 480, quality: 0.42, label: "small" };
+const QUALITY_TINY: QualityPreset = { maxEdge: 360, quality: 0.36, label: "tiny" };
+/** Links above this get squeezed (smaller photos, then fewer embedded clips). */
+export const PORTABLE_TARGET_CHARS = 60_000;
 
 async function encodeClipMedia(
   blob: Blob,
@@ -416,32 +420,23 @@ export async function buildPortableShareUrl(
   );
   let pack = await buildPackAtQuality(record, QUALITY_HIGH, preferredMax || 1);
   let encoded = await encodePayload(pack);
-
-  if (encoded.length > PORTABLE_CHAT_WARN_CHARS || encoded.length > PORTABLE_MAX_CHARS) {
-    notify("Link large — compressing photos…");
-    pack = await buildPackAtQuality(record, QUALITY_COMPACT, preferredMax || 1);
-    encoded = await encodePayload(pack);
-  }
-
   let dropped = pack.flags?.droppedClips ?? 0;
+  // 1) shrink photos further before giving up any clip
+  for (const preset of [QUALITY_COMPACT, QUALITY_SMALL, QUALITY_TINY]) {
+    if (encoded.length <= PORTABLE_TARGET_CHARS) break;
+    notify(`Link large — compressing photos (${preset.label})…`);
+    pack = await buildPackAtQuality(record, preset, preferredMax || 1);
+    encoded = await encodePayload(pack);
+    dropped = pack.flags?.droppedClips ?? dropped;
+  }
+  // 2) then embed fewer clips (library clips are free and always kept)
   let maxKeep = Math.max(
     1,
     (pack.share.playback?.clips?.filter((c) => !c.libraryId).length ?? 1) - 1,
   );
-  // Shrink until under chat-warn when possible (down to 2 clips), then hard-cap.
-  while (
-    (encoded.length > PORTABLE_CHAT_WARN_CHARS || encoded.length > PORTABLE_MAX_CHARS) &&
-    maxKeep >= 2
-  ) {
+  while (encoded.length > PORTABLE_TARGET_CHARS && maxKeep >= 1) {
     notify(`Link still large — embedding first ${maxKeep} clip${maxKeep === 1 ? "" : "s"}…`);
-    pack = await buildPackAtQuality(record, QUALITY_COMPACT, maxKeep);
-    encoded = await encodePayload(pack);
-    dropped = pack.flags?.droppedClips ?? dropped;
-    maxKeep -= 1;
-  }
-  while (encoded.length > PORTABLE_MAX_CHARS && maxKeep >= 1) {
-    notify(`Link still large — embedding first ${maxKeep} clip${maxKeep === 1 ? "" : "s"}…`);
-    pack = await buildPackAtQuality(record, QUALITY_COMPACT, maxKeep);
+    pack = await buildPackAtQuality(record, QUALITY_TINY, maxKeep);
     encoded = await encodePayload(pack);
     dropped = pack.flags?.droppedClips ?? dropped;
     maxKeep -= 1;

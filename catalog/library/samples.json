@@ -1,50 +1,50 @@
 {
  "schema": 1,
- "libraryVersion": "2026.10.09.1",
+ "libraryVersion": "2026.10.10.1",
  "samples": {
   "template.midnight-metro": {
    "mood": "party",
    "grade": "neon",
    "clips": [
     {
-     "media": "lib.photo.party-disco",
+     "media": "lib.photo.tpl-midnight-metro-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "whip",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.37,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.party-lasers",
+     "media": "lib.photo.tpl-midnight-metro-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "whip",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.37,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.party-neon-confetti",
+     "media": "lib.photo.tpl-midnight-metro-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.37,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -53,7 +53,7 @@
     {
      "ref": "lib:lib.audio.party-pulse",
      "at": 0,
-     "durationSec": 7.66,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -92,56 +92,59 @@
      }
     }
    ],
-   "durationSec": 7.66,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/party-disco-thumb.webp",
-    "library/photos/party-lasers-thumb.webp",
-    "library/photos/party-neon-confetti-thumb.webp"
-   ]
+    "library/photos/tpl-midnight-metro-1-thumb.webp",
+    "library/photos/tpl-midnight-metro-2-thumb.webp",
+    "library/photos/tpl-midnight-metro-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-midnight-metro-1-thumb.webp",
+   "textStyle": "mono-tech",
+   "transition": "glitch"
   },
   "template.sunlit-drift": {
    "mood": "travel",
    "grade": "teal-orange",
    "clips": [
     {
-     "media": "lib.photo.trv-peaks",
+     "media": "lib.photo.tpl-sunlit-drift-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "dissolve",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.63,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-ocean",
+     "media": "lib.photo.tpl-sunlit-drift-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "dissolve",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.63,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-road",
+     "media": "lib.photo.tpl-sunlit-drift-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.63,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -150,7 +153,7 @@
     {
      "ref": "lib:lib.audio.travel-breeze",
      "at": 0,
-     "durationSec": 7.14,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -189,57 +192,60 @@
      }
     }
    ],
-   "durationSec": 7.14,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/trv-peaks-thumb.webp",
-    "library/photos/trv-ocean-thumb.webp",
-    "library/photos/trv-road-thumb.webp"
-   ]
+    "library/photos/tpl-sunlit-drift-1-thumb.webp",
+    "library/photos/tpl-sunlit-drift-2-thumb.webp",
+    "library/photos/tpl-sunlit-drift-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-sunlit-drift-1-thumb.webp",
+   "textStyle": "script-soft",
+   "transition": "whip"
   },
   "template.coastal-bounce": {
    "mood": "travel",
    "grade": "teal-orange",
    "clips": [
     {
-     "media": "lib.photo.trv-peaks",
+     "media": "lib.photo.tpl-coastal-bounce-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "push",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.51,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.trv-ocean",
+     "media": "lib.photo.tpl-coastal-bounce-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "push",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.51,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.trv-road",
+     "media": "lib.photo.tpl-coastal-bounce-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.51,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -247,7 +253,7 @@
     {
      "ref": "lib:lib.audio.travel-breeze",
      "at": 0,
-     "durationSec": 7.38,
+     "durationSec": 7.2,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -286,56 +292,59 @@
      }
     }
    ],
-   "durationSec": 7.38,
+   "durationSec": 7.2,
    "preview": [
-    "library/photos/trv-peaks-thumb.webp",
-    "library/photos/trv-ocean-thumb.webp",
-    "library/photos/trv-road-thumb.webp"
-   ]
+    "library/photos/tpl-coastal-bounce-1-thumb.webp",
+    "library/photos/tpl-coastal-bounce-2-thumb.webp",
+    "library/photos/tpl-coastal-bounce-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-coastal-bounce-1-thumb.webp",
+   "textStyle": "bold-impact",
+   "transition": "zoom-through"
   },
   "template.golden-recap": {
    "mood": "cozy",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.cozy-window",
+     "media": "lib.photo.tpl-golden-recap-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "light-leak",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-table",
+     "media": "lib.photo.tpl-golden-recap-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "light-leak",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-home",
+     "media": "lib.photo.tpl-golden-recap-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -344,7 +353,7 @@
     {
      "ref": "lib:lib.audio.cozy-keys",
      "at": 0,
-     "durationSec": 7.06,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -383,56 +392,59 @@
      }
     }
    ],
-   "durationSec": 7.06,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/cozy-window-thumb.webp",
-    "library/photos/cozy-table-thumb.webp",
-    "library/photos/cozy-home-thumb.webp"
-   ]
+    "library/photos/tpl-golden-recap-1-thumb.webp",
+    "library/photos/tpl-golden-recap-2-thumb.webp",
+    "library/photos/tpl-golden-recap-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-golden-recap-1-thumb.webp",
+   "textStyle": "kinetic-outline",
+   "transition": "flash"
   },
   "template.vhs-party": {
    "mood": "retro",
    "grade": "film",
    "clips": [
     {
-     "media": "lib.photo.retro-grid",
+     "media": "lib.photo.tpl-vhs-party-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "flash",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.33,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.retro-checker",
+     "media": "lib.photo.tpl-vhs-party-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "flash",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.33,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.retro-gallery",
+     "media": "lib.photo.tpl-vhs-party-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.33,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -441,7 +453,7 @@
     {
      "ref": "lib:lib.audio.retro-groove",
      "at": 0,
-     "durationSec": 7.74,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -480,57 +492,60 @@
      }
     }
    ],
-   "durationSec": 7.74,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/retro-grid-thumb.webp",
-    "library/photos/retro-checker-thumb.webp",
-    "library/photos/retro-gallery-thumb.webp"
-   ]
+    "library/photos/tpl-vhs-party-1-thumb.webp",
+    "library/photos/tpl-vhs-party-2-thumb.webp",
+    "library/photos/tpl-vhs-party-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-vhs-party-1-thumb.webp",
+   "textStyle": "mono-tech",
+   "transition": "glitch"
   },
   "template.gallery-quiet": {
    "mood": "retro",
    "grade": "film",
    "clips": [
     {
-     "media": "lib.photo.retro-grid",
+     "media": "lib.photo.tpl-gallery-quiet-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "fade-black",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.57,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.retro-checker",
+     "media": "lib.photo.tpl-gallery-quiet-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "fade-black",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.57,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.retro-gallery",
+     "media": "lib.photo.tpl-gallery-quiet-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.57,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -538,7 +553,7 @@
     {
      "ref": "lib:lib.audio.retro-groove",
      "at": 0,
-     "durationSec": 7.26,
+     "durationSec": 7.2,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -577,56 +592,59 @@
      }
     }
    ],
-   "durationSec": 7.26,
+   "durationSec": 7.2,
    "preview": [
-    "library/photos/retro-grid-thumb.webp",
-    "library/photos/retro-checker-thumb.webp",
-    "library/photos/retro-gallery-thumb.webp"
-   ]
+    "library/photos/tpl-gallery-quiet-1-thumb.webp",
+    "library/photos/tpl-gallery-quiet-2-thumb.webp",
+    "library/photos/tpl-gallery-quiet-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-gallery-quiet-1-thumb.webp",
+   "textStyle": "clean-sans",
+   "transition": "zoom-through"
   },
   "template.acid-drop": {
    "mood": "party",
    "grade": "neon",
    "clips": [
     {
-     "media": "lib.photo.party-disco",
+     "media": "lib.photo.tpl-acid-drop-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "zoom-through",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.41,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.party-lasers",
+     "media": "lib.photo.tpl-acid-drop-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "zoom-through",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.41,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.party-neon-confetti",
+     "media": "lib.photo.tpl-acid-drop-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.41,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -635,7 +653,7 @@
     {
      "ref": "lib:lib.audio.party-pulse",
      "at": 0,
-     "durationSec": 7.58,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -674,56 +692,59 @@
      }
     }
    ],
-   "durationSec": 7.58,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/party-disco-thumb.webp",
-    "library/photos/party-lasers-thumb.webp",
-    "library/photos/party-neon-confetti-thumb.webp"
-   ]
+    "library/photos/tpl-acid-drop-1-thumb.webp",
+    "library/photos/tpl-acid-drop-2-thumb.webp",
+    "library/photos/tpl-acid-drop-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-acid-drop-1-thumb.webp",
+   "textStyle": "mono-tech",
+   "transition": "glitch"
   },
   "template.blush-story": {
    "mood": "anniversary",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.anni-hearts",
+     "media": "lib.photo.tpl-blush-story-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "slide-up",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.59,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.anni-glow",
+     "media": "lib.photo.tpl-blush-story-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "slide-up",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.59,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.anni-rings",
+     "media": "lib.photo.tpl-blush-story-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.59,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -732,7 +753,7 @@
     {
      "ref": "lib:lib.audio.love-waltz",
      "at": 0,
-     "durationSec": 7.22,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -771,56 +792,59 @@
      }
     }
    ],
-   "durationSec": 7.22,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/anni-hearts-thumb.webp",
-    "library/photos/anni-glow-thumb.webp",
-    "library/photos/anni-rings-thumb.webp"
-   ]
+    "library/photos/tpl-blush-story-1-thumb.webp",
+    "library/photos/tpl-blush-story-2-thumb.webp",
+    "library/photos/tpl-blush-story-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-blush-story-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "whip"
   },
   "template.field-notes": {
    "mood": "travel",
    "grade": "teal-orange",
    "clips": [
     {
-     "media": "lib.photo.trv-peaks",
+     "media": "lib.photo.tpl-field-notes-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "fade-black",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.71,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-ocean",
+     "media": "lib.photo.tpl-field-notes-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "fade-black",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.71,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-road",
+     "media": "lib.photo.tpl-field-notes-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.71,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -829,7 +853,7 @@
     {
      "ref": "lib:lib.audio.travel-breeze",
      "at": 0,
-     "durationSec": 6.98,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -868,56 +892,59 @@
      }
     }
    ],
-   "durationSec": 6.98,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/trv-peaks-thumb.webp",
-    "library/photos/trv-ocean-thumb.webp",
-    "library/photos/trv-road-thumb.webp"
-   ]
+    "library/photos/tpl-field-notes-1-thumb.webp",
+    "library/photos/tpl-field-notes-2-thumb.webp",
+    "library/photos/tpl-field-notes-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-field-notes-1-thumb.webp",
+   "textStyle": "mono-tech",
+   "transition": "glitch"
   },
   "template.strobe-night": {
    "mood": "party",
    "grade": "neon",
    "clips": [
     {
-     "media": "lib.photo.party-disco",
+     "media": "lib.photo.tpl-strobe-night-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
      "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.3,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.party-lasers",
+     "media": "lib.photo.tpl-strobe-night-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
      "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.3,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.party-neon-confetti",
+     "media": "lib.photo.tpl-strobe-night-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.3,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -926,7 +953,7 @@
     {
      "ref": "lib:lib.audio.party-pulse",
      "at": 0,
-     "durationSec": 7.8,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -965,57 +992,60 @@
      }
     }
    ],
-   "durationSec": 7.8,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/party-disco-thumb.webp",
-    "library/photos/party-lasers-thumb.webp",
-    "library/photos/party-neon-confetti-thumb.webp"
-   ]
+    "library/photos/tpl-strobe-night-1-thumb.webp",
+    "library/photos/tpl-strobe-night-2-thumb.webp",
+    "library/photos/tpl-strobe-night-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-strobe-night-1-thumb.webp",
+   "textStyle": "kinetic-outline",
+   "transition": "flash"
   },
   "template.swing-retro": {
    "mood": "retro",
    "grade": "film",
    "clips": [
     {
-     "media": "lib.photo.retro-grid",
+     "media": "lib.photo.tpl-swing-retro-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "whip",
+     "transitionOut": "spin",
      "transitionSpec": {
-      "durationSec": 0.35,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.retro-checker",
+     "media": "lib.photo.tpl-swing-retro-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "whip",
+     "transitionOut": "spin",
      "transitionSpec": {
-      "durationSec": 0.35,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.retro-gallery",
+     "media": "lib.photo.tpl-swing-retro-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.35,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -1023,7 +1053,7 @@
     {
      "ref": "lib:lib.audio.retro-groove",
      "at": 0,
-     "durationSec": 7.7,
+     "durationSec": 7.2,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1062,56 +1092,59 @@
      }
     }
    ],
-   "durationSec": 7.7,
+   "durationSec": 7.2,
    "preview": [
-    "library/photos/retro-grid-thumb.webp",
-    "library/photos/retro-checker-thumb.webp",
-    "library/photos/retro-gallery-thumb.webp"
-   ]
+    "library/photos/tpl-swing-retro-1-thumb.webp",
+    "library/photos/tpl-swing-retro-2-thumb.webp",
+    "library/photos/tpl-swing-retro-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-swing-retro-1-thumb.webp",
+   "textStyle": "vintage-poster",
+   "transition": "spin"
   },
   "template.mint-travel": {
    "mood": "travel",
    "grade": "teal-orange",
    "clips": [
     {
-     "media": "lib.photo.trv-peaks",
+     "media": "lib.photo.tpl-mint-travel-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "dissolve",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.55,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-ocean",
+     "media": "lib.photo.tpl-mint-travel-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "dissolve",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.55,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-road",
+     "media": "lib.photo.tpl-mint-travel-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.55,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -1120,7 +1153,7 @@
     {
      "ref": "lib:lib.audio.travel-breeze",
      "at": 0,
-     "durationSec": 7.3,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1159,56 +1192,59 @@
      }
     }
    ],
-   "durationSec": 7.3,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/trv-peaks-thumb.webp",
-    "library/photos/trv-ocean-thumb.webp",
-    "library/photos/trv-road-thumb.webp"
-   ]
+    "library/photos/tpl-mint-travel-1-thumb.webp",
+    "library/photos/tpl-mint-travel-2-thumb.webp",
+    "library/photos/tpl-mint-travel-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-mint-travel-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "whip"
   },
   "template.lounge-edit": {
    "mood": "cozy",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.cozy-window",
+     "media": "lib.photo.tpl-lounge-edit-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "dissolve",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.65,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-table",
+     "media": "lib.photo.tpl-lounge-edit-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "dissolve",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.65,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-home",
+     "media": "lib.photo.tpl-lounge-edit-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.65,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -1217,7 +1253,7 @@
     {
      "ref": "lib:lib.audio.cozy-keys",
      "at": 0,
-     "durationSec": 7.1,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1256,57 +1292,60 @@
      }
     }
    ],
-   "durationSec": 7.1,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/cozy-window-thumb.webp",
-    "library/photos/cozy-table-thumb.webp",
-    "library/photos/cozy-home-thumb.webp"
-   ]
+    "library/photos/tpl-lounge-edit-1-thumb.webp",
+    "library/photos/tpl-lounge-edit-2-thumb.webp",
+    "library/photos/tpl-lounge-edit-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-lounge-edit-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "whip"
   },
   "template.pulse-reels": {
    "mood": "party",
    "grade": "neon",
    "clips": [
     {
-     "media": "lib.photo.party-disco",
+     "media": "lib.photo.tpl-pulse-reels-1",
      "durationSec": 2.8,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
      "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.39,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.party-lasers",
+     "media": "lib.photo.tpl-pulse-reels-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
      "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.39,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.party-neon-confetti",
+     "media": "lib.photo.tpl-pulse-reels-3",
      "durationSec": 2.8,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.39,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -1314,7 +1353,7 @@
     {
      "ref": "lib:lib.audio.party-pulse",
      "at": 0,
-     "durationSec": 7.62,
+     "durationSec": 7.2,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1353,57 +1392,60 @@
      }
     }
    ],
-   "durationSec": 7.62,
+   "durationSec": 7.2,
    "preview": [
-    "library/photos/party-disco-thumb.webp",
-    "library/photos/party-lasers-thumb.webp",
-    "library/photos/party-neon-confetti-thumb.webp"
-   ]
+    "library/photos/tpl-pulse-reels-1-thumb.webp",
+    "library/photos/tpl-pulse-reels-2-thumb.webp",
+    "library/photos/tpl-pulse-reels-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-pulse-reels-1-thumb.webp",
+   "textStyle": "kinetic-outline",
+   "transition": "zoom-through"
   },
   "template.birthday-blast": {
    "mood": "birthday",
    "grade": "vivid",
    "clips": [
     {
-     "media": "lib.photo.bday-balloons",
+     "media": "lib.photo.tpl-birthday-blast-1",
      "durationSec": 3.2,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "flash",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.31,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.bday-confetti",
+     "media": "lib.photo.tpl-birthday-blast-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "flash",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.31,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.bday-cake",
+     "media": "lib.photo.tpl-birthday-blast-3",
      "durationSec": 3.2,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.31,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -1411,7 +1453,7 @@
     {
      "ref": "lib:lib.audio.birthday-bounce",
      "at": 0,
-     "durationSec": 8.98,
+     "durationSec": 8.4,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1456,7 +1498,7 @@
      "end": 8.98,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -1466,56 +1508,59 @@
     "eventWhen": "Sat, Nov 14 · 7 PM",
     "eventWhere": "Rooftop · 12 Elm St"
    },
-   "durationSec": 8.98,
+   "durationSec": 8.4,
    "preview": [
-    "library/photos/bday-balloons-thumb.webp",
-    "library/photos/bday-confetti-thumb.webp",
-    "library/photos/bday-cake-thumb.webp"
-   ]
+    "library/photos/tpl-birthday-blast-1-thumb.webp",
+    "library/photos/tpl-birthday-blast-2-thumb.webp",
+    "library/photos/tpl-birthday-blast-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-birthday-blast-1-thumb.webp",
+   "textStyle": "bold-impact",
+   "transition": "zoom-through"
   },
   "template.garden-soiree": {
    "mood": "wedding",
    "grade": "dreamy",
    "clips": [
     {
-     "media": "lib.photo.wed-rings",
+     "media": "lib.photo.tpl-garden-soiree-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "soft-bloom",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.wed-petals",
+     "media": "lib.photo.tpl-garden-soiree-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "soft-bloom",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.wed-arch",
+     "media": "lib.photo.tpl-garden-soiree-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -1524,7 +1569,7 @@
     {
      "ref": "lib:lib.audio.wedding-strings",
      "at": 0,
-     "durationSec": 8.26,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1548,7 +1593,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -1569,7 +1614,7 @@
      "end": 8.26,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -1579,56 +1624,59 @@
     "eventWhen": "Sun, May 9 · 4 PM",
     "eventWhere": "Rose Garden Pavilion"
    },
-   "durationSec": 8.26,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/wed-rings-thumb.webp",
-    "library/photos/wed-petals-thumb.webp",
-    "library/photos/wed-arch-thumb.webp"
-   ]
+    "library/photos/tpl-garden-soiree-1-thumb.webp",
+    "library/photos/tpl-garden-soiree-2-thumb.webp",
+    "library/photos/tpl-garden-soiree-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-garden-soiree-1-thumb.webp",
+   "textStyle": "script-soft",
+   "transition": "whip"
   },
   "template.candle-wish": {
    "mood": "birthday",
    "grade": "vivid",
    "clips": [
     {
-     "media": "lib.photo.bday-balloons",
+     "media": "lib.photo.tpl-candle-wish-1",
      "durationSec": 3.2,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "blur-fade",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.59,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.bday-confetti",
+     "media": "lib.photo.tpl-candle-wish-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "blur-fade",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.59,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.bday-cake",
+     "media": "lib.photo.tpl-candle-wish-3",
      "durationSec": 3.2,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.59,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -1637,7 +1685,7 @@
     {
      "ref": "lib:lib.audio.birthday-bounce",
      "at": 0,
-     "durationSec": 8.42,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1682,7 +1730,7 @@
      "end": 8.42,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -1692,56 +1740,59 @@
     "eventWhen": "Sat, Nov 14 · 7 PM",
     "eventWhere": "Rooftop · 12 Elm St"
    },
-   "durationSec": 8.42,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/bday-balloons-thumb.webp",
-    "library/photos/bday-confetti-thumb.webp",
-    "library/photos/bday-cake-thumb.webp"
-   ]
+    "library/photos/tpl-candle-wish-1-thumb.webp",
+    "library/photos/tpl-candle-wish-2-thumb.webp",
+    "library/photos/tpl-candle-wish-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-candle-wish-1-thumb.webp",
+   "textStyle": "script-soft",
+   "transition": "flash"
   },
   "template.wedding-vows": {
    "mood": "wedding",
    "grade": "dreamy",
    "clips": [
     {
-     "media": "lib.photo.wed-rings",
+     "media": "lib.photo.tpl-wedding-vows-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "heart-wipe",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.wed-petals",
+     "media": "lib.photo.tpl-wedding-vows-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "heart-wipe",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.wed-arch",
+     "media": "lib.photo.tpl-wedding-vows-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -1750,7 +1801,7 @@
     {
      "ref": "lib:lib.audio.wedding-strings",
      "at": 0,
-     "durationSec": 8.26,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1774,7 +1825,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -1795,7 +1846,7 @@
      "end": 8.26,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -1805,57 +1856,60 @@
     "eventWhen": "Sun, May 9 · 4 PM",
     "eventWhere": "Rose Garden Pavilion"
    },
-   "durationSec": 8.26,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/wed-rings-thumb.webp",
-    "library/photos/wed-petals-thumb.webp",
-    "library/photos/wed-arch-thumb.webp"
-   ]
+    "library/photos/tpl-wedding-vows-1-thumb.webp",
+    "library/photos/tpl-wedding-vows-2-thumb.webp",
+    "library/photos/tpl-wedding-vows-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-wedding-vows-1-thumb.webp",
+   "textStyle": "vintage-poster",
+   "transition": "flash"
   },
   "template.baby-shower-bloom": {
    "mood": "baby",
    "grade": "dreamy",
    "clips": [
     {
-     "media": "lib.photo.baby-clouds",
+     "media": "lib.photo.tpl-baby-shower-bloom-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "soft-bloom",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.69,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.baby-stars",
+     "media": "lib.photo.tpl-baby-shower-bloom-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "soft-bloom",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.69,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.baby-bubbles",
+     "media": "lib.photo.tpl-baby-shower-bloom-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.69,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -1863,7 +1917,7 @@
     {
      "ref": "lib:lib.audio.lullaby-bells",
      "at": 0,
-     "durationSec": 8.22,
+     "durationSec": 8.4,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -1887,7 +1941,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -1908,7 +1962,7 @@
      "end": 8.22,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -1918,56 +1972,59 @@
     "eventWhen": "Sun, Mar 3 · 1 PM",
     "eventWhere": "Lina's place · 4 Park Ave"
    },
-   "durationSec": 8.22,
+   "durationSec": 8.4,
    "preview": [
-    "library/photos/baby-clouds-thumb.webp",
-    "library/photos/baby-stars-thumb.webp",
-    "library/photos/baby-bubbles-thumb.webp"
-   ]
+    "library/photos/tpl-baby-shower-bloom-1-thumb.webp",
+    "library/photos/tpl-baby-shower-bloom-2-thumb.webp",
+    "library/photos/tpl-baby-shower-bloom-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-baby-shower-bloom-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "zoom-through"
   },
   "template.housewarming-glow": {
    "mood": "cozy",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.cozy-window",
+     "media": "lib.photo.tpl-housewarming-glow-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "slide-right",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.53,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-table",
+     "media": "lib.photo.tpl-housewarming-glow-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "slide-right",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.53,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-home",
+     "media": "lib.photo.tpl-housewarming-glow-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.53,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -1976,7 +2033,7 @@
     {
      "ref": "lib:lib.audio.cozy-keys",
      "at": 0,
-     "durationSec": 8.54,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2000,7 +2057,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -2021,7 +2078,7 @@
      "end": 8.54,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2031,56 +2088,59 @@
     "eventWhen": "Fri · 7 PM",
     "eventWhere": "Our new place"
    },
-   "durationSec": 8.54,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/cozy-window-thumb.webp",
-    "library/photos/cozy-table-thumb.webp",
-    "library/photos/cozy-home-thumb.webp"
-   ]
+    "library/photos/tpl-housewarming-glow-1-thumb.webp",
+    "library/photos/tpl-housewarming-glow-2-thumb.webp",
+    "library/photos/tpl-housewarming-glow-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-housewarming-glow-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "whip"
   },
   "template.grad-caps": {
    "mood": "graduation",
    "grade": "vivid",
    "clips": [
     {
-     "media": "lib.photo.grad-caps-toss",
+     "media": "lib.photo.tpl-grad-caps-1",
      "durationSec": 3.2,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "circle-wipe",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.grad-stars",
+     "media": "lib.photo.tpl-grad-caps-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "circle-wipe",
+     "transitionOut": "glitch",
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.grad-sunrise",
+     "media": "lib.photo.tpl-grad-caps-3",
      "durationSec": 3.2,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -2089,7 +2149,7 @@
     {
      "ref": "lib:lib.audio.grad-anthem",
      "at": 0,
-     "durationSec": 8.38,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2134,7 +2194,7 @@
      "end": 8.38,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2144,56 +2204,59 @@
     "eventWhen": "Sat, Jun 20 · 3 PM",
     "eventWhere": "Backyard · 88 Oak Rd"
    },
-   "durationSec": 8.38,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/grad-caps-toss-thumb.webp",
-    "library/photos/grad-stars-thumb.webp",
-    "library/photos/grad-sunrise-thumb.webp"
-   ]
+    "library/photos/tpl-grad-caps-1-thumb.webp",
+    "library/photos/tpl-grad-caps-2-thumb.webp",
+    "library/photos/tpl-grad-caps-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-grad-caps-1-thumb.webp",
+   "textStyle": "kinetic-outline",
+   "transition": "glitch"
   },
   "template.holiday-sparkle": {
    "mood": "holiday",
    "grade": "vivid",
    "clips": [
     {
-     "media": "lib.photo.hol-ornaments",
+     "media": "lib.photo.tpl-holiday-sparkle-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "glitch",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.43,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.hol-snowfall",
+     "media": "lib.photo.tpl-holiday-sparkle-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "glitch",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.43,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.hol-lights",
+     "media": "lib.photo.tpl-holiday-sparkle-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.43,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -2202,7 +2265,7 @@
     {
      "ref": "lib:lib.audio.holiday-chimes",
      "at": 0,
-     "durationSec": 8.74,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2226,7 +2289,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -2247,7 +2310,7 @@
      "end": 8.74,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2257,56 +2320,59 @@
     "eventWhen": "Sat, Dec 19 · 8 PM",
     "eventWhere": "Studio 5 · Market St"
    },
-   "durationSec": 8.74,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/hol-ornaments-thumb.webp",
-    "library/photos/hol-snowfall-thumb.webp",
-    "library/photos/hol-lights-thumb.webp"
-   ]
+    "library/photos/tpl-holiday-sparkle-1-thumb.webp",
+    "library/photos/tpl-holiday-sparkle-2-thumb.webp",
+    "library/photos/tpl-holiday-sparkle-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-holiday-sparkle-1-thumb.webp",
+   "textStyle": "bold-impact",
+   "transition": "flash"
   },
   "template.dinner-table": {
    "mood": "cozy",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.cozy-window",
+     "media": "lib.photo.tpl-dinner-table-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "blur-fade",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-table",
+     "media": "lib.photo.tpl-dinner-table-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "blur-fade",
+     "transitionOut": "flash",
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-home",
+     "media": "lib.photo.tpl-dinner-table-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -2315,7 +2381,7 @@
     {
      "ref": "lib:lib.audio.cozy-keys",
      "at": 0,
-     "durationSec": 8.38,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2339,7 +2405,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -2360,7 +2426,7 @@
      "end": 8.38,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2370,57 +2436,60 @@
     "eventWhen": "Fri · 7 PM",
     "eventWhere": "Our new place"
    },
-   "durationSec": 8.38,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/cozy-window-thumb.webp",
-    "library/photos/cozy-table-thumb.webp",
-    "library/photos/cozy-home-thumb.webp"
-   ]
+    "library/photos/tpl-dinner-table-1-thumb.webp",
+    "library/photos/tpl-dinner-table-2-thumb.webp",
+    "library/photos/tpl-dinner-table-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-dinner-table-1-thumb.webp",
+   "textStyle": "script-soft",
+   "transition": "flash"
   },
   "template.kids-party-pop": {
    "mood": "birthday",
    "grade": "vivid",
    "clips": [
     {
-     "media": "lib.photo.bday-balloons",
+     "media": "lib.photo.tpl-kids-party-pop-1",
      "durationSec": 3.2,
      "animation": {
       "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
      "transitionOut": "spin",
      "transitionSpec": {
-      "durationSec": 0.55,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.bday-confetti",
+     "media": "lib.photo.tpl-kids-party-pop-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
      "transitionOut": "spin",
      "transitionSpec": {
-      "durationSec": 0.55,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.bday-cake",
+     "media": "lib.photo.tpl-kids-party-pop-3",
      "durationSec": 3.2,
      "animation": {
       "in": "slide-up",
-      "emphasis": "pulse",
-      "inSec": 0.5
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.55,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -2428,7 +2497,7 @@
     {
      "ref": "lib:lib.audio.birthday-bounce",
      "at": 0,
-     "durationSec": 8.5,
+     "durationSec": 8.4,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2473,7 +2542,7 @@
      "end": 8.5,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2483,56 +2552,59 @@
     "eventWhen": "Sat, Nov 14 · 7 PM",
     "eventWhere": "Rooftop · 12 Elm St"
    },
-   "durationSec": 8.5,
+   "durationSec": 8.4,
    "preview": [
-    "library/photos/bday-balloons-thumb.webp",
-    "library/photos/bday-confetti-thumb.webp",
-    "library/photos/bday-cake-thumb.webp"
-   ]
+    "library/photos/tpl-kids-party-pop-1-thumb.webp",
+    "library/photos/tpl-kids-party-pop-2-thumb.webp",
+    "library/photos/tpl-kids-party-pop-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-kids-party-pop-1-thumb.webp",
+   "textStyle": "bold-impact",
+   "transition": "spin"
   },
   "template.brunch-breeze": {
    "mood": "cozy",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.cozy-window",
+     "media": "lib.photo.tpl-brunch-breeze-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "circle-wipe",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-table",
+     "media": "lib.photo.tpl-brunch-breeze-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "circle-wipe",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.cozy-home",
+     "media": "lib.photo.tpl-brunch-breeze-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.61,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -2541,7 +2613,7 @@
     {
      "ref": "lib:lib.audio.cozy-keys",
      "at": 0,
-     "durationSec": 8.38,
+     "durationSec": 8.7,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2565,7 +2637,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -2586,7 +2658,7 @@
      "end": 8.38,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2596,56 +2668,59 @@
     "eventWhen": "Fri · 7 PM",
     "eventWhere": "Our new place"
    },
-   "durationSec": 8.38,
+   "durationSec": 8.7,
    "preview": [
-    "library/photos/cozy-window-thumb.webp",
-    "library/photos/cozy-table-thumb.webp",
-    "library/photos/cozy-home-thumb.webp"
-   ]
+    "library/photos/tpl-brunch-breeze-1-thumb.webp",
+    "library/photos/tpl-brunch-breeze-2-thumb.webp",
+    "library/photos/tpl-brunch-breeze-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-brunch-breeze-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "whip"
   },
   "template.anniversary-glow": {
    "mood": "anniversary",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.anni-hearts",
+     "media": "lib.photo.tpl-anniversary-glow-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
      "transitionOut": "heart-wipe",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.6,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.anni-glow",
+     "media": "lib.photo.tpl-anniversary-glow-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
      "transitionOut": "heart-wipe",
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.6,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.anni-rings",
+     "media": "lib.photo.tpl-anniversary-glow-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.67,
+      "durationSec": 0.6,
       "easing": "ease-in-out"
      }
     }
@@ -2654,7 +2729,7 @@
     {
      "ref": "lib:lib.audio.love-waltz",
      "at": 0,
-     "durationSec": 8.26,
+     "durationSec": 8.4,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2678,7 +2753,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -2699,7 +2774,7 @@
      "end": 8.26,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2709,57 +2784,60 @@
     "eventWhen": "Fri, Jun 12 · 7:30 PM",
     "eventWhere": "The Lantern Room"
    },
-   "durationSec": 8.26,
+   "durationSec": 8.4,
    "preview": [
-    "library/photos/anni-hearts-thumb.webp",
-    "library/photos/anni-glow-thumb.webp",
-    "library/photos/anni-rings-thumb.webp"
-   ]
+    "library/photos/tpl-anniversary-glow-1-thumb.webp",
+    "library/photos/tpl-anniversary-glow-2-thumb.webp",
+    "library/photos/tpl-anniversary-glow-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-anniversary-glow-1-thumb.webp",
+   "textStyle": "script-soft",
+   "transition": "heart-wipe"
   },
   "template.diwali-lights": {
    "mood": "festival",
    "grade": "warm",
    "clips": [
     {
-     "media": "lib.photo.fest-diyas",
+     "media": "lib.photo.tpl-diwali-lights-1",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "light-leak",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.75,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.fest-rangoli",
+     "media": "lib.photo.tpl-diwali-lights-2",
      "durationSec": 3.2,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "light-leak",
+     "transitionOut": "zoom-through",
      "transitionSpec": {
-      "durationSec": 0.75,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     },
     {
-     "media": "lib.photo.fest-fireworks",
+     "media": "lib.photo.tpl-diwali-lights-3",
      "durationSec": 3.2,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.75,
-      "easing": "ease-in-out"
+      "durationSec": 0.6,
+      "easing": "back-out"
      }
     }
    ],
@@ -2767,7 +2845,7 @@
     {
      "ref": "lib:lib.audio.festival-lights",
      "at": 0,
-     "durationSec": 8.1,
+     "durationSec": 8.4,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2791,7 +2869,7 @@
      "end": 3.6,
      "position": "center",
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "pulse"
      }
     },
@@ -2812,7 +2890,7 @@
      "end": 8.1,
      "position": "lower-third",
      "animation": {
-      "in": "fade"
+      "in": "slide-up"
      }
     }
    ],
@@ -2822,56 +2900,59 @@
     "eventWhen": "Sat, Nov 7 · 6 PM",
     "eventWhere": "Our home · 21 Lotus Ln"
    },
-   "durationSec": 8.1,
+   "durationSec": 8.4,
    "preview": [
-    "library/photos/fest-diyas-thumb.webp",
-    "library/photos/fest-rangoli-thumb.webp",
-    "library/photos/fest-fireworks-thumb.webp"
-   ]
+    "library/photos/tpl-diwali-lights-1-thumb.webp",
+    "library/photos/tpl-diwali-lights-2-thumb.webp",
+    "library/photos/tpl-diwali-lights-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-diwali-lights-1-thumb.webp",
+   "textStyle": "vintage-poster",
+   "transition": "zoom-through"
   },
   "template.travel-postcard": {
    "mood": "travel",
    "grade": "teal-orange",
    "clips": [
     {
-     "media": "lib.photo.trv-peaks",
+     "media": "lib.photo.tpl-travel-postcard-1",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
+      "in": "pop",
       "emphasis": "ken-burns",
-      "inSec": 0.5
+      "inSec": 0.35
      },
-     "transitionOut": "push",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.65,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-ocean",
+     "media": "lib.photo.tpl-travel-postcard-2",
      "durationSec": 2.8,
      "animation": {
       "in": "zoom-in",
-      "emphasis": "ken-burns-out",
-      "inSec": 0.5
+      "emphasis": "pulse",
+      "inSec": 0.3
      },
-     "transitionOut": "push",
+     "transitionOut": "whip",
      "transitionSpec": {
-      "durationSec": 0.65,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     },
     {
-     "media": "lib.photo.trv-road",
+     "media": "lib.photo.tpl-travel-postcard-3",
      "durationSec": 2.8,
      "animation": {
-      "in": "fade",
-      "emphasis": "float",
-      "inSec": 0.5
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
      },
      "transitionOut": null,
      "transitionSpec": {
-      "durationSec": 0.65,
+      "durationSec": 0.45,
       "easing": "ease-in-out"
      }
     }
@@ -2880,7 +2961,7 @@
     {
      "ref": "lib:lib.audio.travel-breeze",
      "at": 0,
-     "durationSec": 7.1,
+     "durationSec": 7.5,
      "volume": 0.8,
      "fadeInSec": 0.4,
      "fadeOutSec": 1.2,
@@ -2919,12 +3000,15 @@
      }
     }
    ],
-   "durationSec": 7.1,
+   "durationSec": 7.5,
    "preview": [
-    "library/photos/trv-peaks-thumb.webp",
-    "library/photos/trv-ocean-thumb.webp",
-    "library/photos/trv-road-thumb.webp"
-   ]
+    "library/photos/tpl-travel-postcard-1-thumb.webp",
+    "library/photos/tpl-travel-postcard-2-thumb.webp",
+    "library/photos/tpl-travel-postcard-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-travel-postcard-1-thumb.webp",
+   "textStyle": "vintage-poster",
+   "transition": "whip"
   }
  }
 }

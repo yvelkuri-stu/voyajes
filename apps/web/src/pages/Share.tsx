@@ -148,6 +148,17 @@ function GuestEngageDrawer({
   );
 }
 
+/** Remove ?host=1 so a copied link opens the guest view. */
+function stripHostParam(href: string): string {
+  try {
+    const u = new URL(href);
+    u.searchParams.delete("host");
+    return u.toString();
+  } catch {
+    return href;
+  }
+}
+
 export function Share() {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
@@ -374,12 +385,22 @@ export function Share() {
         setPortablePack(result.pack);
         setPortableFlags(result);
         setStatus(result.status);
+        // The address bar must hold the *working* link too: people copy it
+        // directly. A bare /v/<id> only exists in this browser's storage.
+        try {
+          const u = new URL(result.url);
+          if (hostView) u.searchParams.set("host", "1");
+          window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+        } catch {
+          /* ignore */
+        }
       } catch (err) {
         if (cancelled) return;
         console.warn("portable build failed", err);
-        setPortableUrl(publicShareUrl(record.id));
+        // Never fall back to a local-only /v/<id> link — it is blank elsewhere.
+        setPortableUrl(null);
         setStatus(
-          "Could not embed media in link — local link only. Try Export video for WhatsApp.",
+          "Could not build a shareable link — try fewer clips, or Export video / Download invite pack.",
         );
       } finally {
         if (!cancelled) setPortableBusy(false);
@@ -388,13 +409,14 @@ export function Share() {
     return () => {
       cancelled = true;
     };
-  }, [record, fromPortableHash]);
+  }, [record, fromPortableHash, hostView]);
 
   const shareUrl = useMemo(() => {
     if (portableUrl) return portableUrl;
+    if (fromPortableHash && typeof window !== "undefined") return stripHostParam(window.location.href);
     if (record) return publicShareUrl(record.id);
     return `https://${brand.shareHost}/v/…`;
-  }, [record, portableUrl]);
+  }, [record, portableUrl, fromPortableHash]);
 
   const isVideoPoster =
     !fromPortableHash &&
@@ -796,6 +818,8 @@ export function Share() {
           link = publicShareUrl(record.id);
         }
       }
+      // Guests re-sharing: the current URL (with its #vj1 payload) is the link
+      if (!link && fromPortableHash) link = stripHostParam(window.location.href);
       if (!link) link = publicShareUrl(record.id);
 
       const file = exp ? blobToShareFile(exp.blob, exp.filename) : null;

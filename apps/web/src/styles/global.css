@@ -4468,3 +4468,10 @@ html, body { overscroll-behavior-x: none; overflow-x: clip; }
 .media-importer-sheet { max-width: 100vw; box-sizing: border-box; }
 .invite-tpl-gallery { grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); }
 .vj-insp-chips, .vj-insp-kf-grid { flex-wrap: wrap; min-width: 0; }
+.vj-sample-preview img.vj-sample-cover { opacity: 1; animation: none; transform: none; }
+.card > .vj-sample-preview { border-radius: 12px 12px 0 0; margin: 0; aspect-ratio: 16 / 9; }
+.card > .vj-sample-preview { aspect-ratio: 4 / 3; }
+.card > .vj-sample-preview + .theme-card-preview { min-height: 0 !important; background: var(--bg-surface) !important; padding-top: 10px; }
+.card > .vj-sample-preview + .theme-card-preview::before, .card > .vj-sample-preview + .theme-card-preview::after { display: none; }
+.card > .vj-sample-preview { aspect-ratio: 1 / 1; }
+.card > .vj-sample-preview + .theme-card-preview { aspect-ratio: auto; }

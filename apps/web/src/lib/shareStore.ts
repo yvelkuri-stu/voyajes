@@ -27,6 +27,9 @@ export type SharePlaybackSnapshot = {
   transitionSpec?: DraftState["transitionSpec"];
   audioClips?: DraftState["audioClips"];
   autoDuck?: boolean;
+  /** custom:<id> → playable URL (portable embeds / local blobs); runtime only */
+  audioUrls?: Record<string, string>;
+  customSoundNames?: Record<string, string>;
 };
 
 export type ShareRecord = {
@@ -216,6 +219,9 @@ export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
     ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
     ...(Array.isArray(draft.audioClips) ? { audioClips: draft.audioClips } : {}),
     ...(typeof draft.autoDuck === "boolean" ? { autoDuck: draft.autoDuck } : {}),
+    ...(draft.customSounds?.length
+      ? { customSoundNames: Object.fromEntries(draft.customSounds.map((c) => [c.id, c.name])) }
+      : {}),
   };
 }
 

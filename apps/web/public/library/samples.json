@@ -1,0 +1,2930 @@
+{
+ "schema": 1,
+ "libraryVersion": "2026.10.09.1",
+ "samples": {
+  "template.midnight-metro": {
+   "mood": "party",
+   "grade": "neon",
+   "clips": [
+    {
+     "media": "lib.photo.party-disco",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.37,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-lasers",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.37,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-neon-confetti",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.37,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.party-pulse",
+     "at": 0,
+     "durationSec": 7.66,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "NIGHT MODE",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Turn it up",
+     "at": 5.26,
+     "end": 7.66,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.66,
+   "preview": [
+    "library/photos/party-disco-thumb.webp",
+    "library/photos/party-lasers-thumb.webp",
+    "library/photos/party-neon-confetti-thumb.webp"
+   ]
+  },
+  "template.sunlit-drift": {
+   "mood": "travel",
+   "grade": "teal-orange",
+   "clips": [
+    {
+     "media": "lib.photo.trv-peaks",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "dissolve",
+     "transitionSpec": {
+      "durationSec": 0.63,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-ocean",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "dissolve",
+     "transitionSpec": {
+      "durationSec": 0.63,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-road",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.63,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.travel-breeze",
+     "at": 0,
+     "durationSec": 7.14,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Postcards from away",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Swap in your trip",
+     "at": 4.74,
+     "end": 7.14,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.14,
+   "preview": [
+    "library/photos/trv-peaks-thumb.webp",
+    "library/photos/trv-ocean-thumb.webp",
+    "library/photos/trv-road-thumb.webp"
+   ]
+  },
+  "template.coastal-bounce": {
+   "mood": "travel",
+   "grade": "teal-orange",
+   "clips": [
+    {
+     "media": "lib.photo.trv-peaks",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "push",
+     "transitionSpec": {
+      "durationSec": 0.51,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-ocean",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "push",
+     "transitionSpec": {
+      "durationSec": 0.51,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-road",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.51,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.travel-breeze",
+     "at": 0,
+     "durationSec": 7.38,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Postcards from away",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Swap in your trip",
+     "at": 4.98,
+     "end": 7.38,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.38,
+   "preview": [
+    "library/photos/trv-peaks-thumb.webp",
+    "library/photos/trv-ocean-thumb.webp",
+    "library/photos/trv-road-thumb.webp"
+   ]
+  },
+  "template.golden-recap": {
+   "mood": "cozy",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.cozy-window",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "light-leak",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-table",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "light-leak",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-home",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.cozy-keys",
+     "at": 0,
+     "durationSec": 7.06,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Little moments",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Golden hours",
+     "at": 4.66,
+     "end": 7.06,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.06,
+   "preview": [
+    "library/photos/cozy-window-thumb.webp",
+    "library/photos/cozy-table-thumb.webp",
+    "library/photos/cozy-home-thumb.webp"
+   ]
+  },
+  "template.vhs-party": {
+   "mood": "retro",
+   "grade": "film",
+   "clips": [
+    {
+     "media": "lib.photo.retro-grid",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.33,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.retro-checker",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.33,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.retro-gallery",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.33,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.retro-groove",
+     "at": 0,
+     "durationSec": 7.74,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Rewind",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Press play",
+     "at": 5.34,
+     "end": 7.74,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.74,
+   "preview": [
+    "library/photos/retro-grid-thumb.webp",
+    "library/photos/retro-checker-thumb.webp",
+    "library/photos/retro-gallery-thumb.webp"
+   ]
+  },
+  "template.gallery-quiet": {
+   "mood": "retro",
+   "grade": "film",
+   "clips": [
+    {
+     "media": "lib.photo.retro-grid",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "fade-black",
+     "transitionSpec": {
+      "durationSec": 0.57,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.retro-checker",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "fade-black",
+     "transitionSpec": {
+      "durationSec": 0.57,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.retro-gallery",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.57,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.retro-groove",
+     "at": 0,
+     "durationSec": 7.26,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Rewind",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Press play",
+     "at": 4.86,
+     "end": 7.26,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.26,
+   "preview": [
+    "library/photos/retro-grid-thumb.webp",
+    "library/photos/retro-checker-thumb.webp",
+    "library/photos/retro-gallery-thumb.webp"
+   ]
+  },
+  "template.acid-drop": {
+   "mood": "party",
+   "grade": "neon",
+   "clips": [
+    {
+     "media": "lib.photo.party-disco",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.41,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-lasers",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.41,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-neon-confetti",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.41,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.party-pulse",
+     "at": 0,
+     "durationSec": 7.58,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "NIGHT MODE",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Turn it up",
+     "at": 5.18,
+     "end": 7.58,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.58,
+   "preview": [
+    "library/photos/party-disco-thumb.webp",
+    "library/photos/party-lasers-thumb.webp",
+    "library/photos/party-neon-confetti-thumb.webp"
+   ]
+  },
+  "template.blush-story": {
+   "mood": "anniversary",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.anni-hearts",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "slide-up",
+     "transitionSpec": {
+      "durationSec": 0.59,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.anni-glow",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "slide-up",
+     "transitionSpec": {
+      "durationSec": 0.59,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.anni-rings",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.59,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.love-waltz",
+     "at": 0,
+     "durationSec": 7.22,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Us, lately",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Soft days",
+     "at": 4.82,
+     "end": 7.22,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.22,
+   "preview": [
+    "library/photos/anni-hearts-thumb.webp",
+    "library/photos/anni-glow-thumb.webp",
+    "library/photos/anni-rings-thumb.webp"
+   ]
+  },
+  "template.field-notes": {
+   "mood": "travel",
+   "grade": "teal-orange",
+   "clips": [
+    {
+     "media": "lib.photo.trv-peaks",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "fade-black",
+     "transitionSpec": {
+      "durationSec": 0.71,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-ocean",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "fade-black",
+     "transitionSpec": {
+      "durationSec": 0.71,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-road",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.71,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.travel-breeze",
+     "at": 0,
+     "durationSec": 6.98,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Postcards from away",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Swap in your trip",
+     "at": 4.58,
+     "end": 6.98,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 6.98,
+   "preview": [
+    "library/photos/trv-peaks-thumb.webp",
+    "library/photos/trv-ocean-thumb.webp",
+    "library/photos/trv-road-thumb.webp"
+   ]
+  },
+  "template.strobe-night": {
+   "mood": "party",
+   "grade": "neon",
+   "clips": [
+    {
+     "media": "lib.photo.party-disco",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.3,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-lasers",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.3,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-neon-confetti",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.3,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.party-pulse",
+     "at": 0,
+     "durationSec": 7.8,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "NIGHT MODE",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Turn it up",
+     "at": 5.4,
+     "end": 7.8,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.8,
+   "preview": [
+    "library/photos/party-disco-thumb.webp",
+    "library/photos/party-lasers-thumb.webp",
+    "library/photos/party-neon-confetti-thumb.webp"
+   ]
+  },
+  "template.swing-retro": {
+   "mood": "retro",
+   "grade": "film",
+   "clips": [
+    {
+     "media": "lib.photo.retro-grid",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.35,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.retro-checker",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.35,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.retro-gallery",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.35,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.retro-groove",
+     "at": 0,
+     "durationSec": 7.7,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Rewind",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Press play",
+     "at": 5.3,
+     "end": 7.7,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.7,
+   "preview": [
+    "library/photos/retro-grid-thumb.webp",
+    "library/photos/retro-checker-thumb.webp",
+    "library/photos/retro-gallery-thumb.webp"
+   ]
+  },
+  "template.mint-travel": {
+   "mood": "travel",
+   "grade": "teal-orange",
+   "clips": [
+    {
+     "media": "lib.photo.trv-peaks",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "dissolve",
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-ocean",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "dissolve",
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-road",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.travel-breeze",
+     "at": 0,
+     "durationSec": 7.3,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Postcards from away",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Swap in your trip",
+     "at": 4.9,
+     "end": 7.3,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.3,
+   "preview": [
+    "library/photos/trv-peaks-thumb.webp",
+    "library/photos/trv-ocean-thumb.webp",
+    "library/photos/trv-road-thumb.webp"
+   ]
+  },
+  "template.lounge-edit": {
+   "mood": "cozy",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.cozy-window",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "dissolve",
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-table",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "dissolve",
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-home",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.cozy-keys",
+     "at": 0,
+     "durationSec": 7.1,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Little moments",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Golden hours",
+     "at": 4.7,
+     "end": 7.1,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.1,
+   "preview": [
+    "library/photos/cozy-window-thumb.webp",
+    "library/photos/cozy-table-thumb.webp",
+    "library/photos/cozy-home-thumb.webp"
+   ]
+  },
+  "template.pulse-reels": {
+   "mood": "party",
+   "grade": "neon",
+   "clips": [
+    {
+     "media": "lib.photo.party-disco",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.39,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-lasers",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.39,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.party-neon-confetti",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.39,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.party-pulse",
+     "at": 0,
+     "durationSec": 7.62,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "NIGHT MODE",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Turn it up",
+     "at": 5.22,
+     "end": 7.62,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.62,
+   "preview": [
+    "library/photos/party-disco-thumb.webp",
+    "library/photos/party-lasers-thumb.webp",
+    "library/photos/party-neon-confetti-thumb.webp"
+   ]
+  },
+  "template.birthday-blast": {
+   "mood": "birthday",
+   "grade": "vivid",
+   "clips": [
+    {
+     "media": "lib.photo.bday-balloons",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.31,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.bday-confetti",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.31,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.bday-cake",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.31,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.birthday-bounce",
+     "at": 0,
+     "durationSec": 8.98,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 3.09,
+     "end": 6.09,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.98,
+     "end": 8.98,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Your name",
+    "eventName": "Maya's 30th Birthday",
+    "eventWhen": "Sat, Nov 14 · 7 PM",
+    "eventWhere": "Rooftop · 12 Elm St"
+   },
+   "durationSec": 8.98,
+   "preview": [
+    "library/photos/bday-balloons-thumb.webp",
+    "library/photos/bday-confetti-thumb.webp",
+    "library/photos/bday-cake-thumb.webp"
+   ]
+  },
+  "template.garden-soiree": {
+   "mood": "wedding",
+   "grade": "dreamy",
+   "clips": [
+    {
+     "media": "lib.photo.wed-rings",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "soft-bloom",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.wed-petals",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "soft-bloom",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.wed-arch",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.wedding-strings",
+     "at": 0,
+     "durationSec": 8.26,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.73,
+     "end": 5.73,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.26,
+     "end": 8.26,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Ana & Sam",
+    "eventName": "Ana & Sam are getting married",
+    "eventWhen": "Sun, May 9 · 4 PM",
+    "eventWhere": "Rose Garden Pavilion"
+   },
+   "durationSec": 8.26,
+   "preview": [
+    "library/photos/wed-rings-thumb.webp",
+    "library/photos/wed-petals-thumb.webp",
+    "library/photos/wed-arch-thumb.webp"
+   ]
+  },
+  "template.candle-wish": {
+   "mood": "birthday",
+   "grade": "vivid",
+   "clips": [
+    {
+     "media": "lib.photo.bday-balloons",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "blur-fade",
+     "transitionSpec": {
+      "durationSec": 0.59,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.bday-confetti",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "blur-fade",
+     "transitionSpec": {
+      "durationSec": 0.59,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.bday-cake",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.59,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.birthday-bounce",
+     "at": 0,
+     "durationSec": 8.42,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.81,
+     "end": 5.81,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.42,
+     "end": 8.42,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Your name",
+    "eventName": "Maya's 30th Birthday",
+    "eventWhen": "Sat, Nov 14 · 7 PM",
+    "eventWhere": "Rooftop · 12 Elm St"
+   },
+   "durationSec": 8.42,
+   "preview": [
+    "library/photos/bday-balloons-thumb.webp",
+    "library/photos/bday-confetti-thumb.webp",
+    "library/photos/bday-cake-thumb.webp"
+   ]
+  },
+  "template.wedding-vows": {
+   "mood": "wedding",
+   "grade": "dreamy",
+   "clips": [
+    {
+     "media": "lib.photo.wed-rings",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "heart-wipe",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.wed-petals",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "heart-wipe",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.wed-arch",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.wedding-strings",
+     "at": 0,
+     "durationSec": 8.26,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.73,
+     "end": 5.73,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.26,
+     "end": 8.26,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Ana & Sam",
+    "eventName": "Ana & Sam are getting married",
+    "eventWhen": "Sun, May 9 · 4 PM",
+    "eventWhere": "Rose Garden Pavilion"
+   },
+   "durationSec": 8.26,
+   "preview": [
+    "library/photos/wed-rings-thumb.webp",
+    "library/photos/wed-petals-thumb.webp",
+    "library/photos/wed-arch-thumb.webp"
+   ]
+  },
+  "template.baby-shower-bloom": {
+   "mood": "baby",
+   "grade": "dreamy",
+   "clips": [
+    {
+     "media": "lib.photo.baby-clouds",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "soft-bloom",
+     "transitionSpec": {
+      "durationSec": 0.69,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.baby-stars",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "soft-bloom",
+     "transitionSpec": {
+      "durationSec": 0.69,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.baby-bubbles",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.69,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.lullaby-bells",
+     "at": 0,
+     "durationSec": 8.22,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.71,
+     "end": 5.71,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.22,
+     "end": 8.22,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Priya & friends",
+    "eventName": "Baby Shower for Lina",
+    "eventWhen": "Sun, Mar 3 · 1 PM",
+    "eventWhere": "Lina's place · 4 Park Ave"
+   },
+   "durationSec": 8.22,
+   "preview": [
+    "library/photos/baby-clouds-thumb.webp",
+    "library/photos/baby-stars-thumb.webp",
+    "library/photos/baby-bubbles-thumb.webp"
+   ]
+  },
+  "template.housewarming-glow": {
+   "mood": "cozy",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.cozy-window",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "slide-right",
+     "transitionSpec": {
+      "durationSec": 0.53,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-table",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "slide-right",
+     "transitionSpec": {
+      "durationSec": 0.53,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-home",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.53,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.cozy-keys",
+     "at": 0,
+     "durationSec": 8.54,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.87,
+     "end": 5.87,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.54,
+     "end": 8.54,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Your name",
+    "eventName": "Come over for dinner",
+    "eventWhen": "Fri · 7 PM",
+    "eventWhere": "Our new place"
+   },
+   "durationSec": 8.54,
+   "preview": [
+    "library/photos/cozy-window-thumb.webp",
+    "library/photos/cozy-table-thumb.webp",
+    "library/photos/cozy-home-thumb.webp"
+   ]
+  },
+  "template.grad-caps": {
+   "mood": "graduation",
+   "grade": "vivid",
+   "clips": [
+    {
+     "media": "lib.photo.grad-caps-toss",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "circle-wipe",
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.grad-stars",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "circle-wipe",
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.grad-sunrise",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.grad-anthem",
+     "at": 0,
+     "durationSec": 8.38,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.79,
+     "end": 5.79,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.38,
+     "end": 8.38,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "The Chen family",
+    "eventName": "Alex's Graduation Party",
+    "eventWhen": "Sat, Jun 20 · 3 PM",
+    "eventWhere": "Backyard · 88 Oak Rd"
+   },
+   "durationSec": 8.38,
+   "preview": [
+    "library/photos/grad-caps-toss-thumb.webp",
+    "library/photos/grad-stars-thumb.webp",
+    "library/photos/grad-sunrise-thumb.webp"
+   ]
+  },
+  "template.holiday-sparkle": {
+   "mood": "holiday",
+   "grade": "vivid",
+   "clips": [
+    {
+     "media": "lib.photo.hol-ornaments",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "glitch",
+     "transitionSpec": {
+      "durationSec": 0.43,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.hol-snowfall",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "glitch",
+     "transitionSpec": {
+      "durationSec": 0.43,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.hol-lights",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.43,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.holiday-chimes",
+     "at": 0,
+     "durationSec": 8.74,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.97,
+     "end": 5.97,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.74,
+     "end": 8.74,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Jo & Kai",
+    "eventName": "Holiday Sparkle Party",
+    "eventWhen": "Sat, Dec 19 · 8 PM",
+    "eventWhere": "Studio 5 · Market St"
+   },
+   "durationSec": 8.74,
+   "preview": [
+    "library/photos/hol-ornaments-thumb.webp",
+    "library/photos/hol-snowfall-thumb.webp",
+    "library/photos/hol-lights-thumb.webp"
+   ]
+  },
+  "template.dinner-table": {
+   "mood": "cozy",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.cozy-window",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "blur-fade",
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-table",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "blur-fade",
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-home",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.cozy-keys",
+     "at": 0,
+     "durationSec": 8.38,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.79,
+     "end": 5.79,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.38,
+     "end": 8.38,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Your name",
+    "eventName": "Come over for dinner",
+    "eventWhen": "Fri · 7 PM",
+    "eventWhere": "Our new place"
+   },
+   "durationSec": 8.38,
+   "preview": [
+    "library/photos/cozy-window-thumb.webp",
+    "library/photos/cozy-table-thumb.webp",
+    "library/photos/cozy-home-thumb.webp"
+   ]
+  },
+  "template.kids-party-pop": {
+   "mood": "birthday",
+   "grade": "vivid",
+   "clips": [
+    {
+     "media": "lib.photo.bday-balloons",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "spin",
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.bday-confetti",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "spin",
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.bday-cake",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "pulse",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.birthday-bounce",
+     "at": 0,
+     "durationSec": 8.5,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.85,
+     "end": 5.85,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.5,
+     "end": 8.5,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Your name",
+    "eventName": "Maya's 30th Birthday",
+    "eventWhen": "Sat, Nov 14 · 7 PM",
+    "eventWhere": "Rooftop · 12 Elm St"
+   },
+   "durationSec": 8.5,
+   "preview": [
+    "library/photos/bday-balloons-thumb.webp",
+    "library/photos/bday-confetti-thumb.webp",
+    "library/photos/bday-cake-thumb.webp"
+   ]
+  },
+  "template.brunch-breeze": {
+   "mood": "cozy",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.cozy-window",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "circle-wipe",
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-table",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "circle-wipe",
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.cozy-home",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.61,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.cozy-keys",
+     "at": 0,
+     "durationSec": 8.38,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.79,
+     "end": 5.79,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.38,
+     "end": 8.38,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Your name",
+    "eventName": "Come over for dinner",
+    "eventWhen": "Fri · 7 PM",
+    "eventWhere": "Our new place"
+   },
+   "durationSec": 8.38,
+   "preview": [
+    "library/photos/cozy-window-thumb.webp",
+    "library/photos/cozy-table-thumb.webp",
+    "library/photos/cozy-home-thumb.webp"
+   ]
+  },
+  "template.anniversary-glow": {
+   "mood": "anniversary",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.anni-hearts",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "heart-wipe",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.anni-glow",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "heart-wipe",
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.anni-rings",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.67,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.love-waltz",
+     "at": 0,
+     "durationSec": 8.26,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.73,
+     "end": 5.73,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.26,
+     "end": 8.26,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "The Patels",
+    "eventName": "25 Years Together",
+    "eventWhen": "Fri, Jun 12 · 7:30 PM",
+    "eventWhere": "The Lantern Room"
+   },
+   "durationSec": 8.26,
+   "preview": [
+    "library/photos/anni-hearts-thumb.webp",
+    "library/photos/anni-glow-thumb.webp",
+    "library/photos/anni-rings-thumb.webp"
+   ]
+  },
+  "template.diwali-lights": {
+   "mood": "festival",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.fest-diyas",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "light-leak",
+     "transitionSpec": {
+      "durationSec": 0.75,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.fest-rangoli",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "light-leak",
+     "transitionSpec": {
+      "durationSec": 0.75,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.fest-fireworks",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.75,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.festival-lights",
+     "at": 0,
+     "durationSec": 8.1,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.2,
+     "end": 3.6,
+     "position": "center",
+     "animation": {
+      "in": "fade",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.65,
+     "end": 5.65,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere} · hosted by {hostName}",
+     "at": 5.1,
+     "end": 8.1,
+     "position": "lower-third",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "The Sharmas",
+    "eventName": "Diwali Night of Lights",
+    "eventWhen": "Sat, Nov 7 · 6 PM",
+    "eventWhere": "Our home · 21 Lotus Ln"
+   },
+   "durationSec": 8.1,
+   "preview": [
+    "library/photos/fest-diyas-thumb.webp",
+    "library/photos/fest-rangoli-thumb.webp",
+    "library/photos/fest-fireworks-thumb.webp"
+   ]
+  },
+  "template.travel-postcard": {
+   "mood": "travel",
+   "grade": "teal-orange",
+   "clips": [
+    {
+     "media": "lib.photo.trv-peaks",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "push",
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-ocean",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.5
+     },
+     "transitionOut": "push",
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.trv-road",
+     "durationSec": 2.8,
+     "animation": {
+      "in": "fade",
+      "emphasis": "float",
+      "inSec": 0.5
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.travel-breeze",
+     "at": 0,
+     "durationSec": 7.1,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.2,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.55,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Postcards from away",
+     "at": 0.2,
+     "end": 2.8,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Swap in your trip",
+     "at": 4.7,
+     "end": 7.1,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "durationSec": 7.1,
+   "preview": [
+    "library/photos/trv-peaks-thumb.webp",
+    "library/photos/trv-ocean-thumb.webp",
+    "library/photos/trv-road-thumb.webp"
+   ]
+  }
+ }
+}

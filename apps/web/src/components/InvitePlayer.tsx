@@ -1,6 +1,9 @@
 import { AnimatedLayer } from "./editor/AnimatedLayer";
 import { computeLayout, themeLayer, transitionEasingInto } from "../lib/timelineRender";
-import { clampSpeed, sourceTimeAt } from "@voyajes/core";
+import { clampSpeed, duckWindows, effectiveAudioClips, sourceTimeAt } from "@voyajes/core";
+import { TimelineAudioPlayer } from "../lib/timelineAudio";
+import { resolveAudioRef } from "../lib/audioRefs";
+import { getLibraryItem, libraryAssetUrl } from "../data/library";
 import { easingCss, gradeFilter, type ClipAnimation } from "@voyajes/core";
 import {
   useCallback,
@@ -15,7 +18,7 @@ import { getBeatByRef } from "../data/beats";
 import { getThemeById, type ThemeCard } from "../data/themes";
 import { assetUrl } from "../lib/assetUrl";
 import { startBeatPreview, type PreviewHandle } from "../lib/beatPreview";
-import { getBlob, transitionIntoClip, type DraftClipMeta } from "../lib/draftStore";
+import { getBlob, soundBlobKey, transitionIntoClip, type DraftClipMeta } from "../lib/draftStore";
 import { buildInviteCardLines } from "../lib/inviteCard";
 import type { SharePlaybackSnapshot, ShareRecord } from "../lib/shareStore";
 
@@ -117,6 +120,10 @@ export function InvitePlayer({
           const objectUrl = URL.createObjectURL(blob);
           objectUrlsRef.current.add(objectUrl);
           live.push({ ...meta, objectUrl });
+        } else if (meta.libraryId) {
+          // Template/library media travels by id — load from the app's library
+          const item = getLibraryItem(meta.libraryId);
+          if (item) live.push({ ...meta, objectUrl: libraryAssetUrl(item.url) });
         }
       }
       setClips(live);
@@ -301,27 +308,93 @@ export function InvitePlayer({
     }
   }, [playing, active, activeIndex, transitionKey, soundOn]);
 
-  // Beat audio alongside slideshow — only after unmute (autoplay policy)
+  // Multi-clip audio track (clips · trims · fades · volume · ducking) — only
+  // after unmute (autoplay policy). Same scheduler + envelope as the editor.
+  const [localSoundUrls, setLocalSoundUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    // Host's own device: custom sounds live in IndexedDB
+    let alive = true;
+    const made: string[] = [];
+    (async () => {
+      const refs = new Set<string>();
+      for (const a of playback?.audioClips ?? []) if (a.ref.startsWith("custom:")) refs.add(a.ref);
+      if (playback?.audioTrackRef?.startsWith("custom:")) refs.add(playback.audioTrackRef);
+      const out: Record<string, string> = {};
+      for (const ref of refs) {
+        if (playback?.audioUrls?.[ref]) continue;
+        const blob = await getBlob(soundBlobKey(ref.slice(7)));
+        if (blob) {
+          const u = URL.createObjectURL(blob);
+          made.push(u);
+          out[ref] = u;
+        }
+      }
+      if (alive) setLocalSoundUrls(out);
+    })();
+    return () => {
+      alive = false;
+      for (const u of made) URL.revokeObjectURL(u);
+    };
+  }, [playback]);
+
+  const shareAudio = useMemo(() => {
+    if (!playback) return [];
+    const urls = { ...localSoundUrls, ...(playback.audioUrls ?? {}) };
+    return effectiveAudioClips(
+      {
+        track: playback.audioTrackRef,
+        ducking: playback.ducking,
+        mixMode: playback.audioClips ? undefined : undefined,
+        clips: playback.audioClips,
+      },
+      tlLayout.total,
+    ).map((a) => ({ ...a, url: resolveAudioRef(a.ref, urls) }));
+  }, [playback, localSoundUrls, tlLayout.total]);
+  const shareDucks = useMemo(
+    () => ((playback?.autoDuck ?? playback?.ducking !== false) ? duckWindows(clips, tlLayout) : []),
+    [playback, clips, tlLayout],
+  );
+  const audioPlayerRef = useRef<TimelineAudioPlayer | null>(null);
+  const audioSync = useRef<{ startedAt: number; offset: number } | null>(null);
+  const clipTime = (tlLayout.starts[activeIndex] ?? 0) + elapsed;
+  const clipTimeRef = useRef(0);
+  // Intro card is pre-roll: timeline audio is scheduled to land on clip 0
+  clipTimeRef.current = phase === "intro" && showInviteCards ? elapsed - INTRO_SEC : clipTime;
+  const audioPhase = phase === "clips" || (phase === "intro" && showInviteCards);
+  const shareAudioRef = useRef(shareAudio);
+  shareAudioRef.current = shareAudio;
+  const shareDucksRef = useRef(shareDucks);
+  shareDucksRef.current = shareDucks;
+  const audioKey = JSON.stringify([shareAudio, shareDucks]);
+  const startShareAudio = useCallback((from: number) => {
+    if (!audioPlayerRef.current) audioPlayerRef.current = new TimelineAudioPlayer();
+    audioSync.current = { startedAt: performance.now(), offset: from };
+    void audioPlayerRef.current.play(shareAudioRef.current, from, shareDucksRef.current, 0.3);
+  }, []);
   useEffect(() => {
     previewHandle.current?.stop();
     previewHandle.current = null;
-    if (!playing || !playback || !soundOn) return;
-    if (phase === "intro" || phase === "end") {
-      // Soft: still play beat under cards
+    if (!playing || !playback || !soundOn || !audioPhase || shareAudio.length === 0) {
+      audioPlayerRef.current?.stop();
+      audioSync.current = null;
+      return;
     }
-    const beat = getBeatByRef(playback.audioTrackRef);
-    const url = beat?.previewUrl ? assetUrl(beat.previewUrl) : undefined;
-    if (!url) return;
-    previewHandle.current = startBeatPreview({
-      previewUrl: url,
-      bpm: beat?.bpm ?? 100,
-      mood: beat?.mood ?? [],
-    });
+    startShareAudio(clipTimeRef.current);
     return () => {
-      previewHandle.current?.stop();
-      previewHandle.current = null;
+      audioPlayerRef.current?.stop();
+      audioSync.current = null;
     };
-  }, [playing, playback, phase, soundOn]);
+  }, [playing, playback, audioPhase, soundOn, startShareAudio, audioKey]);
+  // Re-sync after manual skips / loops (drift > 0.4s)
+  useEffect(() => {
+    const s0 = audioSync.current;
+    if (!s0 || !playing || !soundOn || phase !== "clips") return;
+    const expected = tlLayout.starts[activeIndex] ?? 0;
+    const actual = s0.offset + (performance.now() - s0.startedAt) / 1000;
+    if (Math.abs(actual - expected) > 0.4) startShareAudio(expected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, transitionKey]);
+  useEffect(() => () => audioPlayerRef.current?.stop(), []);
 
   const overlays = playback?.textOverlays ?? [];
   const aspect = playback?.aspect ?? "9:16";

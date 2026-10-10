@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "libraryVersion": "2026.10.07.1",
+  "libraryVersion": "2026.10.09.1",
   "generatedAt": "2026-10-07T14:10:00Z",
   "license": "Voyajes original abstract art & synthetic audio — free to use in Voyajes projects (see LIBRARY.md)",
   "items": [
@@ -8,7 +8,12 @@
       "id": "lib.photo.neon-corridor",
       "title": "Neon Corridor",
       "kind": "photo",
-      "tags": ["neon", "futuristic", "magenta", "grid"],
+      "tags": [
+        "neon",
+        "futuristic",
+        "magenta",
+        "grid"
+      ],
       "url": "library/photos/neon-corridor.webp",
       "thumbnail": "library/photos/neon-corridor-thumb.webp"
     },
@@ -16,7 +21,12 @@
       "id": "lib.photo.aurora-drift",
       "title": "Aurora Drift",
       "kind": "photo",
-      "tags": ["aurora", "ocean", "calm", "waves"],
+      "tags": [
+        "aurora",
+        "ocean",
+        "calm",
+        "waves"
+      ],
       "url": "library/photos/aurora-drift.webp",
       "thumbnail": "library/photos/aurora-drift-thumb.webp"
     },
@@ -24,7 +34,12 @@
       "id": "lib.photo.magenta-orbit",
       "title": "Magenta Orbit",
       "kind": "photo",
-      "tags": ["orbs", "bold", "party", "magenta"],
+      "tags": [
+        "orbs",
+        "bold",
+        "party",
+        "magenta"
+      ],
       "url": "library/photos/magenta-orbit.webp",
       "thumbnail": "library/photos/magenta-orbit-thumb.webp"
     },
@@ -32,7 +47,12 @@
       "id": "lib.photo.cyber-horizon",
       "title": "Cyber Horizon",
       "kind": "photo",
-      "tags": ["city", "skyline", "indigo", "night"],
+      "tags": [
+        "city",
+        "skyline",
+        "indigo",
+        "night"
+      ],
       "url": "library/photos/cyber-horizon.webp",
       "thumbnail": "library/photos/cyber-horizon-thumb.webp"
     },
@@ -40,7 +60,11 @@
       "id": "lib.photo.prism-cascade",
       "title": "Prism Cascade",
       "kind": "photo",
-      "tags": ["prism", "colorful", "abstract"],
+      "tags": [
+        "prism",
+        "colorful",
+        "abstract"
+      ],
       "url": "library/photos/prism-cascade.webp",
       "thumbnail": "library/photos/prism-cascade-thumb.webp"
     },
@@ -48,7 +72,12 @@
       "id": "lib.photo.void-bloom",
       "title": "Void Bloom",
       "kind": "photo",
-      "tags": ["bloom", "space", "rings", "futuristic"],
+      "tags": [
+        "bloom",
+        "space",
+        "rings",
+        "futuristic"
+      ],
       "url": "library/photos/void-bloom.webp",
       "thumbnail": "library/photos/void-bloom-thumb.webp"
     },
@@ -56,7 +85,12 @@
       "id": "lib.photo.mint-nebula",
       "title": "Mint Nebula",
       "kind": "photo",
-      "tags": ["mint", "nebula", "soft", "travel"],
+      "tags": [
+        "mint",
+        "nebula",
+        "soft",
+        "travel"
+      ],
       "url": "library/photos/mint-nebula.webp",
       "thumbnail": "library/photos/mint-nebula-thumb.webp"
     },
@@ -64,7 +98,12 @@
       "id": "lib.photo.solar-flare",
       "title": "Solar Flare",
       "kind": "photo",
-      "tags": ["warm", "gold", "flare", "sunset"],
+      "tags": [
+        "warm",
+        "gold",
+        "flare",
+        "sunset"
+      ],
       "url": "library/photos/solar-flare.webp",
       "thumbnail": "library/photos/solar-flare-thumb.webp"
     },
@@ -72,7 +111,12 @@
       "id": "lib.photo.glass-city",
       "title": "Glass City",
       "kind": "photo",
-      "tags": ["city", "night", "neon", "metro"],
+      "tags": [
+        "city",
+        "night",
+        "neon",
+        "metro"
+      ],
       "url": "library/photos/glass-city.webp",
       "thumbnail": "library/photos/glass-city-thumb.webp"
     },
@@ -80,7 +124,12 @@
       "id": "lib.photo.plasma-ring",
       "title": "Plasma Ring",
       "kind": "photo",
-      "tags": ["ring", "plasma", "futuristic", "bold"],
+      "tags": [
+        "ring",
+        "plasma",
+        "futuristic",
+        "bold"
+      ],
       "url": "library/photos/plasma-ring.webp",
       "thumbnail": "library/photos/plasma-ring-thumb.webp"
     },
@@ -88,7 +137,11 @@
       "id": "lib.photo.chromatic-mesh",
       "title": "Chromatic Mesh",
       "kind": "photo",
-      "tags": ["mesh", "abstract", "colorful"],
+      "tags": [
+        "mesh",
+        "abstract",
+        "colorful"
+      ],
       "url": "library/photos/chromatic-mesh.webp",
       "thumbnail": "library/photos/chromatic-mesh-thumb.webp"
     },
@@ -96,7 +149,12 @@
       "id": "lib.photo.starfield-pop",
       "title": "Starfield Pop",
       "kind": "photo",
-      "tags": ["stars", "space", "celebration", "party"],
+      "tags": [
+        "stars",
+        "space",
+        "celebration",
+        "party"
+      ],
       "url": "library/photos/starfield-pop.webp",
       "thumbnail": "library/photos/starfield-pop-thumb.webp"
     },
@@ -104,7 +162,12 @@
       "id": "lib.audio.soft-pad",
       "title": "Soft Pad",
       "kind": "audio",
-      "tags": ["ambient", "pad", "calm", "loop"],
+      "tags": [
+        "ambient",
+        "pad",
+        "calm",
+        "loop"
+      ],
       "url": "library/audio/soft-pad.mp3",
       "durationSec": 6
     },
@@ -112,7 +175,12 @@
       "id": "lib.audio.deep-hum",
       "title": "Deep Hum",
       "kind": "audio",
-      "tags": ["bass", "hum", "night", "loop"],
+      "tags": [
+        "bass",
+        "hum",
+        "night",
+        "loop"
+      ],
       "url": "library/audio/deep-hum.mp3",
       "durationSec": 5
     },
@@ -120,7 +188,12 @@
       "id": "lib.audio.crystal-shimmer",
       "title": "Crystal Shimmer",
       "kind": "audio",
-      "tags": ["bright", "shimmer", "party", "loop"],
+      "tags": [
+        "bright",
+        "shimmer",
+        "party",
+        "loop"
+      ],
       "url": "library/audio/crystal-shimmer.mp3",
       "durationSec": 4
     },
@@ -128,7 +201,12 @@
       "id": "lib.audio.pink-drift",
       "title": "Pink Drift",
       "kind": "audio",
-      "tags": ["noise", "drift", "soft", "loop"],
+      "tags": [
+        "noise",
+        "drift",
+        "soft",
+        "loop"
+      ],
       "url": "library/audio/pink-drift.mp3",
       "durationSec": 5
     },
@@ -136,7 +214,12 @@
       "id": "lib.audio.aurora-wash",
       "title": "Aurora Wash",
       "kind": "audio",
-      "tags": ["aurora", "wash", "ocean", "loop"],
+      "tags": [
+        "aurora",
+        "wash",
+        "ocean",
+        "loop"
+      ],
       "url": "library/audio/aurora-wash.mp3",
       "durationSec": 5
     },
@@ -144,9 +227,677 @@
       "id": "lib.audio.pulse-glow",
       "title": "Pulse Glow",
       "kind": "audio",
-      "tags": ["pulse", "glow", "neon", "loop"],
+      "tags": [
+        "pulse",
+        "glow",
+        "neon",
+        "loop"
+      ],
       "url": "library/audio/pulse-glow.mp3",
       "durationSec": 4.5
+    },
+    {
+      "id": "lib.photo.bday-balloons",
+      "title": "Balloon Bash",
+      "kind": "photo",
+      "tags": [
+        "birthday",
+        "party",
+        "balloons",
+        "birthday"
+      ],
+      "sample": true,
+      "url": "library/photos/bday-balloons.webp",
+      "thumbnail": "library/photos/bday-balloons-thumb.webp"
+    },
+    {
+      "id": "lib.photo.bday-confetti",
+      "title": "Confetti Storm",
+      "kind": "photo",
+      "tags": [
+        "birthday",
+        "party",
+        "confetti",
+        "birthday"
+      ],
+      "sample": true,
+      "url": "library/photos/bday-confetti.webp",
+      "thumbnail": "library/photos/bday-confetti-thumb.webp"
+    },
+    {
+      "id": "lib.photo.bday-cake",
+      "title": "Candle Cake",
+      "kind": "photo",
+      "tags": [
+        "birthday",
+        "cake",
+        "candles",
+        "birthday"
+      ],
+      "sample": true,
+      "url": "library/photos/bday-cake.webp",
+      "thumbnail": "library/photos/bday-cake-thumb.webp"
+    },
+    {
+      "id": "lib.photo.wed-rings",
+      "title": "Golden Rings",
+      "kind": "photo",
+      "tags": [
+        "wedding",
+        "rings",
+        "romantic",
+        "wedding"
+      ],
+      "sample": true,
+      "url": "library/photos/wed-rings.webp",
+      "thumbnail": "library/photos/wed-rings-thumb.webp"
+    },
+    {
+      "id": "lib.photo.wed-petals",
+      "title": "Petal Rain",
+      "kind": "photo",
+      "tags": [
+        "wedding",
+        "petals",
+        "garden",
+        "wedding"
+      ],
+      "sample": true,
+      "url": "library/photos/wed-petals.webp",
+      "thumbnail": "library/photos/wed-petals-thumb.webp"
+    },
+    {
+      "id": "lib.photo.wed-arch",
+      "title": "Garden Arch",
+      "kind": "photo",
+      "tags": [
+        "wedding",
+        "arch",
+        "ceremony",
+        "wedding"
+      ],
+      "sample": true,
+      "url": "library/photos/wed-arch.webp",
+      "thumbnail": "library/photos/wed-arch-thumb.webp"
+    },
+    {
+      "id": "lib.photo.anni-hearts",
+      "title": "Floating Hearts",
+      "kind": "photo",
+      "tags": [
+        "anniversary",
+        "love",
+        "hearts",
+        "anniversary"
+      ],
+      "sample": true,
+      "url": "library/photos/anni-hearts.webp",
+      "thumbnail": "library/photos/anni-hearts-thumb.webp"
+    },
+    {
+      "id": "lib.photo.anni-glow",
+      "title": "Candle Glow",
+      "kind": "photo",
+      "tags": [
+        "anniversary",
+        "candles",
+        "warm",
+        "anniversary"
+      ],
+      "sample": true,
+      "url": "library/photos/anni-glow.webp",
+      "thumbnail": "library/photos/anni-glow-thumb.webp"
+    },
+    {
+      "id": "lib.photo.anni-rings",
+      "title": "Twin Rings",
+      "kind": "photo",
+      "tags": [
+        "anniversary",
+        "rings",
+        "anniversary"
+      ],
+      "sample": true,
+      "url": "library/photos/anni-rings.webp",
+      "thumbnail": "library/photos/anni-rings-thumb.webp"
+    },
+    {
+      "id": "lib.photo.baby-clouds",
+      "title": "Moon & Clouds",
+      "kind": "photo",
+      "tags": [
+        "baby-shower",
+        "pastel",
+        "moon",
+        "baby"
+      ],
+      "sample": true,
+      "url": "library/photos/baby-clouds.webp",
+      "thumbnail": "library/photos/baby-clouds-thumb.webp"
+    },
+    {
+      "id": "lib.photo.baby-stars",
+      "title": "Pastel Stars",
+      "kind": "photo",
+      "tags": [
+        "baby-shower",
+        "stars",
+        "pastel",
+        "baby"
+      ],
+      "sample": true,
+      "url": "library/photos/baby-stars.webp",
+      "thumbnail": "library/photos/baby-stars-thumb.webp"
+    },
+    {
+      "id": "lib.photo.baby-bubbles",
+      "title": "Soft Bubbles",
+      "kind": "photo",
+      "tags": [
+        "baby-shower",
+        "bubbles",
+        "soft",
+        "baby"
+      ],
+      "sample": true,
+      "url": "library/photos/baby-bubbles.webp",
+      "thumbnail": "library/photos/baby-bubbles-thumb.webp"
+    },
+    {
+      "id": "lib.photo.party-disco",
+      "title": "Disco Ball",
+      "kind": "photo",
+      "tags": [
+        "party",
+        "night",
+        "disco",
+        "party"
+      ],
+      "sample": true,
+      "url": "library/photos/party-disco.webp",
+      "thumbnail": "library/photos/party-disco-thumb.webp"
+    },
+    {
+      "id": "lib.photo.party-lasers",
+      "title": "Laser Floor",
+      "kind": "photo",
+      "tags": [
+        "party",
+        "neon",
+        "lasers",
+        "party"
+      ],
+      "sample": true,
+      "url": "library/photos/party-lasers.webp",
+      "thumbnail": "library/photos/party-lasers-thumb.webp"
+    },
+    {
+      "id": "lib.photo.party-neon-confetti",
+      "title": "Neon Confetti",
+      "kind": "photo",
+      "tags": [
+        "party",
+        "confetti",
+        "neon",
+        "party"
+      ],
+      "sample": true,
+      "url": "library/photos/party-neon-confetti.webp",
+      "thumbnail": "library/photos/party-neon-confetti-thumb.webp"
+    },
+    {
+      "id": "lib.photo.grad-caps-toss",
+      "title": "Caps Toss",
+      "kind": "photo",
+      "tags": [
+        "graduation",
+        "caps",
+        "celebrate",
+        "graduation"
+      ],
+      "sample": true,
+      "url": "library/photos/grad-caps-toss.webp",
+      "thumbnail": "library/photos/grad-caps-toss-thumb.webp"
+    },
+    {
+      "id": "lib.photo.grad-stars",
+      "title": "Gold Stars",
+      "kind": "photo",
+      "tags": [
+        "graduation",
+        "stars",
+        "gold",
+        "graduation"
+      ],
+      "sample": true,
+      "url": "library/photos/grad-stars.webp",
+      "thumbnail": "library/photos/grad-stars-thumb.webp"
+    },
+    {
+      "id": "lib.photo.grad-sunrise",
+      "title": "Bright Future",
+      "kind": "photo",
+      "tags": [
+        "graduation",
+        "sunrise",
+        "future",
+        "graduation"
+      ],
+      "sample": true,
+      "url": "library/photos/grad-sunrise.webp",
+      "thumbnail": "library/photos/grad-sunrise-thumb.webp"
+    },
+    {
+      "id": "lib.photo.fest-diyas",
+      "title": "Diya Row",
+      "kind": "photo",
+      "tags": [
+        "festival",
+        "diwali",
+        "lights",
+        "festival"
+      ],
+      "sample": true,
+      "url": "library/photos/fest-diyas.webp",
+      "thumbnail": "library/photos/fest-diyas-thumb.webp"
+    },
+    {
+      "id": "lib.photo.fest-rangoli",
+      "title": "Rangoli Bloom",
+      "kind": "photo",
+      "tags": [
+        "festival",
+        "diwali",
+        "rangoli",
+        "festival"
+      ],
+      "sample": true,
+      "url": "library/photos/fest-rangoli.webp",
+      "thumbnail": "library/photos/fest-rangoli-thumb.webp"
+    },
+    {
+      "id": "lib.photo.fest-fireworks",
+      "title": "Festival Fireworks",
+      "kind": "photo",
+      "tags": [
+        "festival",
+        "fireworks",
+        "night",
+        "festival"
+      ],
+      "sample": true,
+      "url": "library/photos/fest-fireworks.webp",
+      "thumbnail": "library/photos/fest-fireworks-thumb.webp"
+    },
+    {
+      "id": "lib.photo.hol-ornaments",
+      "title": "Ornament Swing",
+      "kind": "photo",
+      "tags": [
+        "holiday",
+        "ornaments",
+        "winter",
+        "holiday"
+      ],
+      "sample": true,
+      "url": "library/photos/hol-ornaments.webp",
+      "thumbnail": "library/photos/hol-ornaments-thumb.webp"
+    },
+    {
+      "id": "lib.photo.hol-snowfall",
+      "title": "Snowy Pines",
+      "kind": "photo",
+      "tags": [
+        "holiday",
+        "snow",
+        "pines",
+        "holiday"
+      ],
+      "sample": true,
+      "url": "library/photos/hol-snowfall.webp",
+      "thumbnail": "library/photos/hol-snowfall-thumb.webp"
+    },
+    {
+      "id": "lib.photo.hol-lights",
+      "title": "Twinkle Lights",
+      "kind": "photo",
+      "tags": [
+        "holiday",
+        "lights",
+        "bokeh",
+        "holiday"
+      ],
+      "sample": true,
+      "url": "library/photos/hol-lights.webp",
+      "thumbnail": "library/photos/hol-lights-thumb.webp"
+    },
+    {
+      "id": "lib.photo.trv-peaks",
+      "title": "Sunset Peaks",
+      "kind": "photo",
+      "tags": [
+        "travel",
+        "mountains",
+        "sunset",
+        "travel"
+      ],
+      "sample": true,
+      "url": "library/photos/trv-peaks.webp",
+      "thumbnail": "library/photos/trv-peaks-thumb.webp"
+    },
+    {
+      "id": "lib.photo.trv-ocean",
+      "title": "Ocean Lines",
+      "kind": "photo",
+      "tags": [
+        "travel",
+        "ocean",
+        "waves",
+        "travel"
+      ],
+      "sample": true,
+      "url": "library/photos/trv-ocean.webp",
+      "thumbnail": "library/photos/trv-ocean-thumb.webp"
+    },
+    {
+      "id": "lib.photo.trv-road",
+      "title": "Open Road",
+      "kind": "photo",
+      "tags": [
+        "travel",
+        "road",
+        "adventure",
+        "travel"
+      ],
+      "sample": true,
+      "url": "library/photos/trv-road.webp",
+      "thumbnail": "library/photos/trv-road-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cozy-window",
+      "title": "Morning Window",
+      "kind": "photo",
+      "tags": [
+        "cozy",
+        "home",
+        "brunch",
+        "cozy"
+      ],
+      "sample": true,
+      "url": "library/photos/cozy-window.webp",
+      "thumbnail": "library/photos/cozy-window-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cozy-table",
+      "title": "Dinner Table",
+      "kind": "photo",
+      "tags": [
+        "cozy",
+        "dinner",
+        "candles",
+        "cozy"
+      ],
+      "sample": true,
+      "url": "library/photos/cozy-table.webp",
+      "thumbnail": "library/photos/cozy-table-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cozy-home",
+      "title": "Warm Home",
+      "kind": "photo",
+      "tags": [
+        "cozy",
+        "housewarming",
+        "home",
+        "cozy"
+      ],
+      "sample": true,
+      "url": "library/photos/cozy-home.webp",
+      "thumbnail": "library/photos/cozy-home-thumb.webp"
+    },
+    {
+      "id": "lib.photo.retro-grid",
+      "title": "Retro Grid Sun",
+      "kind": "photo",
+      "tags": [
+        "retro",
+        "vhs",
+        "synthwave",
+        "retro"
+      ],
+      "sample": true,
+      "url": "library/photos/retro-grid.webp",
+      "thumbnail": "library/photos/retro-grid-thumb.webp"
+    },
+    {
+      "id": "lib.photo.retro-checker",
+      "title": "Checker Dance",
+      "kind": "photo",
+      "tags": [
+        "retro",
+        "swing",
+        "vintage",
+        "retro"
+      ],
+      "sample": true,
+      "url": "library/photos/retro-checker.webp",
+      "thumbnail": "library/photos/retro-checker-thumb.webp"
+    },
+    {
+      "id": "lib.photo.retro-gallery",
+      "title": "Gallery Frame",
+      "kind": "photo",
+      "tags": [
+        "minimal",
+        "gallery",
+        "clean",
+        "retro"
+      ],
+      "sample": true,
+      "url": "library/photos/retro-gallery.webp",
+      "thumbnail": "library/photos/retro-gallery-thumb.webp"
+    },
+    {
+      "id": "lib.audio.birthday-bounce",
+      "title": "Birthday Bounce",
+      "kind": "audio",
+      "tags": [
+        "birthday",
+        "party",
+        "upbeat",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/birthday-bounce.mp3",
+      "durationSec": 7.74,
+      "bpm": 124
+    },
+    {
+      "id": "lib.audio.wedding-strings",
+      "title": "Wedding Strings",
+      "kind": "audio",
+      "tags": [
+        "wedding",
+        "romantic",
+        "soft",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/wedding-strings.mp3",
+      "durationSec": 13.33,
+      "bpm": 72
+    },
+    {
+      "id": "lib.audio.lullaby-bells",
+      "title": "Lullaby Bells",
+      "kind": "audio",
+      "tags": [
+        "baby-shower",
+        "gentle",
+        "bells",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/lullaby-bells.mp3",
+      "durationSec": 11.43,
+      "bpm": 84
+    },
+    {
+      "id": "lib.audio.party-pulse",
+      "title": "Party Pulse",
+      "kind": "audio",
+      "tags": [
+        "party",
+        "night",
+        "dance",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/party-pulse.mp3",
+      "durationSec": 7.62,
+      "bpm": 126
+    },
+    {
+      "id": "lib.audio.grad-anthem",
+      "title": "Grad Anthem",
+      "kind": "audio",
+      "tags": [
+        "graduation",
+        "uplifting",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/grad-anthem.mp3",
+      "durationSec": 8.73,
+      "bpm": 110
+    },
+    {
+      "id": "lib.audio.festival-lights",
+      "title": "Festival Lights",
+      "kind": "audio",
+      "tags": [
+        "festival",
+        "diwali",
+        "bells",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/festival-lights.mp3",
+      "durationSec": 9.6,
+      "bpm": 100
+    },
+    {
+      "id": "lib.audio.holiday-chimes",
+      "title": "Holiday Chimes",
+      "kind": "audio",
+      "tags": [
+        "holiday",
+        "winter",
+        "chimes",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/holiday-chimes.mp3",
+      "durationSec": 10.0,
+      "bpm": 96
+    },
+    {
+      "id": "lib.audio.travel-breeze",
+      "title": "Travel Breeze",
+      "kind": "audio",
+      "tags": [
+        "travel",
+        "breezy",
+        "acoustic",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/travel-breeze.mp3",
+      "durationSec": 9.8,
+      "bpm": 98
+    },
+    {
+      "id": "lib.audio.cozy-keys",
+      "title": "Cozy Keys",
+      "kind": "audio",
+      "tags": [
+        "cozy",
+        "dinner",
+        "brunch",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/cozy-keys.mp3",
+      "durationSec": 12.0,
+      "bpm": 80
+    },
+    {
+      "id": "lib.audio.love-waltz",
+      "title": "Love Waltz",
+      "kind": "audio",
+      "tags": [
+        "anniversary",
+        "romantic",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/love-waltz.mp3",
+      "durationSec": 10.67,
+      "bpm": 90
+    },
+    {
+      "id": "lib.audio.retro-groove",
+      "title": "Retro Groove",
+      "kind": "audio",
+      "tags": [
+        "retro",
+        "vhs",
+        "funk",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/retro-groove.mp3",
+      "durationSec": 8.89,
+      "bpm": 108
+    },
+    {
+      "id": "lib.audio.stinger-sparkle",
+      "title": "Sparkle Stinger",
+      "kind": "audio",
+      "tags": [
+        "stinger",
+        "sparkle",
+        "magic"
+      ],
+      "sample": true,
+      "url": "library/audio/stinger-sparkle.mp3",
+      "durationSec": 1.6
+    },
+    {
+      "id": "lib.audio.stinger-whoosh",
+      "title": "Whoosh Stinger",
+      "kind": "audio",
+      "tags": [
+        "stinger",
+        "whoosh",
+        "transition"
+      ],
+      "sample": true,
+      "url": "library/audio/stinger-whoosh.mp3",
+      "durationSec": 1.6
+    },
+    {
+      "id": "lib.audio.stinger-chime",
+      "title": "Chime Stinger",
+      "kind": "audio",
+      "tags": [
+        "stinger",
+        "chime",
+        "reveal"
+      ],
+      "sample": true,
+      "url": "library/audio/stinger-chime.mp3",
+      "durationSec": 1.6
     }
   ]
 }

@@ -48,6 +48,10 @@ export type DraftClipMeta = {
    * without IndexedDB. Not persisted to localStorage drafts.
    */
   portableUrl?: string;
+  /** v5: clip comes from the Voyajes library (shared links reference it by id) */
+  libraryId?: string;
+  /** v5: template placeholder slot — "Replace" keeps timing/animation/transition */
+  placeholder?: boolean;
   /** v3: playback speed 0.25–4 (video) */
   speed?: number;
   /** v3: reverse motion (animation/keyframes) — photos-as-motion */
@@ -270,12 +274,14 @@ function pickLayerFields(raw: { animation?: unknown; keyframes?: unknown }) {
 }
 
 function pickTimelineFields(c: Partial<DraftClipMeta>) {
-  const out: Pick<DraftClipMeta, "inSec" | "sourceSec" | "speed" | "reverse" | "transitionSpec" | "animation" | "keyframes"> =
+  const out: Pick<DraftClipMeta, "inSec" | "sourceSec" | "speed" | "reverse" | "libraryId" | "placeholder" | "transitionSpec" | "animation" | "keyframes"> =
     pickLayerFields(c);
   if (typeof c.inSec === "number" && Number.isFinite(c.inSec) && c.inSec > 0) out.inSec = c.inSec;
   if (typeof c.speed === "number" && Number.isFinite(c.speed) && c.speed !== 1)
     out.speed = Math.min(4, Math.max(0.25, c.speed));
   if (c.reverse === true) out.reverse = true;
+  if (typeof c.libraryId === "string" && c.libraryId) out.libraryId = c.libraryId;
+  if (c.placeholder === true) out.placeholder = true;
   if (typeof c.sourceSec === "number" && Number.isFinite(c.sourceSec) && c.sourceSec > 0)
     out.sourceSec = c.sourceSec;
   const t = TransitionSpecSchema.safeParse(c.transitionSpec);

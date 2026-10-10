@@ -25,6 +25,7 @@ export type TLClip = {
   speed?: number;
   reverse?: boolean;
   mute?: boolean;
+  placeholder?: boolean;
   keyframes?: Keyframe[];
 };
 
@@ -458,6 +459,7 @@ export function Timeline(p: Props) {
                       {c.durationSec.toFixed(1)}s{speed !== 1 ? ` · ${speed}×` : ""}
                       {c.reverse ? " · ⟲" : ""}
                     </span>
+                    {c.placeholder && <span className="vj-placeholder-badge">sample</span>}
                     {(c.keyframes ?? []).map((k, ki) => (
                       <span key={ki} className="vj-tl-kf" style={{ left: Math.min(w - 6, k.t * pxPerSec) }} title={`Keyframe @ ${k.t.toFixed(2)}s`} />
                     ))}

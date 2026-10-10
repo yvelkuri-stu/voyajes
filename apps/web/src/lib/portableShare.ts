@@ -4,7 +4,20 @@
  * No backend — photos travel with the link; videos become stills.
  */
 
-import { getBlob, type DraftClipMeta } from "./draftStore";
+import { getBlob, soundBlobKey, type DraftClipMeta } from "./draftStore";
+import { effectiveAudioClips } from "@voyajes/core";
+
+/** User-uploaded sounds at or under this size travel inside the link. */
+export const PORTABLE_MAX_SOUND_BYTES = 160_000;
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
 import {
   publicShareUrl,
   type SharePlaybackSnapshot,
@@ -27,7 +40,7 @@ export type PortableMediaEntry = {
   /** JPEG (or original image) data URL */
   dataUrl: string;
   /** Playback kind after packing (videos may be coerced to image stills) */
-  kind: "image" | "video";
+  kind: "image" | "video" | "audio";
   /** Original clip was video; link embeds a poster still */
   videoAsStill?: boolean;
 };
@@ -41,6 +54,8 @@ export type PortablePackV1 = {
     truncated?: boolean;
     videosAsStills?: boolean;
     droppedClips?: number;
+    /** A user-uploaded sound was too big for the link (invite pack / export has it) */
+    audioOmitted?: boolean;
     quality?: "high" | "compact";
   };
 };
@@ -295,7 +310,16 @@ async function buildPackAtQuality(
   maxClips: number,
 ): Promise<PortablePackV1> {
   const share = stripShareForPack(record);
-  const metas = (share.playback?.clips ?? []).slice(0, maxClips);
+  // maxClips caps *embedded* clips; library clips (referenced by id) are free
+  const metas: DraftClipMeta[] = [];
+  let embedded = 0;
+  for (const c of share.playback?.clips ?? []) {
+    if (c.libraryId) metas.push(c);
+    else if (embedded < maxClips) {
+      metas.push(c);
+      embedded += 1;
+    }
+  }
   if (share.playback) {
     share.playback = {
       ...share.playback,
@@ -315,6 +339,8 @@ async function buildPackAtQuality(
   const media: Record<string, PortableMediaEntry> = {};
   let videosAsStills = false;
   for (const meta of metas) {
+    // Library media is referenced by id — guests load it from the app, not the link
+    if (meta.libraryId) continue;
     const blob = await getBlob(meta.id);
     if (!blob) continue;
     const entry = await encodeClipMedia(blob, meta.kind, preset);
@@ -331,9 +357,30 @@ async function buildPackAtQuality(
     }
   }
 
+  // Multi-clip audio track: library/catalog sounds by id; small uploads embedded
+  let audioOmitted = false;
+  if (share.playback) {
+    const pb = share.playback;
+    const used = effectiveAudioClips(
+      { track: pb.audioTrackRef, ducking: pb.ducking, clips: pb.audioClips },
+      share.durationSec || 1,
+    );
+    const customIds = [...new Set(used.map((a) => a.ref).filter((r) => r.startsWith("custom:")).map((r) => r.slice(7)))];
+    for (const id of customIds) {
+      const blob = await getBlob(soundBlobKey(id));
+      if (blob && blob.size <= PORTABLE_MAX_SOUND_BYTES) {
+        media[`sound:${id}`] = { dataUrl: await blobToDataUrl(blob), kind: "audio" };
+      } else {
+        audioOmitted = true;
+      }
+    }
+  }
+
   const originalCount = record.playback?.clips?.length ?? record.clipCount;
   const droppedClips = Math.max(0, originalCount - metas.length);
-  const truncated = droppedClips > 0 || Object.keys(media).length < metas.length;
+  const needMedia = metas.filter((m) => !m.libraryId).length;
+  const clipMedia = Object.keys(media).filter((k) => !k.startsWith("sound:")).length;
+  const truncated = droppedClips > 0 || clipMedia < needMedia;
 
   return {
     v: 1,
@@ -343,6 +390,7 @@ async function buildPackAtQuality(
       truncated: truncated || undefined,
       videosAsStills: videosAsStills || undefined,
       droppedClips: droppedClips || undefined,
+      audioOmitted: audioOmitted || undefined,
       quality: preset.label,
     },
   };
@@ -361,7 +409,8 @@ export async function buildPortableShareUrl(
 
   notify("Preparing shareable link…");
   // Aggressively cap clips so WhatsApp/SMS have a chance; invitation meta always kept.
-  const preferredMax = Math.min(
+  const embeddable = record.playback?.clips?.filter((c) => !c.libraryId).length;
+  const preferredMax = embeddable === 0 ? 1 : Math.min(
     clipCount || PORTABLE_MAX_CLIPS_PREFERRED,
     PORTABLE_MAX_CLIPS_PREFERRED,
   );
@@ -375,7 +424,10 @@ export async function buildPortableShareUrl(
   }
 
   let dropped = pack.flags?.droppedClips ?? 0;
-  let maxKeep = Math.max(1, (pack.share.playback?.clips?.length ?? 1) - 1);
+  let maxKeep = Math.max(
+    1,
+    (pack.share.playback?.clips?.filter((c) => !c.libraryId).length ?? 1) - 1,
+  );
   // Shrink until under chat-warn when possible (down to 2 clips), then hard-cap.
   while (
     (encoded.length > PORTABLE_CHAT_WARN_CHARS || encoded.length > PORTABLE_MAX_CHARS) &&
@@ -508,7 +560,11 @@ export function applyPortableUrlsToRecord(
     if (!url) return c;
     return { ...c, portableUrl: url } as DraftClipMeta & { portableUrl: string };
   });
-  const playback: SharePlaybackSnapshot = { ...record.playback, clips };
+  const audioUrls: Record<string, string> = { ...(record.playback.audioUrls ?? {}) };
+  for (const [k, url] of Object.entries(objectUrls)) {
+    if (k.startsWith("sound:")) audioUrls[`custom:${k.slice(6)}`] = url;
+  }
+  const playback: SharePlaybackSnapshot = { ...record.playback, clips, audioUrls };
   return { ...record, playback };
 }
 

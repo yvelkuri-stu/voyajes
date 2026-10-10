@@ -1,7 +1,7 @@
 {
   "name": "voyajes",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Voyajes \u2014 photos to films, with feeling. Color & motion-first templated video for humans and robots.",
   "scripts": {
     "dev": "pnpm --filter @voyajes/web dev",

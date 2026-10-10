@@ -142,6 +142,9 @@ import { AnimatedLayer } from "../components/editor/AnimatedLayer";
 import { useHistory } from "../hooks/useHistory";
 import { computeLayout, themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
 import { TimelineAudioPlayer, type ResolvedAudioClip } from "../lib/timelineAudio";
+import { audioRefLabel, resolveAudioRef } from "../lib/audioRefs";
+import { fillTokens, getTemplateSample, type TemplateSample } from "../data/samples";
+import { SamplePreview } from "../components/SamplePreview";
 import {
   clipStarts,
   easingCss,
@@ -165,6 +168,7 @@ import {
 import {
   defaultLibraryForTheme,
   getLibraryItem,
+  getLibraryItems,
   libraryAssetUrl,
   type LibraryItem,
 } from "../data/library";
@@ -395,6 +399,11 @@ export function Create() {
   const [appliedChip, setAppliedChip] = useState<{ label: string; snap: EditorSnapshot | null } | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [audioClips, setAudioClips] = useState<AudioClip[] | undefined>(undefined);
+  /** inline, non-blocking "keep your media vs load sample" choice */
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [keepBar, setKeepBar] = useState<{ tplId: string; count: number } | null>(null);
+  /** MediaImporter target when replacing a clip / sound in place */
+  const [replaceTarget, setReplaceTarget] = useState<{ type: "clip" | "audio"; id: string } | null>(null);
   const [autoDuck, setAutoDuck] = useState<boolean | undefined>(undefined);
   const historyRef = useRef<{
     checkpoint: () => EditorSnapshot | null;
@@ -1030,7 +1039,7 @@ export function Create() {
   }, []);
 
   const importAudioFiles = useCallback(
-    async (files: FileList | File[]) => {
+    async (files: FileList | File[], opts?: { keepTrack?: boolean }): Promise<CustomSound[]> => {
       const list = Array.from(files);
       const added: CustomSound[] = [];
       for (const file of list) {
@@ -1054,9 +1063,10 @@ export function Create() {
       if (added.length) {
         setCustomSounds((prev) => [...prev, ...added]);
         const last = added[added.length - 1];
-        setAudioTrackRef(`custom:${last.id}`);
+        if (!opts?.keepTrack) setAudioTrackRef(`custom:${last.id}`);
         setStatus(`Imported sound · ${last.name}`);
       }
+      return added;
     },
     [trackUrl],
   );
@@ -1243,6 +1253,201 @@ export function Create() {
     [applyBeatSnap, selectedBeat.bpm],
   );
 
+  /** Load a template's complete sample (or keep the user's media in its slots). */
+  const loadSample = useCallback(
+    async (tpl: TemplateCard, sample: TemplateSample, keep: boolean) => {
+      const inv = sample.invitation ?? {};
+      const vars: Record<string, string | undefined> = { ...inv };
+      const user = clipsRef.current.filter((c) => !c.placeholder);
+      const built: LiveClip[] = [];
+      for (let i = 0; i < sample.clips.length; i++) {
+        const slot = sample.clips[i];
+        const slotFields = {
+          animation: slot.animation,
+          transitionOut: slot.transitionOut ?? null,
+          transitionSpec: slot.transitionSpec,
+        };
+        if (keep && user[i]) {
+          const u = user[i];
+          built.push({ ...u, ...slotFields, durationSec: u.kind === "image" ? slot.durationSec : u.durationSec });
+          continue;
+        }
+        const item = getLibraryItem(slot.media);
+        if (!item) continue;
+        try {
+          const res = await fetch(libraryAssetUrl(item.url));
+          if (!res.ok) throw new Error(String(res.status));
+          const blob = await res.blob();
+          const id = newClipId();
+          await putBlob(id, blob);
+          built.push({
+            id,
+            kind: "image",
+            fileName: item.title,
+            mimeType: blob.type || "image/webp",
+            durationSec: slot.durationSec,
+            mute: true,
+            objectUrl: trackUrl(URL.createObjectURL(blob)),
+            libraryId: item.id,
+            placeholder: true,
+            ...slotFields,
+          });
+        } catch {
+          /* offline: skip this slot */
+        }
+      }
+      if (keep) built.push(...user.slice(sample.clips.length));
+      if (!built.length) return;
+      setClips(built);
+      setActiveIndex(0);
+      setElapsed(0);
+      setSelection(null);
+      const sampleTotal = computeLayout(built, tpl.transition, undefined, getThemeById(tpl.themeId) ?? theme).total;
+      setAudioClips(
+        sample.audio.map((a, i) => ({
+          id: `aud-${i}-${Math.random().toString(36).slice(2, 7)}`,
+          ref: a.ref,
+          at: a.at,
+          durationSec: i === 0 ? Math.round(sampleTotal * 100) / 100 : a.durationSec,
+          ...(a.volume != null ? { volume: a.volume } : {}),
+          ...(a.fadeInSec != null ? { fadeInSec: a.fadeInSec } : {}),
+          ...(a.fadeOutSec != null ? { fadeOutSec: a.fadeOutSec } : {}),
+          ...(a.loop != null ? { loop: a.loop } : {}),
+          label: audioRefLabel(a.ref),
+        })),
+      );
+      setGrade(sample.grade);
+      setTextOverlays(
+        sample.text.map((t, i) => ({
+          ...defaultTextOverlay(t.at, t.end, fillTokens(t.value, vars).trim() || tpl.name),
+          id: `txt-${i}-${Math.random().toString(36).slice(2, 7)}`,
+          role: t.role,
+          style: tpl.textStyle,
+          animationIn: tpl.textTransition,
+          position: t.position as TextPosition,
+          ...(t.animation ? { animation: t.animation } : {}),
+        })),
+      );
+      if (sample.invitation) {
+        if (inv.hostName) setHostName(inv.hostName);
+        if (inv.eventName) {
+          setEventName(inv.eventName);
+          setTitle(inv.eventName);
+        }
+        if (inv.eventWhen) setEventWhen(inv.eventWhen);
+        if (inv.eventWhere) setEventWhere(inv.eventWhere);
+      }
+      setTransitionKey((k) => k + 1);
+      setStatus(keep ? `${tpl.name} · your media in the slots` : `${tpl.name} · sample loaded · tap a clip → Replace`);
+    },
+    [trackUrl, theme],
+  );
+
+  /** Replace a clip's media in place — keeps timing, animation, transitions. */
+  const replaceClipMedia = useCallback(
+    async (clipId: string, blob: Blob, name: string, libraryId?: string) => {
+      const target = clipsRef.current.find((c) => c.id === clipId);
+      if (!target) return;
+      const mime = blob.type || "image/jpeg";
+      const kind = mime.startsWith("video") ? "video" : "image";
+      let sourceSec: number | undefined;
+      if (kind === "video") {
+        sourceSec = await readVideoDuration(new File([blob], name, { type: mime }));
+      }
+      await putBlob(clipId, blob);
+      const objectUrl = trackUrl(URL.createObjectURL(blob));
+      setClips((prev) =>
+        prev.map((c) =>
+          c.id !== clipId
+            ? c
+            : {
+                ...c,
+                kind,
+                objectUrl,
+                fileName: name,
+                mimeType: mime,
+                inSec: undefined,
+                libraryId,
+                placeholder: false,
+                ...(kind === "video"
+                  ? { sourceSec, durationSec: Math.min(c.durationSec, sourceSec ?? c.durationSec), mute: true }
+                  : { sourceSec: undefined }),
+              },
+        ),
+      );
+      setTransitionKey((k) => k + 1);
+      setCoachHint(`Replaced · ${name} · timing & animation kept`);
+    },
+    [trackUrl],
+  );
+
+  const handleReplaceFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const t = replaceTarget;
+      const f = Array.from(files)[0];
+      if (!t || !f) return;
+      if (t.type === "clip") {
+        if (!clipKindFromMime(f.type, f.name)) {
+          setStatus("Pick a photo or video to replace this clip");
+          return;
+        }
+        await replaceClipMedia(t.id, f, f.name);
+      } else {
+        const added = await importAudioFiles([f], { keepTrack: true });
+        if (added[0]) {
+          editAudio((l) => l.map((a) => (a.id === t.id ? { ...a, ref: `custom:${added[0].id}`, inSec: 0, label: added[0].name } : a)));
+          setCoachHint(`Sound replaced · ${added[0].name}`);
+        }
+      }
+      setReplaceTarget(null);
+      setMediaImporterOpen(false);
+    },
+    [replaceTarget, replaceClipMedia, importAudioFiles],
+  );
+
+  const handleReplaceLibrary = useCallback(
+    async (item: LibraryItem) => {
+      const t = replaceTarget;
+      if (!t) return;
+      if (t.type === "clip") {
+        if (item.kind === "audio") return;
+        try {
+          const blob = await (await fetch(libraryAssetUrl(item.url))).blob();
+          await replaceClipMedia(t.id, blob, item.title, item.id);
+        } catch {
+          setStatus(`Could not load ${item.title}`);
+        }
+      } else {
+        if (item.kind !== "audio") return;
+        editAudio((l) => l.map((a) => (a.id === t.id ? { ...a, ref: `lib:${item.id}`, inSec: 0, label: item.title } : a)));
+        setCoachHint(`Sound replaced · ${item.title}`);
+      }
+      setReplaceTarget(null);
+      setMediaImporterOpen(false);
+    },
+    [replaceTarget, replaceClipMedia],
+  );
+
+  const startFromScratch = useCallback(() => {
+    const snap = historyRef.current?.checkpoint() ?? null;
+    setPlaying(false);
+    setClips([]);
+    setTextOverlays([]);
+    setAudioClips([]);
+    setTemplateId(undefined);
+    setGrade(undefined);
+    setProjectTxSpec(undefined);
+    setDefaultAnimation(undefined);
+    setTransitionOverride(null);
+    setSelection(null);
+    setKeepBar(null);
+    setActiveIndex(0);
+    setElapsed(0);
+    setAppliedChip({ label: "Blank project", snap });
+    setMiniSheet(null);
+    setStatus("Blank project · add photos, video and sound");
+  }, []);
+
   const applyTemplate = useCallback(
     (tpl: TemplateCard) => {
       const th = getThemeById(tpl.themeId);
@@ -1345,9 +1550,18 @@ export function Create() {
       );
       ai.pulse("template", 1200);
       setMiniSheet(null);
-      void seedTemplateLibraryMedia(tpl);
+      const sample = getTemplateSample(tpl.id);
+      if (sample) {
+        const userCount = clipsRef.current.filter((c) => !c.placeholder).length;
+        const keep = userCount > 0;
+        void loadSample(tpl, sample, keep);
+        setKeepBar(keep ? { tplId: tpl.id, count: userCount } : null);
+      } else {
+        setKeepBar(null);
+        void seedTemplateLibraryMedia(tpl);
+      }
     },
-    [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl, title],
+    [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl, title, loadSample],
   );
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
@@ -2134,15 +2348,13 @@ export function Create() {
         const id = customIdFromTrackRef(ref);
         return id ? customSoundUrls[id] || customSounds.find((x) => x.id === id)?.url : undefined;
       }
-      return getBeatByRef(ref)?.previewUrl;
+      return resolveAudioRef(ref);
     },
     [customSoundUrls, customSounds],
   );
   const audioLabelFor = useCallback(
     (ref: string) =>
-      isCustomTrackRef(ref)
-        ? customSounds.find((x) => x.id === customIdFromTrackRef(ref))?.name ?? "Custom sound"
-        : getBeatByRef(ref)?.name ?? ref,
+      audioRefLabel(ref, Object.fromEntries(customSounds.map((c) => [c.id, c.name]))),
     [customSounds],
   );
   const resolvedAudio: ResolvedAudioClip[] = useMemo(
@@ -3295,10 +3507,30 @@ export function Create() {
             {activeOverlays.map((o) => (
               <div
                 key={o.id}
-                className={`preview-overlay text-style-${o.style} text-tx-${o.animationIn} overlay-pos-${o.position}`}
+                className={`preview-overlay is-editable text-style-${o.style} text-tx-${o.animationIn} overlay-pos-${o.position}`}
                 style={{ color: o.color || theme.palette.text }}
+                title="Tap to edit text"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPlaying(false);
+                  setSelection({ type: "text", id: o.id });
+                  setEditingTextId(o.id);
+                }}
               >
-                {o.animation || o.keyframes?.length ? (
+                {editingTextId === o.id ? (
+                  <input
+                    className="preview-overlay-input"
+                    autoFocus
+                    value={o.value}
+                    aria-label="Edit text"
+                    onChange={(e) => patchText(o.id, { value: e.target.value })}
+                    onBlur={() => setEditingTextId(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === "Escape") (e.target as HTMLInputElement).blur();
+                      e.stopPropagation();
+                    }}
+                  />
+                ) : o.animation || o.keyframes?.length ? (
                   <AnimatedLayer
                     animation={o.animation}
                     keyframes={o.keyframes}
@@ -3487,6 +3719,26 @@ export function Create() {
               <div className="vj-insp-body">
                 {selClip && (
                   <>
+                    <InspectorSection
+                      title={selClip.placeholder ? "Sample clip" : "Media"}
+                      hint={selClip.placeholder ? "swap in yours — timing, motion & transitions stay" : selClip.fileName}
+                      compact={minimalist}
+                    >
+                      <div className="vj-insp-chips">
+                        <button
+                          type="button"
+                          className={`vj-chip${selClip.placeholder ? " active" : ""}`}
+                          data-replace-clip
+                          onClick={() => {
+                            setReplaceTarget({ type: "clip", id: selClip.id });
+                            setMediaImporterMode("clips");
+                            setMediaImporterOpen(true);
+                          }}
+                        >
+                          ⇄ Replace…
+                        </button>
+                      </div>
+                    </InspectorSection>
                     <InspectorSection title="Timing" hint="seconds" compact={minimalist}>
                       <div className="vj-insp-kf-grid">
                         <label className="vj-insp-row">
@@ -3691,8 +3943,27 @@ export function Create() {
                             {customSounds.map((cs) => (
                               <option key={cs.id} value={`custom:${cs.id}`}>{cs.name}</option>
                             ))}
+                            <optgroup label="Voyajes library">
+                              {getLibraryItems("audio").map((it) => (
+                                <option key={it.id} value={`lib:${it.id}`}>{it.title}</option>
+                              ))}
+                            </optgroup>
                           </select>
                         </label>
+                        <div className="vj-insp-chips">
+                          <button
+                            type="button"
+                            className="vj-chip"
+                            data-replace-audio
+                            onClick={() => {
+                              setReplaceTarget({ type: "audio", id: selAudio.id });
+                              setMediaImporterMode("audio");
+                              setMediaImporterOpen(true);
+                            }}
+                          >
+                            ⇄ Replace sound…
+                          </button>
+                        </div>
                         <div className="vj-insp-kf-grid">
                           <label className="vj-insp-row">
                             <span>Volume</span>
@@ -3981,8 +4252,41 @@ export function Create() {
           <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6, fontWeight: 700 }}>
             {projectMode === "invitation" ? "Invitation templates — tap to apply" : "Voyage templates — tap to apply"}
           </div>
-          {projectMode === "invitation" ? (
+          {keepBar && (
+            <div className="vj-keep-bar" role="status">
+              <span>
+                Kept your {keepBar.count} clip{keepBar.count === 1 ? "" : "s"} in the template slots.
+              </span>
+              <button
+                type="button"
+                className="vj-chip"
+                onClick={() => {
+                  const tpl = templates.find((t) => t.id === keepBar.tplId);
+                  const sample = getTemplateSample(keepBar.tplId);
+                  if (tpl && sample) void loadSample(tpl, sample, false);
+                  setKeepBar(null);
+                }}
+              >
+                Load sample media instead
+              </button>
+              <button type="button" className="vj-chip" aria-label="Dismiss" onClick={() => setKeepBar(null)}>
+                ✕
+              </button>
+            </div>
+          )}
+          {true ? (
             <div className="invite-tpl-gallery">
+              <button
+                type="button"
+                className="invite-tpl-card vj-scratch-card"
+                onClick={startFromScratch}
+                title="Clear everything and start a blank project"
+                data-start-scratch
+              >
+                <span className="vj-scratch-plus" aria-hidden>＋</span>
+                <span className="invite-tpl-name">Start from scratch</span>
+                <span className="muted" style={{ fontSize: "0.7rem" }}>blank timeline</span>
+              </button>
               {templates.map((tpl) => {
                 const selected = templateId === tpl.id;
                 const emoji =
@@ -4009,6 +4313,7 @@ export function Create() {
                     onClick={() => applyTemplate(tpl)}
                     title={tpl.description}
                   >
+                    <SamplePreview templateId={tpl.id} />
                     <div className="invite-tpl-card-top">
                       <span className="invite-tpl-emoji" aria-hidden>
                         {emoji}
@@ -4022,7 +4327,10 @@ export function Create() {
                       {tpl.vibe || tpl.description || tpl.eventType || "Invitation pack"}
                     </div>
                     <div className="invite-tpl-audio">
-                      ♪ {tpl.beat?.name ?? tpl.beatId}
+                      ♪ {(() => {
+                        const a0 = getTemplateSample(tpl.id)?.audio[0];
+                        return a0 ? audioRefLabel(a0.ref) : tpl.beat?.name ?? tpl.beatId;
+                      })()}
                     </div>
                     <div className="invite-tpl-includes">
                       Includes: {transitionIcon(tpl.transition)}{" "}
@@ -4756,10 +5064,13 @@ export function Create() {
 
       <MediaImporter
         open={mediaImporterOpen}
-        onClose={() => setMediaImporterOpen(false)}
+        onClose={() => {
+          setMediaImporterOpen(false);
+          setReplaceTarget(null);
+        }}
         mode={mediaImporterMode}
-        onImportFiles={(files) => void importAnyFiles(files)}
-        onInsertLibrary={(item) => void insertLibraryItem(item)}
+        onImportFiles={(files) => void (replaceTarget ? handleReplaceFiles(files) : importAnyFiles(files))}
+        onInsertLibrary={(item) => void (replaceTarget ? handleReplaceLibrary(item) : insertLibraryItem(item))}
         onImportAudioUrl={
           mediaImporterMode === "clips"
             ? undefined

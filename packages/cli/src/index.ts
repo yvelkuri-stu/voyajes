@@ -20,6 +20,7 @@ import {
   type Aspect,
   type DurationTarget,
   type TemplatePack,
+  safeParseProject,
   type TransitionKind,
   type TextStyle,
   type TextTransition,
@@ -685,6 +686,97 @@ program
       }
     },
   );
+
+program
+  .command("template")
+  .description(
+    "Write a template's complete sample project (library images, audio clips, text, grade) — then `voyajes render` it",
+  )
+  .argument("[id]", "Template id (e.g. template.birthday-blast); omit with --list")
+  .option("-o, --out <file>", "Project JSON path", "voyajes.project.json")
+  .option("--list", "List templates that ship a sample")
+  .action((id: string | undefined, opts: { out: string; list?: boolean }) => {
+    const manifest = loadManifest();
+    const samplesPath = join(catalogRoot(), "library", "samples.json");
+    if (!existsSync(samplesPath)) {
+      console.error(`No samples at ${samplesPath}`);
+      process.exit(3);
+    }
+    const samples = JSON.parse(readFileSync(samplesPath, "utf8")).samples as Record<string, any>;
+    const templates = manifest.packs.filter((p) => p.kind === "template") as TemplatePack[];
+    if (opts.list || !id) {
+      for (const t of templates) {
+        const s0 = samples[t.id];
+        console.log(`${t.id.padEnd(30)} ${s0 ? `${s0.clips.length} clips · ${s0.audio.length} audio · ${s0.durationSec}s` : "(no sample)"}  ${t.name}`);
+      }
+      return;
+    }
+    const want = id.startsWith("template.") ? id : `template.${id}`;
+    const tpl = templates.find((t) => t.id === want || `${t.id}@${t.version}` === id);
+    const sample = tpl ? samples[tpl.id] : undefined;
+    if (!tpl || !sample) {
+      console.error(`Template sample not found: ${id} (try --list)`);
+      process.exit(1);
+    }
+    const theme = manifest.packs.find((p) => p.id === tpl.themeId);
+    const beat = manifest.packs.find((p) => p.id === tpl.beatId);
+    const inv = (sample.invitation ?? {}) as Record<string, string>;
+    const fill = (v: string) => v.replace(/\{(\w+)\}/g, (_m, k) => inv[k] ?? "");
+    const project = {
+      schema: 3,
+      title: inv.eventName ?? tpl.name,
+      aspect: tpl.aspect ?? "9:16",
+      theme: `${tpl.themeId}@${theme?.version ?? "1.0.0"}`,
+      template: `${tpl.id}@${tpl.version}`,
+      transition: tpl.transition,
+      textStyle: tpl.textStyle,
+      textTransition: tpl.textTransition,
+      grade: sample.grade,
+      media: sample.clips.map((c: any) => ({
+        path: `lib:${c.media}`,
+        mute: true,
+        durationSec: c.durationSec,
+        ...(c.animation ? { animation: c.animation } : {}),
+        ...(c.transitionOut ? { transitionOut: c.transitionOut } : {}),
+        ...(c.transitionSpec ? { transitionSpec: c.transitionSpec } : {}),
+      })),
+      text: sample.text.map((t: any) => ({
+        at: t.at,
+        end: t.end,
+        role: t.role,
+        value: fill(t.value),
+        position: t.position,
+        ...(t.animation ? { animation: t.animation } : {}),
+      })),
+      audio: {
+        track: `${tpl.beatId}@${beat?.version ?? "1.0.0"}`,
+        beatSync: "off",
+        ducking: true,
+        clips: sample.audio.map((a: any, i: number) => ({
+          id: `a${i}`,
+          ref: a.ref,
+          at: a.at,
+          durationSec: a.durationSec,
+          ...(a.volume != null ? { volume: a.volume } : {}),
+          ...(a.fadeInSec != null ? { fadeInSec: a.fadeInSec } : {}),
+          ...(a.fadeOutSec != null ? { fadeOutSec: a.fadeOutSec } : {}),
+          ...(a.loop != null ? { loop: a.loop } : {}),
+        })),
+      },
+      ...(sample.invitation
+        ? { share: { public: true, mode: "invitation", invitation: { ...inv, eventType: tpl.eventType } } }
+        : {}),
+    };
+    const parsed = safeParseProject(project);
+    if (!parsed.success) {
+      console.error("Sample project failed validation:", parsed.error.issues.slice(0, 5));
+      process.exit(1);
+    }
+    writeFileSync(resolve(opts.out), JSON.stringify(project, null, 2) + "\n");
+    console.error(`✓ Wrote ${opts.out} · ${tpl.name} sample (${sample.clips.length} clips, ${sample.audio.length} audio)`);
+    console.error(`  Next: voyajes render ${opts.out} -o ${tpl.id.replace("template.", "")}.mp4`);
+    console.log(resolve(opts.out));
+  });
 
 program
   .command("render")

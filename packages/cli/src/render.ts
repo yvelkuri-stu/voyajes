@@ -3,6 +3,7 @@
  * Images/videos → scale+pad → optional xfade → title overlay → beat audio mux.
  */
 import {
+  readFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -130,7 +131,34 @@ function aspectSize(
   return { width: short, height: Math.round((short * 16) / 9) };
 }
 
+/** Voyajes library root (catalog/library) for `lib:<id>` media + audio refs. */
+let libraryRoot: string | null = null;
+let libraryIndex: Record<string, string> | null = null;
+export function setLibraryRoot(root: string) {
+  libraryRoot = root;
+  libraryIndex = null;
+}
+export function resolveLibraryId(id: string): string | null {
+  if (!libraryRoot) return null;
+  if (!libraryIndex) {
+    libraryIndex = {};
+    try {
+      const man = JSON.parse(readFileSync(join(libraryRoot, "manifest.json"), "utf8")) as {
+        items: { id: string; url: string }[];
+      };
+      for (const it of man.items) libraryIndex[it.id] = join(libraryRoot, it.url.replace(/^library\//, ""));
+    } catch {
+      /* no library */
+    }
+  }
+  return libraryIndex[id] ?? null;
+}
+
 function resolveMediaPath(clipPath: string, projectDir: string): string {
+  if (clipPath.startsWith("lib:")) {
+    const abs = resolveLibraryId(clipPath.slice(4));
+    if (abs) return abs;
+  }
   if (isAbsolute(clipPath)) return clipPath;
   return resolve(projectDir, clipPath);
 }
@@ -323,7 +351,7 @@ function escapeDrawtext(text: string): string {
   return text
     .replace(/\\/g, "\\\\")
     .replace(/:/g, "\\:")
-    .replace(/'/g, "\\'")
+    .replace(/'/g, "\u2019")
     .replace(/%/g, "\\%")
     .replace(/\n/g, " ");
 }
@@ -532,7 +560,8 @@ function buildVideoFilters(
     enable?: string,
   ) => {
     const titleEsc = escapeDrawtext(text);
-    const fontsize = Math.max(28, Math.round(width / 18));
+    // shrink long lines so they fit the frame width
+    const fontsize = Math.max(18, Math.min(Math.round(width / 18), Math.round((width * 1.7) / Math.max(1, text.length))));
     const next = `dt${layer++}`;
     const enableExpr = enable ? `:enable='${enable}'` : "";
     parts.push(
@@ -591,6 +620,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
   }
 
   const projectDir = dirname(resolve(opts.projectPath));
+  setLibraryRoot(join(opts.catalogRoot, "library"));
   const title = opts.titleOverride ?? opts.project.title;
 
   let themeRef = opts.project.theme;
@@ -717,6 +747,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
     // v3 audio track: explicit clips (or the legacy looping bed) with
     // volume, fades and auto-ducking under unmuted video — same envelope as web.
     const resolveAudioRef = (ref: string): string | null => {
+      if (ref.startsWith("lib:")) return resolveLibraryId(ref.slice(4));
       if (ref.startsWith("custom:")) {
         const id = ref.slice("custom:".length);
         const cs = opts.project.audio?.customSounds?.find((x) => x.id === id);
@@ -807,6 +838,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
       const overlays = (opts.project.text ?? [])
         .filter((t) => t.role !== "title" || t.at > 0 || t.end != null)
         .map((t) => ({
+          role: t.role,
           at: t.at,
           end: t.end,
           value: t.value,
@@ -821,7 +853,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
         fps,
         txSec,
         useXfade,
-        withTitle ? title : null,
+        withTitle && !overlays.some((o) => o.role === "title") ? title : null,
         defaultTransition,
         overlays,
         opts.project.grade,

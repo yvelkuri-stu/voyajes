@@ -130,6 +130,29 @@ import {
   type FreshMode,
 } from "../lib/startFresh";
 import { MediaImporter } from "../components/MediaImporter";
+import { Timeline, type TLSelection } from "../components/editor/Timeline";
+import {
+  AnimationPicker,
+  GradePicker,
+  InspectorSection,
+  KeyframeEditor,
+  TransitionBrowser,
+} from "../components/editor/Inspector";
+import { AnimatedLayer } from "../components/editor/AnimatedLayer";
+import { useHistory } from "../hooks/useHistory";
+import { themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
+import {
+  clipStarts,
+  easingCss,
+  gradeFilter,
+  keyframesAt,
+  locateTime,
+  upsertKeyframe,
+  type ClipAnimation,
+  type GradePreset,
+  type Keyframe,
+  type TransitionSpec,
+} from "@voyajes/core";
 import {
   defaultLibraryForTheme,
   getLibraryItem,
@@ -138,6 +161,40 @@ import {
 } from "../data/library";
 
 type LiveClip = DraftClipMeta & { objectUrl: string };
+
+/** Strip runtime-only fields for persistence / share snapshots. */
+function toClipMeta(c: LiveClip): DraftClipMeta {
+  const { objectUrl: _u, ...meta } = c;
+  return { ...meta, transitionOut: meta.transitionOut ?? null };
+}
+
+type EditorSnapshot = {
+  clips: LiveClip[];
+  textOverlays: DraftTextOverlay[];
+  themeId: string;
+  templateId: string | undefined;
+  transitionOverride: TransitionKind | null;
+  grade: GradePreset | undefined;
+  defaultAnimation: ClipAnimation | undefined;
+  projectTxSpec: TransitionSpec | undefined;
+  textStyle: TextStyle;
+  textTransition: TextTransition;
+  audioTrackRef: string;
+  beatSync: BeatSync;
+  aspect: Aspect;
+};
+
+function keyframesAtSafe(keys: Keyframe[] | undefined, t: number) {
+  const v = keyframesAt(keys, t);
+  return { x: v.x, y: v.y, scale: v.scale, rotation: v.rotation, opacity: v.opacity };
+}
+
+function isTypingTarget(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
 
 const ASPECTS: Aspect[] = ["9:16", "16:9", "1:1", "4:5"];
 const BEAT_SYNC_MODES: BeatSync[] = ["off", "soft", "medium", "hard"];
@@ -293,6 +350,8 @@ export function Create() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const elapsedRef = useRef(0);
+  elapsedRef.current = elapsed;
   const [dragOver, setDragOver] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [transitionKey, setTransitionKey] = useState(0);
@@ -316,6 +375,17 @@ export function Create() {
   const [mediaImporterMode, setMediaImporterMode] = useState<"clips" | "audio" | "all">("all");
   /** Minimalist secondary sheets: theme | audio | text | null */
   const [miniSheet, setMiniSheet] = useState<"theme" | "audio" | "text" | null>(null);
+  // v2 timeline / pro-editor state
+  const [grade, setGrade] = useState<GradePreset | undefined>(undefined);
+  const [defaultAnimation, setDefaultAnimation] = useState<ClipAnimation | undefined>(undefined);
+  const [projectTxSpec, setProjectTxSpec] = useState<TransitionSpec | undefined>(undefined);
+  const [selection, setSelection] = useState<TLSelection>(null);
+  const [appliedChip, setAppliedChip] = useState<{ label: string; snap: EditorSnapshot | null } | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const historyRef = useRef<{
+    checkpoint: () => EditorSnapshot | null;
+    restore: (s: EditorSnapshot) => void;
+  } | null>(null);
   const clipsRef = useRef<LiveClip[]>([]);
 
   const theme: ThemeCard = useMemo(
@@ -408,6 +478,9 @@ export function Create() {
         setThemeId(tid);
         setTemplateId(undefined);
         setTransitionOverride(null);
+        setGrade(undefined);
+        setDefaultAnimation(undefined);
+        setProjectTxSpec(undefined);
         setAudioTrackRef(d.audioTrackRef);
         setBeatSync(d.beatSync);
         setDucking(d.ducking);
@@ -530,6 +603,9 @@ export function Create() {
       setTextOverlays(base.textOverlays ?? []);
       setCustomSounds(base.customSounds ?? []);
       setAudioMixMode(base.audioMixMode ?? "replace");
+      setGrade(base.grade);
+      setDefaultAnimation(base.defaultAnimation);
+      setProjectTxSpec(base.transitionSpec);
       if (base.transitionOverride) {
         setTransitionOverride(base.transitionOverride);
       } else if (paramTemplate) {
@@ -591,6 +667,9 @@ export function Create() {
       captionText,
       textOverlays,
       transitionOverride,
+      grade,
+      defaultAnimation,
+      transitionSpec: projectTxSpec,
       watermark,
       durationTargetSec,
       exportDestination,
@@ -602,25 +681,7 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
-      clips: clips.map(
-        ({
-          id,
-          fileName,
-          mimeType,
-          kind,
-          durationSec,
-          mute,
-          transitionOut,
-        }): DraftClipMeta => ({
-          id,
-          fileName,
-          mimeType,
-          kind,
-          durationSec,
-          mute,
-          transitionOut: transitionOut ?? null,
-        }),
-      ),
+      clips: clips.map(toClipMeta),
       updatedAt: new Date().toISOString(),
     };
     saveDraft(draft);
@@ -644,6 +705,9 @@ export function Create() {
     captionText,
     textOverlays,
     transitionOverride,
+    grade,
+    defaultAnimation,
+    projectTxSpec,
     watermark,
     durationTargetSec,
     exportDestination,
@@ -703,7 +767,8 @@ export function Create() {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const holdMs = Math.max(400, clip.durationSec * 1000);
-    const tickStart = performance.now();
+    const tickStart =
+      performance.now() - Math.min(elapsedRef.current, clip.durationSec) * 1000;
 
     const tick = () => {
       const t = (performance.now() - tickStart) / 1000;
@@ -725,7 +790,7 @@ export function Create() {
     const clip = clips[activeIndex];
     const el = videoRef.current;
     if (!clip || clip.kind !== "video" || !el) return;
-    el.currentTime = 0;
+    el.currentTime = (clip.inSec ?? 0) + elapsedRef.current;
     if (playing) {
       void el.play().catch(() => {
         /* autoplay may fail without gesture; Play button covers it */
@@ -771,6 +836,7 @@ export function Create() {
           durationSec,
           mute: true,
           objectUrl,
+          ...(kind === "video" ? { sourceSec: durationSec } : {}),
         });
       }
 
@@ -1156,7 +1222,38 @@ export function Create() {
       const th = getThemeById(tpl.themeId);
       const beat = getBeatById(tpl.beatId);
       const invite = isInvitationTemplate(tpl);
+      const snapBefore = historyRef.current?.checkpoint() ?? null;
       setTemplateId(tpl.id);
+      // Layered preset: theme layer + template timing/transition/animation slots
+      setGrade(undefined);
+      setProjectTxSpec({
+        durationSec: Math.min(2, Math.max(0.2, tpl.transitionDurationMs / 1000)),
+        easing: tpl.motion === "snappy" ? "back-out" : "ease-in-out",
+      });
+      setDefaultAnimation(
+        themeLayer({ id: tpl.themeId, motion: tpl.motion, photoMotion: tpl.photoMotion, tags: tpl.tags })
+          .animation,
+      );
+      setClips((prev) =>
+        prev.map((c) => ({ ...c, transitionOut: null, transitionSpec: undefined, animation: undefined })),
+      );
+      if (!invite) {
+        setTextOverlays((prev) =>
+          prev.some((o) => o.value.trim())
+            ? prev
+            : [
+                {
+                  ...defaultTextOverlay(0, 2.6, title.trim() && title.trim() !== "Untitled voyage" ? title.trim() : tpl.name),
+                  role: "title",
+                  style: tpl.textStyle,
+                  animationIn: tpl.textTransition,
+                  position: "center" as TextPosition,
+                  animation: { in: tpl.motion === "snappy" ? "pop" : "slide-up", out: "fade" },
+                },
+              ],
+        );
+      }
+      setAppliedChip({ label: tpl.name, snap: snapBefore });
       if (th) setThemeId(th.id);
       setTransitionOverride(tpl.transition);
       if (beat) {
@@ -1224,7 +1321,7 @@ export function Create() {
       setMiniSheet(null);
       void seedTemplateLibraryMedia(tpl);
     },
-    [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl],
+    [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl, title],
   );
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
@@ -1321,6 +1418,9 @@ export function Create() {
     setThemeId(tid);
     setTemplateId(undefined);
     setTransitionOverride(null);
+        setGrade(undefined);
+        setDefaultAnimation(undefined);
+        setProjectTxSpec(undefined);
     setAudioTrackRef(d.audioTrackRef);
     setBeatSync(d.beatSync);
     setDucking(d.ducking);
@@ -1471,7 +1571,13 @@ export function Create() {
           fileName: c.fileName,
           durationSec: c.durationSec,
           transitionOut: c.transitionOut,
+          inSec: c.inSec,
+          transitionSpec: c.transitionSpec,
+          animation: animFor(c),
+          keyframes: c.keyframes,
         })),
+        grade: effectiveGrade,
+        transitionSpec: projectTxSpec,
         theme,
         title,
         aspect,
@@ -1569,7 +1675,13 @@ export function Create() {
           fileName: c.fileName,
           durationSec: c.durationSec,
           transitionOut: c.transitionOut,
+          inSec: c.inSec,
+          transitionSpec: c.transitionSpec,
+          animation: animFor(c),
+          keyframes: c.keyframes,
         })),
+        grade: effectiveGrade,
+        transitionSpec: projectTxSpec,
         theme,
         title,
         aspect,
@@ -1669,19 +1781,14 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
-      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
-        id,
-        fileName,
-        mimeType,
-        kind,
-        durationSec,
-        mute,
-        transitionOut: transitionOut ?? null,
-      })),
+      clips: clips.map(toClipMeta),
       textOverlays,
       customSounds,
       audioMixMode,
       transitionOverride,
+      grade,
+      defaultAnimation,
+      transitionSpec: projectTxSpec,
       updatedAt: new Date().toISOString(),
     };
     const project = toVoyajesProject(draft);
@@ -1728,19 +1835,14 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
-      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
-        id,
-        fileName,
-        mimeType,
-        kind,
-        durationSec,
-        mute,
-        transitionOut: transitionOut ?? null,
-      })),
+      clips: clips.map(toClipMeta),
       textOverlays,
       customSounds,
       audioMixMode,
       transitionOverride,
+      grade,
+      defaultAnimation,
+      transitionSpec: projectTxSpec,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -1785,19 +1887,14 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
-      clips: clips.map(({ id, fileName, mimeType, kind, durationSec, mute, transitionOut }) => ({
-        id,
-        fileName,
-        mimeType,
-        kind,
-        durationSec,
-        mute,
-        transitionOut: transitionOut ?? null,
-      })),
+      clips: clips.map(toClipMeta),
       textOverlays,
       customSounds,
       audioMixMode,
       transitionOverride,
+      grade,
+      defaultAnimation,
+      transitionSpec: projectTxSpec,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -1963,14 +2060,342 @@ export function Create() {
     setCoachHint(`Sticker stamped · ${sticker}`);
   };
 
+
+  // ───────────── v2 timeline editor ─────────────
+  const layer = useMemo(() => themeLayer(theme), [theme]);
+  const effectiveGrade: GradePreset = grade ?? layer.grade;
+  const effectiveAnim: ClipAnimation = defaultAnimation ?? layer.animation;
+  const gradeCss = gradeFilter(effectiveGrade);
+  const animFor = useCallback(
+    (c: { kind: "image" | "video"; animation?: ClipAnimation }): ClipAnimation | undefined =>
+      c.animation ?? (c.kind === "image" ? effectiveAnim : { ...effectiveAnim, emphasis: undefined }),
+    [effectiveAnim],
+  );
+  const starts = useMemo(() => clipStarts(clips), [clips]);
+
+  const snapshot: EditorSnapshot = useMemo(
+    () => ({
+      clips,
+      textOverlays,
+      themeId,
+      templateId,
+      transitionOverride,
+      grade,
+      defaultAnimation,
+      projectTxSpec,
+      textStyle,
+      textTransition,
+      audioTrackRef,
+      beatSync,
+      aspect,
+    }),
+    [clips, textOverlays, themeId, templateId, transitionOverride, grade, defaultAnimation, projectTxSpec, textStyle, textTransition, audioTrackRef, beatSync, aspect],
+  );
+  const history = useHistory<EditorSnapshot>(
+    snapshot,
+    (sn) => {
+      setClips(sn.clips);
+      setTextOverlays(sn.textOverlays);
+      setThemeId(sn.themeId);
+      setTemplateId(sn.templateId);
+      setTransitionOverride(sn.transitionOverride);
+      setGrade(sn.grade);
+      setDefaultAnimation(sn.defaultAnimation);
+      setProjectTxSpec(sn.projectTxSpec);
+      setTextStyle(sn.textStyle);
+      setTextTransition(sn.textTransition);
+      setAudioTrackRef(sn.audioTrackRef);
+      setBeatSync(sn.beatSync);
+      setAspect(sn.aspect);
+      setActiveIndex((ai) => Math.min(ai, Math.max(0, sn.clips.length - 1)));
+    },
+    hydrated,
+  );
+  historyRef.current = history;
+
+  const doUndo = useCallback(() => {
+    if (history.undo()) setCoachHint("Undo");
+  }, [history]);
+  const doRedo = useCallback(() => {
+    if (history.redo()) setCoachHint("Redo");
+  }, [history]);
+
+  const seekTo = useCallback(
+    (t: number) => {
+      if (clips.length === 0) return;
+      setPlaying(false);
+      const { index, local } = locateTime(clips, t);
+      setActiveIndex(index);
+      setElapsed(local);
+    },
+    [clips],
+  );
+
+  // Paused scrubbing drives the video frame
+  useEffect(() => {
+    if (playing) return;
+    const clip = clips[activeIndex];
+    const el = videoRef.current;
+    if (!clip || clip.kind !== "video" || !el) return;
+    const want = (clip.inSec ?? 0) + elapsed;
+    if (Math.abs(el.currentTime - want) > 0.05) el.currentTime = want;
+  }, [elapsed, playing, activeIndex, clips]);
+
+  const patchClip = useCallback((id: string, patch: Partial<LiveClip>) => {
+    setClips((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  }, []);
+  const patchText = useCallback((id: string, patch: Partial<DraftTextOverlay>) => {
+    setTextOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  }, []);
+
+  const onTrimClip = useCallback(
+    (id: string, next: { durationSec: number; inSec?: number }, origin: { durationSec: number; inSec: number }) => {
+      setClips((prev) =>
+        prev.map((c) => {
+          if (c.id !== id) return c;
+          if (c.kind === "image") {
+            const d = next.inSec !== undefined ? next.durationSec : next.durationSec;
+            return { ...c, durationSec: Math.round(Math.min(60, Math.max(0.3, d)) * 100) / 100 };
+          }
+          const source = c.sourceSec ?? origin.inSec + origin.durationSec;
+          const inSec = Math.max(0, Math.min(source - 0.3, next.inSec ?? c.inSec ?? 0));
+          const dur = Math.max(0.3, Math.min(source - inSec, next.durationSec));
+          return {
+            ...c,
+            sourceSec: source,
+            inSec: Math.round(inSec * 100) / 100 || undefined,
+            durationSec: Math.round(dur * 100) / 100,
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const reorderClip = useCallback(
+    (from: number, to: number) => {
+      setClips((prev) => {
+        const next = [...prev];
+        const [item] = next.splice(from, 1);
+        next.splice(to, 0, item);
+        return next;
+      });
+      setActiveIndex(to);
+      setElapsed(0);
+      setCoachHint(`Moved clip ${from + 1} → ${to + 1}`);
+    },
+    [],
+  );
+
+  const playhead = trackElapsed;
+
+  const selectedClipIndex =
+    selection?.type === "clip" ? clips.findIndex((c) => c.id === selection.id) : -1;
+  const selClip = selectedClipIndex >= 0 ? clips[selectedClipIndex] : undefined;
+  const selText =
+    selection?.type === "text" ? textOverlays.find((o) => o.id === selection.id) : undefined;
+  const selGap = selection?.type === "gap" && selection.index < clips.length - 1 ? selection.index : -1;
+
+  const clipLocal = (index: number) =>
+    Math.max(0, Math.min(clips[index]?.durationSec ?? 0, playhead - (starts[index] ?? 0)));
+  const textLocal = (o: DraftTextOverlay) => Math.max(0, Math.min(o.end - o.at, playhead - o.at));
+
+  const copyBlob = useCallback(async (fromId: string, toId: string) => {
+    try {
+      const blob = await getBlob(fromId);
+      if (blob) await putBlob(toId, blob);
+    } catch {
+      /* media stays in memory for this session */
+    }
+  }, []);
+
+  const splitAtPlayhead = useCallback(() => {
+    const idx = activeIndex;
+    const c = clips[idx];
+    if (!c) return;
+    const local = elapsed;
+    if (local < 0.2 || local > c.durationSec - 0.2) {
+      setCoachHint("Move the playhead inside a clip to split");
+      return;
+    }
+    const newId = newClipId();
+    void copyBlob(c.id, newId);
+    const keys = c.keyframes ?? [];
+    const first: LiveClip = {
+      ...c,
+      durationSec: Math.round(local * 100) / 100,
+      transitionOut: "cut",
+      transitionSpec: undefined,
+      keyframes: keys.filter((k) => k.t <= local),
+      animation: c.animation ? { ...c.animation, out: undefined } : undefined,
+    };
+    const second: LiveClip = {
+      ...c,
+      id: newId,
+      inSec: c.kind === "video" ? Math.round(((c.inSec ?? 0) + local) * 100) / 100 : undefined,
+      durationSec: Math.round((c.durationSec - local) * 100) / 100,
+      keyframes: keys.filter((k) => k.t > local).map((k) => ({ ...k, t: Math.round((k.t - local) * 100) / 100 })),
+      animation: c.animation ? { ...c.animation, in: undefined } : undefined,
+    };
+    setClips((prev) => [...prev.slice(0, idx), first, second, ...prev.slice(idx + 1)]);
+    setSelection({ type: "clip", id: newId });
+    setActiveIndex(idx + 1);
+    setElapsed(0);
+    setCoachHint("Split at playhead");
+  }, [activeIndex, clips, elapsed, copyBlob]);
+
+  const duplicateSelected = useCallback(() => {
+    if (selClip) {
+      const newId = newClipId();
+      void copyBlob(selClip.id, newId);
+      const copy: LiveClip = { ...selClip, id: newId };
+      setClips((prev) => {
+        const i = prev.findIndex((c) => c.id === selClip.id);
+        return [...prev.slice(0, i + 1), copy, ...prev.slice(i + 1)];
+      });
+      setSelection({ type: "clip", id: newId });
+      setCoachHint("Duplicated clip");
+    } else if (selText) {
+      const len = selText.end - selText.at;
+      const copy: DraftTextOverlay = { ...selText, id: newClipId(), at: selText.end, end: selText.end + len };
+      setTextOverlays((prev) => [...prev, copy]);
+      setSelection({ type: "text", id: copy.id });
+      setCoachHint("Duplicated text");
+    }
+  }, [selClip, selText, copyBlob]);
+
+  const deleteSelected = useCallback(() => {
+    if (selClip) {
+      // Keep blob + URL alive so Undo can bring the clip back.
+      setClips((prev) => prev.filter((c) => c.id !== selClip.id));
+      setActiveIndex((ai) => Math.max(0, Math.min(ai, clips.length - 2)));
+      setElapsed(0);
+      setSelection(null);
+      setCoachHint("Clip deleted · Ctrl/Cmd+Z to undo");
+    } else if (selText) {
+      setTextOverlays((prev) => prev.filter((o) => o.id !== selText.id));
+      setSelection(null);
+      setCoachHint("Text deleted · Ctrl/Cmd+Z to undo");
+    } else if (selGap >= 0) {
+      const id = clips[selGap].id;
+      patchClip(id, { transitionOut: null, transitionSpec: undefined });
+      setCoachHint("Transition reset to theme default");
+    }
+  }, [selClip, selText, selGap, clips, patchClip]);
+
+  const addKeyframeAtPlayhead = useCallback(() => {
+    if (selClip) {
+      const t = clipLocal(selectedClipIndex);
+      const cur = keyframesAtSafe(selClip.keyframes, t);
+      patchClip(selClip.id, { keyframes: upsertKeyframe(selClip.keyframes, t, cur) });
+      setCoachHint(`◆ Keyframe @ ${t.toFixed(2)}s`);
+    } else if (selText) {
+      const t = textLocal(selText);
+      const cur = keyframesAtSafe(selText.keyframes, t);
+      patchText(selText.id, { keyframes: upsertKeyframe(selText.keyframes, t, cur) });
+      setCoachHint(`◆ Keyframe @ ${t.toFixed(2)}s`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selClip, selText, selectedClipIndex, playhead, patchClip, patchText]);
+
+  const setGapSpec = useCallback(
+    (index: number, spec: TransitionSpec) => {
+      const id = clips[index]?.id;
+      if (id) patchClip(id, { transitionSpec: spec });
+    },
+    [clips, patchClip],
+  );
+
+  const applyGapToAll = useCallback(
+    (index: number) => {
+      const src = clips[index];
+      if (!src) return;
+      setClips((prev) =>
+        prev.map((c, i) =>
+          i < prev.length - 1 ? { ...c, transitionOut: src.transitionOut ?? null, transitionSpec: src.transitionSpec } : c,
+        ),
+      );
+      setCoachHint(`Applied ${transitionLabel(src.transitionOut ?? globalTransition)} to all gaps`);
+    },
+    [clips, globalTransition],
+  );
+
+  const randomGap = useCallback(
+    (index: number) => {
+      const pool = TRANSITIONS.filter((k) => k !== "cut" && k !== clips[index]?.transitionOut);
+      const k = pool[Math.floor(Math.random() * pool.length)];
+      if (k) setGapTransition(index, k);
+    },
+    [clips, setGapTransition],
+  );
+
+  const addTextAtPlayhead = useCallback(() => {
+    const at = Math.round(playhead * 100) / 100;
+    const end = Math.min(Math.max(totalDuration, at + 0.5), at + 3);
+    const o = { ...defaultTextOverlay(at, end, "New text"), animation: { in: "pop" as const, out: "fade" as const } };
+    setTextOverlays((prev) => [...prev, o]);
+    setSelection({ type: "text", id: o.id });
+    setInspectorOpen(true);
+  }, [playhead, totalDuration]);
+
+  // Keyboard shortcuts (pro-editor muscle memory)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      const mod = e.metaKey || e.ctrlKey;
+      const k = e.key.toLowerCase();
+      if (mod && k === "z") {
+        e.preventDefault();
+        if (e.shiftKey) doRedo();
+        else doUndo();
+      } else if (mod && k === "y") {
+        e.preventDefault();
+        doRedo();
+      } else if (mod && k === "d") {
+        e.preventDefault();
+        duplicateSelected();
+      } else if (mod) {
+        return;
+      } else if (k === " " && clips.length) {
+        e.preventDefault();
+        setPlaying((pl) => !pl);
+      } else if (k === "s") {
+        splitAtPlayhead();
+      } else if (k === "k") {
+        addKeyframeAtPlayhead();
+      } else if (k === "delete" || k === "backspace") {
+        if (selection) {
+          e.preventDefault();
+          deleteSelected();
+        }
+      } else if (k === "arrowleft" || k === "arrowright") {
+        if (!clips.length) return;
+        e.preventDefault();
+        const step = e.shiftKey ? 1 : 0.1;
+        seekTo(Math.max(0, Math.min(totalDuration, playhead + (k === "arrowleft" ? -step : step))));
+      } else if (k === "escape") {
+        setSelection(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [doUndo, doRedo, duplicateSelected, splitAtPlayhead, addKeyframeAtPlayhead, deleteSelected, seekTo, selection, clips.length, totalDuration, playhead]);
+
+  // Applied chip fades quietly
+  useEffect(() => {
+    if (!appliedChip) return;
+    const id = window.setTimeout(() => setAppliedChip(null), 9000);
+    return () => window.clearTimeout(id);
+  }, [appliedChip]);
+
+  const activeTxSec = transitionSecInto(clips, activeIndex, projectTxSpec, theme);
+  const activeTxEasing = transitionEasingInto(clips, activeIndex, projectTxSpec);
+
   const active = clips[activeIndex];
-  const transitionClass = `tx-${activeTransition}`;
-  const kenBurns =
-    active?.kind === "image" && theme.photoMotion !== "off"
-      ? theme.photoMotion === "bold"
-        ? "ken-bold"
-        : "ken-gentle"
-      : "";
+  const transitionClass =
+    playing || elapsed < activeTxSec + 0.05 ? `tx-${activeTransition}` : "";
+  // Ken Burns now comes from the theme layer animation (AnimatedLayer)
+  const kenBurns = "";
 
   return (
     <div className={`compose-root${minimalist ? " is-minimalist" : ""}`}>
@@ -2576,9 +3001,10 @@ export function Create() {
                 className={`preview-media ${transitionClass} ${kenBurns}`}
                 style={
                   {
-                    "--tx-ms": `${theme.transitionDurationMs}ms`,
-                    "--tx-ease":
-                      theme.motion === "snappy"
+                    "--tx-ms": `${Math.round(activeTxSec * 1000)}ms`,
+                    "--tx-ease": activeTxEasing
+                      ? easingCss(activeTxEasing)
+                      : theme.motion === "snappy"
                         ? "var(--motion-snappy)"
                         : theme.motion === "float" || theme.motion === "cinematic"
                           ? "var(--motion-float)"
@@ -2586,17 +3012,30 @@ export function Create() {
                   } as CSSProperties
                 }
               >
-                {active.kind === "image" ? (
-                  <img src={active.objectUrl} alt={active.fileName} draggable={false} />
-                ) : (
-                  <video
-                    ref={videoRef}
-                    src={active.objectUrl}
-                    muted={active.mute}
-                    playsInline
-                    loop={false}
-                  />
-                )}
+                <AnimatedLayer
+                  animation={animFor(active)}
+                  keyframes={active.keyframes}
+                  durationSec={active.durationSec}
+                  localSec={elapsed}
+                  playing={playing}
+                  resetKey={`${active.id}-${transitionKey}`}
+                  filter={gradeCss}
+                >
+                  {active.kind === "image" ? (
+                    <img src={active.objectUrl} alt={active.fileName} draggable={false} />
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      src={active.objectUrl}
+                      muted={active.mute}
+                      playsInline
+                      loop={false}
+                      onLoadedMetadata={(e) => {
+                        e.currentTarget.currentTime = (active.inSec ?? 0) + elapsedRef.current;
+                      }}
+                    />
+                  )}
+                </AnimatedLayer>
               </div>
             ) : projectMode === "invitation" ? (
               <>
@@ -2647,7 +3086,20 @@ export function Create() {
                 className={`preview-overlay text-style-${o.style} text-tx-${o.animationIn} overlay-pos-${o.position}`}
                 style={{ color: o.color || theme.palette.text }}
               >
-                {o.value}
+                {o.animation || o.keyframes?.length ? (
+                  <AnimatedLayer
+                    animation={o.animation}
+                    keyframes={o.keyframes}
+                    durationSec={Math.max(0.01, o.end - o.at)}
+                    localSec={Math.max(0, trackElapsed - o.at)}
+                    playing={playing}
+                    resetKey={o.id}
+                  >
+                    {o.value}
+                  </AnimatedLayer>
+                ) : (
+                  o.value
+                )}
               </div>
             ))}
             {watermark && (
@@ -2718,116 +3170,321 @@ export function Create() {
             </span>
           </div>
 
-          <div className="filmstrip" aria-label="Clip filmstrip">
-            {clips.map((c, i) => (
-              <Fragment key={c.id}>
-              <div className="film-clip-wrap">
+          {appliedChip && (
+            <div className="vj-applied-chip" role="status">
+              <span>Applied: {appliedChip.label}</span>
+              {appliedChip.snap && (
                 <button
                   type="button"
-                  className={`film-clip${i === activeIndex ? " active" : ""}`}
                   onClick={() => {
-                    setPlaying(false);
-                    goToClip(i, true);
+                    if (appliedChip.snap) history.restore(appliedChip.snap);
+                    setAppliedChip(null);
                   }}
-                  style={{
-                    backgroundImage: c.kind === "image" ? `url(${c.objectUrl})` : undefined,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    borderColor:
-                      i === activeIndex ? theme.palette.accent : undefined,
-                  }}
-                  title={c.fileName}
                 >
-                  {c.kind === "video" && (
-                    <video src={c.objectUrl} muted playsInline preload="metadata" />
-                  )}
-                  <span className="film-clip-label">
-                    {c.kind === "video" ? "▶" : i + 1}
-                  </span>
+                  Undo
                 </button>
-                <div className="film-clip-actions">
-                  <button
-                    type="button"
-                    aria-label="Move earlier"
-                    disabled={i === 0}
-                    onClick={() => moveClip(i, -1)}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Move later"
-                    disabled={i === clips.length - 1}
-                    onClick={() => moveClip(i, 1)}
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${c.fileName}`}
-                    onClick={() => void removeClip(i)}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-                {i < clips.length - 1 && (
-                  <div className="film-gap" key={`gap-${c.id}`}>
-                    <button
-                      type="button"
-                      className={`film-gap-btn${gapMenuIndex === i ? " open" : ""}${c.transitionOut ? " custom" : ""}`}
-                      title={`Transition after clip ${i + 1}: ${transitionLabel(gapTransitionKind(i))}`}
-                      onClick={() =>
-                        setGapMenuIndex((cur) => (cur === i ? null : i))
-                      }
-                    >
-                      ✦
-                      <span className="film-gap-label">
-                        {transitionLabel(gapTransitionKind(i))}
-                      </span>
-                    </button>
-                    {gapMenuIndex === i && (
-                      <div className="film-gap-menu" role="menu">
-                        <button
-                          type="button"
-                          className={!c.transitionOut ? "active" : ""}
-                          onClick={() => setGapTransition(i, null)}
-                        >
-                          Theme default ({transitionLabel(globalTransition)})
-                        </button>
-                        {TRANSITIONS.map((kind) => (
-                          <button
-                            key={kind}
-                            type="button"
-                            className={
-                              c.transitionOut === kind ? "active" : ""
-                            }
-                            onClick={() => setGapTransition(i, kind)}
-                          >
-                            <span className="chip-tx-icon" aria-hidden>
-                              {transitionIcon(kind)}
-                            </span>
-                            {transitionLabel(kind)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Fragment>
-            ))}
+              )}
+              <button type="button" aria-label="Dismiss" onClick={() => setAppliedChip(null)}>
+                ×
+              </button>
+            </div>
+          )}
+
+          <Timeline
+            clips={clips}
+            texts={textOverlays}
+            audioLabel={selectedBeat.name}
+            totalDuration={totalDuration}
+            playhead={playhead}
+            playing={playing}
+            accent={theme.palette.accent}
+            compact={minimalist}
+            selection={selection}
+            gapInfo={(i) => {
+              const k = gapTransitionKind(i);
+              return {
+                icon: transitionIcon(k),
+                label: transitionLabel(k),
+                custom: Boolean(clips[i]?.transitionOut || clips[i]?.transitionSpec),
+                sec: transitionSecInto(clips, i + 1, projectTxSpec, theme),
+              };
+            }}
+            onSelect={(sel) => {
+              setSelection(sel);
+              if (sel) setInspectorOpen(true);
+            }}
+            onSeek={seekTo}
+            onTogglePlay={() => clips.length && setPlaying((p) => !p)}
+            onReorder={reorderClip}
+            onTrimClip={onTrimClip}
+            onTextTiming={(id, at, end) => patchText(id, { at, end })}
+            onSplit={splitAtPlayhead}
+            onDuplicate={duplicateSelected}
+            onDelete={deleteSelected}
+            onAddKeyframe={addKeyframeAtPlayhead}
+            onUndo={doUndo}
+            onRedo={doRedo}
+            canUndo={history.canUndo}
+            canRedo={history.canRedo}
+            onAddClips={() => fileInputRef.current?.click()}
+            onAddText={addTextAtPlayhead}
+          />
+
+          <section
+            className={`vj-inspector${minimalist ? " is-compact" : ""}${inspectorOpen ? "" : " is-collapsed"}`}
+            aria-label="Inspector"
+          >
             <button
               type="button"
-              className="film-clip film-add"
-              onClick={() => fileInputRef.current?.click()}
-              aria-label="Add clips"
+              className="vj-insp-head"
+              onClick={() => setInspectorOpen((o) => !o)}
+              aria-expanded={inspectorOpen}
             >
-              +
+              <span className="vj-insp-icon" aria-hidden>
+                {selClip ? (selClip.kind === "video" ? "🎬" : "🖼") : selText ? "T" : selGap >= 0 ? "✦" : selection?.type === "audio" ? "♪" : "🎨"}
+              </span>
+              <span className="vj-insp-title">
+                {selClip
+                  ? `Clip ${selectedClipIndex + 1}`
+                  : selText
+                    ? "Text layer"
+                    : selGap >= 0
+                      ? `Transition ${selGap + 1} → ${selGap + 2}`
+                      : selection?.type === "audio"
+                        ? "Audio"
+                        : "Project look"}
+              </span>
+              <span className="vj-insp-sub muted">
+                {selClip
+                  ? "duration · trim · animation · keyframes"
+                  : selText
+                    ? "text · timing · animation"
+                    : selGap >= 0
+                      ? "pick · duration · easing"
+                      : selection?.type === "audio"
+                        ? "beat · sync"
+                        : "grade · default motion · transitions"}
+              </span>
+              <span aria-hidden className="vj-insp-caret">{inspectorOpen ? "▾" : "▸"}</span>
             </button>
-          </div>
-          <p className="muted" style={{ fontSize: "0.75rem", textAlign: "center", marginTop: 6 }}>
-            Tap ✦ between clips to set a per-gap transition (preview + WebM + CLI).
-          </p>
+
+            {inspectorOpen && (
+              <div className="vj-insp-body">
+                {selClip && (
+                  <>
+                    <InspectorSection title="Timing" hint="seconds" compact={minimalist}>
+                      <div className="vj-insp-kf-grid">
+                        <label className="vj-insp-row">
+                          <span>Duration</span>
+                          <input
+                            type="number"
+                            min={0.3}
+                            max={60}
+                            step={0.1}
+                            value={selClip.durationSec}
+                            onChange={(e) =>
+                              onTrimClip(
+                                selClip.id,
+                                { durationSec: Number(e.target.value) || selClip.durationSec },
+                                { durationSec: selClip.durationSec, inSec: selClip.inSec ?? 0 },
+                              )
+                            }
+                          />
+                        </label>
+                        {selClip.kind === "video" && (
+                          <label className="vj-insp-row">
+                            <span>Trim in</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              value={selClip.inSec ?? 0}
+                              onChange={(e) =>
+                                onTrimClip(
+                                  selClip.id,
+                                  { durationSec: selClip.durationSec, inSec: Math.max(0, Number(e.target.value) || 0) },
+                                  { durationSec: selClip.durationSec, inSec: selClip.inSec ?? 0 },
+                                )
+                              }
+                            />
+                          </label>
+                        )}
+                      </div>
+                      <div className="vj-insp-chips">
+                        <button type="button" className="vj-chip" disabled={selectedClipIndex <= 0} onClick={() => reorderClip(selectedClipIndex, selectedClipIndex - 1)}>
+                          ◀ Earlier
+                        </button>
+                        <button type="button" className="vj-chip" disabled={selectedClipIndex >= clips.length - 1} onClick={() => reorderClip(selectedClipIndex, selectedClipIndex + 1)}>
+                          Later ▶
+                        </button>
+                        {selClip.kind === "video" && (
+                          <button type="button" className={`vj-chip${selClip.mute ? "" : " active"}`} onClick={() => patchClip(selClip.id, { mute: !selClip.mute })}>
+                            {selClip.mute ? "🔇 Muted" : "🔊 Sound"}
+                          </button>
+                        )}
+                      </div>
+                    </InspectorSection>
+                    <AnimationPicker
+                      value={selClip.animation ?? animFor(selClip)}
+                      onChange={(a) => patchClip(selClip.id, { animation: a })}
+                      compact={minimalist}
+                    />
+                    {selClip.animation && (
+                      <button type="button" className="btn btn-ghost vj-insp-wide" onClick={() => patchClip(selClip.id, { animation: undefined })}>
+                        ↺ Use theme motion
+                      </button>
+                    )}
+                    <KeyframeEditor
+                      keys={selClip.keyframes}
+                      localSec={clipLocal(selectedClipIndex)}
+                      onSet={(props) =>
+                        patchClip(selClip.id, {
+                          keyframes: upsertKeyframe(selClip.keyframes, clipLocal(selectedClipIndex), props),
+                        })
+                      }
+                      onDelete={(t) => patchClip(selClip.id, { keyframes: (selClip.keyframes ?? []).filter((k) => k.t !== t) })}
+                      onSeekLocal={(t) => seekTo((starts[selectedClipIndex] ?? 0) + t)}
+                      compact={minimalist}
+                    />
+                  </>
+                )}
+
+                {selGap >= 0 && (
+                  <TransitionBrowser
+                    kinds={TRANSITIONS}
+                    current={clips[selGap]?.transitionOut ?? null}
+                    themeDefault={globalTransition}
+                    spec={{
+                      durationSec: transitionSecInto(clips, selGap + 1, projectTxSpec, theme),
+                      easing: clips[selGap]?.transitionSpec?.easing ?? projectTxSpec?.easing,
+                    }}
+                    onPick={(k) => {
+                      setGapTransition(selGap, k);
+                      seekTo(Math.max(0, (starts[selGap + 1] ?? 0) - 0.4));
+                      setPlaying(true);
+                    }}
+                    onSpec={(sp) => setGapSpec(selGap, { ...clips[selGap]?.transitionSpec, ...sp })}
+                    onRandom={() => randomGap(selGap)}
+                    onApplyAll={() => applyGapToAll(selGap)}
+                    compact={minimalist}
+                  />
+                )}
+
+                {selText && (
+                  <>
+                    <InspectorSection title="Text" compact={minimalist}>
+                      <textarea
+                        className="vj-insp-textarea"
+                        value={selText.value}
+                        rows={2}
+                        onChange={(e) => patchText(selText.id, { value: e.target.value })}
+                      />
+                      <div className="vj-insp-kf-grid">
+                        <label className="vj-insp-row">
+                          <span>Start</span>
+                          <input type="number" min={0} step={0.1} value={selText.at} onChange={(e) => patchText(selText.id, { at: Math.max(0, Math.min(selText.end - 0.2, Number(e.target.value) || 0)) })} />
+                        </label>
+                        <label className="vj-insp-row">
+                          <span>End</span>
+                          <input type="number" min={0} step={0.1} value={selText.end} onChange={(e) => patchText(selText.id, { end: Math.max(selText.at + 0.2, Number(e.target.value) || 0) })} />
+                        </label>
+                        <label className="vj-insp-row">
+                          <span>Color</span>
+                          <input type="color" value={selText.color || "#ffffff"} onChange={(e) => patchText(selText.id, { color: e.target.value })} />
+                        </label>
+                        <label className="vj-insp-row">
+                          <span>Place</span>
+                          <select value={selText.position} onChange={(e) => patchText(selText.id, { position: e.target.value as TextPosition })}>
+                            {TEXT_POSITIONS.map((pos) => (
+                              <option key={pos} value={pos}>{pos}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="vj-insp-row">
+                          <span>Font</span>
+                          <select value={selText.style} onChange={(e) => patchText(selText.id, { style: e.target.value as TextStyle })}>
+                            {TEXT_STYLE_KINDS.map((st) => (
+                              <option key={st} value={st}>{textStyleLabel(st)}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </InspectorSection>
+                    <AnimationPicker
+                      value={selText.animation}
+                      onChange={(a) => patchText(selText.id, { animation: a })}
+                      compact={minimalist}
+                    />
+                    <KeyframeEditor
+                      keys={selText.keyframes}
+                      localSec={textLocal(selText)}
+                      onSet={(props) => patchText(selText.id, { keyframes: upsertKeyframe(selText.keyframes, textLocal(selText), props) })}
+                      onDelete={(t) => patchText(selText.id, { keyframes: (selText.keyframes ?? []).filter((k) => k.t !== t) })}
+                      onSeekLocal={(t) => seekTo(selText.at + t)}
+                      compact={minimalist}
+                    />
+                  </>
+                )}
+
+                {selection?.type === "audio" && (
+                  <InspectorSection title={`♪ ${selectedBeat.name}`} hint={`${selectedBeat.bpm} BPM`} compact={minimalist}>
+                    <div className="vj-insp-chips">
+                      {BEAT_SYNC_MODES.map((m) => (
+                        <button key={m} type="button" className={`vj-chip${beatSync === m ? " active" : ""}`} onClick={() => setBeatSyncMode(m)}>
+                          Sync {m}
+                        </button>
+                      ))}
+                      <button type="button" className={`vj-chip${ducking ? " active" : ""}`} onClick={() => setDucking((d) => !d)}>
+                        Ducking {ducking ? "on" : "off"}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-ghost vj-insp-wide"
+                      onClick={() => {
+                        if (minimalist) setMiniSheet("audio");
+                        else audioPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                    >
+                      Change music…
+                    </button>
+                  </InspectorSection>
+                )}
+
+                {!selClip && !selText && selGap < 0 && selection?.type !== "audio" && (
+                  <>
+                    <GradePicker
+                      value={grade}
+                      themeGrade={layer.grade}
+                      onChange={setGrade}
+                      sampleUrl={clips.find((c) => c.kind === "image")?.objectUrl}
+                      compact={minimalist}
+                    />
+                    <InspectorSection title="Default clip motion" hint="clips without their own animation" compact={minimalist}>
+                      <AnimationPicker value={effectiveAnim} onChange={setDefaultAnimation} compact={minimalist} />
+                    </InspectorSection>
+                    <InspectorSection title="All transitions" hint="duration · easing default" compact={minimalist}>
+                      <label className="vj-insp-row">
+                        <input
+                          type="range"
+                          min={0.2}
+                          max={2}
+                          step={0.1}
+                          value={projectTxSpec?.durationSec ?? Math.max(0.2, theme.transitionDurationMs / 1000)}
+                          onChange={(e) => setProjectTxSpec({ ...projectTxSpec, durationSec: Number(e.target.value) })}
+                        />
+                        <span className="vj-insp-val">
+                          {(projectTxSpec?.durationSec ?? theme.transitionDurationMs / 1000).toFixed(1)}s
+                        </span>
+                      </label>
+                    </InspectorSection>
+                    <p className="vj-insp-hint">Tap a clip, ✦ gap, text or ♪ on the timeline to edit it.</p>
+                  </>
+                )}
+              </div>
+            )}
+          </section>
+
           <p className="muted" style={{ fontSize: "0.8rem", textAlign: "center" }}>
             Draft saves to localStorage (+ media in IndexedDB). Export records browser
             WebM with beat mux when supported. Use Export… for YouTube / TikTok / IG
@@ -2981,8 +3638,18 @@ export function Create() {
                 key={t.id}
                 type="button"
                 onClick={() => {
+                  const snapBefore = historyRef.current?.checkpoint() ?? null;
                   setThemeId(t.id);
+                  {
+                    const sb = t.suggestedBeatIds?.[0];
+                    const b = sb ? getBeatById(sb) : undefined;
+                    if (b) setAudioTrackRef(b.packRef);
+                  }
+                  setAppliedChip({ label: t.name, snap: snapBefore });
                   setTransitionOverride(null);
+        setGrade(undefined);
+        setDefaultAnimation(undefined);
+        setProjectTxSpec(undefined);
                   setMiniSheet(null);
                   setStatus(`Theme · ${t.name}`);
                 }}

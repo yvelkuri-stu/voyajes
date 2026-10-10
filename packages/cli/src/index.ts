@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import {
   brand,
   VoyajesProjectSchema,
+  migrateProject,
   type VoyajesProject,
   type CatalogManifest,
   type BeatSync,
@@ -80,7 +81,7 @@ function loadProject(projectPath: string): VoyajesProject {
     process.exit(1);
   }
   try {
-    return VoyajesProjectSchema.parse(JSON.parse(readFileSync(abs, "utf8")));
+    return VoyajesProjectSchema.parse(migrateProject(JSON.parse(readFileSync(abs, "utf8"))));
   } catch (e) {
     console.error("Invalid project file (Zod validation failed):");
     console.error(e instanceof Error ? e.message : e);
@@ -504,7 +505,7 @@ program
       }
 
       let project = VoyajesProjectSchema.parse({
-        schema: 1,
+        schema: 2,
         title,
         aspect,
         theme: `${themePack.id}@${themePack.version}`,
@@ -921,7 +922,7 @@ program
     }
     try {
       const project = VoyajesProjectSchema.parse(
-        JSON.parse(readFileSync(abs, "utf8")),
+        migrateProject(JSON.parse(readFileSync(abs, "utf8"))),
       );
       const { id } = parsePackRef(project.theme);
       const manifest = loadManifest();

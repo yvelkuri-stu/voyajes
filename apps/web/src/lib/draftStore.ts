@@ -13,7 +13,16 @@ import type {
   TransitionKindSchemaType,
   VoyajesProject,
 } from "@voyajes/core";
-import { packRef, safeParseProject } from "@voyajes/core";
+import {
+  ClipAnimationSchema,
+  GradePresetSchema,
+  KeyframeSchema,
+  TransitionKindSchema,
+  TransitionSpecSchema,
+  packRef,
+  safeParseProject,
+} from "@voyajes/core";
+import type { ClipAnimation, GradePreset, Keyframe, TransitionSpec } from "@voyajes/core";
 import type { TransitionKind } from "@voyajes/core";
 
 const LS_DRAFT = "voyajes.draft.v1";
@@ -38,6 +47,14 @@ export type DraftClipMeta = {
    * without IndexedDB. Not persisted to localStorage drafts.
    */
   portableUrl?: string;
+  /** v2 timeline: full source length (video) for trim bounds */
+  sourceSec?: number;
+  /** v2 timeline: trim in-point (video source seconds) */
+  inSec?: number;
+  /** v2 timeline: transition object in the gap after this clip */
+  transitionSpec?: TransitionSpec;
+  animation?: ClipAnimation;
+  keyframes?: Keyframe[];
 };
 
 export type DraftTextOverlay = {
@@ -51,6 +68,8 @@ export type DraftTextOverlay = {
   position: TextPosition;
   animationIn: TextTransition;
   animationOut: TextTransition;
+  animation?: ClipAnimation;
+  keyframes?: Keyframe[];
 };
 
 export type DraftCustomSound = CustomSound & {
@@ -93,6 +112,12 @@ export type DraftState = {
   eventType?: string;
   eventWhen?: string;
   eventWhere?: string;
+  /** v2 theme layer: color grade override (undefined = theme default) */
+  grade?: GradePreset;
+  /** v2 theme layer: default clip animation */
+  defaultAnimation?: ClipAnimation;
+  /** v2: project-wide transition duration/easing */
+  transitionSpec?: TransitionSpec;
   updatedAt: string;
 };
 
@@ -129,17 +154,7 @@ const DESTINATIONS: ExportDestination[] = [
   "custom",
 ];
 
-const TRANSITIONS: TransitionKind[] = [
-  "cut",
-  "dissolve",
-  "push",
-  "whip",
-  "light-leak",
-  "fade-black",
-  "zoom-through",
-  "slide-up",
-  "flash",
-];
+const TRANSITIONS: TransitionKind[] = TransitionKindSchema.options as TransitionKind[];
 
 export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
   return {
@@ -219,6 +234,7 @@ function normalizeOverlay(raw: Partial<DraftTextOverlay>): DraftTextOverlay | nu
     position: asTextPos(raw.position, "bottom"),
     animationIn: asTextTx(raw.animationIn, "fade"),
     animationOut: asTextTx(raw.animationOut, "fade"),
+    ...pickLayerFields(raw),
   };
 }
 
@@ -233,6 +249,26 @@ function normalizeCustomSound(raw: Partial<CustomSound>): CustomSound | null {
     url: typeof raw.url === "string" ? raw.url : undefined,
     path: typeof raw.path === "string" ? raw.path : undefined,
   };
+}
+
+function pickLayerFields(raw: { animation?: unknown; keyframes?: unknown }) {
+  const out: { animation?: ClipAnimation; keyframes?: Keyframe[] } = {};
+  const a = ClipAnimationSchema.safeParse(raw.animation);
+  if (raw.animation && a.success) out.animation = a.data;
+  const k = KeyframeSchema.array().safeParse(raw.keyframes);
+  if (raw.keyframes && k.success && k.data.length) out.keyframes = k.data;
+  return out;
+}
+
+function pickTimelineFields(c: Partial<DraftClipMeta>) {
+  const out: Pick<DraftClipMeta, "inSec" | "sourceSec" | "transitionSpec" | "animation" | "keyframes"> =
+    pickLayerFields(c);
+  if (typeof c.inSec === "number" && Number.isFinite(c.inSec) && c.inSec > 0) out.inSec = c.inSec;
+  if (typeof c.sourceSec === "number" && Number.isFinite(c.sourceSec) && c.sourceSec > 0)
+    out.sourceSec = c.sourceSec;
+  const t = TransitionSpecSchema.safeParse(c.transitionSpec);
+  if (c.transitionSpec && t.success) out.transitionSpec = t.data;
+  return out;
 }
 
 function normalizeClip(c: Partial<DraftClipMeta>): DraftClipMeta | null {
@@ -250,6 +286,7 @@ function normalizeClip(c: Partial<DraftClipMeta>): DraftClipMeta | null {
         : 2.8,
     mute: c.mute === true,
     transitionOut: asTransition(c.transitionOut),
+    ...pickTimelineFields(c),
   };
 }
 
@@ -322,6 +359,13 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     eventType: typeof parsed.eventType === "string" ? parsed.eventType : "",
     eventWhen: typeof parsed.eventWhen === "string" ? parsed.eventWhen : "",
     eventWhere: typeof parsed.eventWhere === "string" ? parsed.eventWhere : "",
+    grade: GradePresetSchema.safeParse(parsed.grade).success ? parsed.grade : undefined,
+    defaultAnimation: ClipAnimationSchema.safeParse(parsed.defaultAnimation).success
+      ? parsed.defaultAnimation
+      : undefined,
+    transitionSpec: TransitionSpecSchema.safeParse(parsed.transitionSpec).success
+      ? parsed.transitionSpec
+      : undefined,
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -361,6 +405,8 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       position: o.position,
       animationIn: o.animationIn,
       animationOut: o.animationOut,
+      ...(o.animation ? { animation: o.animation } : {}),
+      ...(o.keyframes?.length ? { keyframes: o.keyframes } : {}),
     }));
 
   const legacyText: TextCard[] = [
@@ -394,7 +440,7 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
     .filter((e): e is { afterIndex: number; kind: TransitionKindSchemaType } => Boolean(e));
 
   const project: VoyajesProject = {
-    schema: 1,
+    schema: 2,
     title: draft.title.trim() || "Untitled voyage",
     aspect: draft.aspect,
     theme: packRef(draft.themeId, draft.themeVersion),
@@ -407,7 +453,14 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       mute: c.mute,
       durationSec: c.durationSec,
       ...(c.transitionOut ? { transitionOut: c.transitionOut } : {}),
+      ...(c.transitionSpec ? { transitionSpec: c.transitionSpec } : {}),
+      ...(c.inSec ? { inSec: c.inSec } : {}),
+      ...(c.animation ? { animation: c.animation } : {}),
+      ...(c.keyframes?.length ? { keyframes: c.keyframes } : {}),
     })),
+    ...(draft.grade ? { grade: draft.grade } : {}),
+    ...(draft.defaultAnimation ? { defaultAnimation: draft.defaultAnimation } : {}),
+    ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
     ...(draft.transitionOverride
       ? { transition: draft.transitionOverride }
       : {}),

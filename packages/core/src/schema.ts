@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  ClipAnimationSchema,
+  EasingSchema,
+  GradePresetSchema,
+  KeyframeSchema,
+  TransitionSpecSchema,
+  migrateProject,
+} from "./timeline.js";
 
 export const AspectSchema = z.enum(["9:16", "16:9", "1:1", "4:5"]);
 export type Aspect = z.infer<typeof AspectSchema>;
@@ -100,6 +108,14 @@ export const MediaClipSchema = z.object({
    * (gap after this clip on the filmstrip). Omit = project/theme default.
    */
   transitionOut: TransitionKindSchema.optional(),
+  /** v2: duration + easing of the transition object in the gap after this clip */
+  transitionSpec: TransitionSpecSchema.optional(),
+  /** v2: trim — source in-point (seconds) for video clips */
+  inSec: z.number().nonnegative().optional(),
+  /** v2: in/out/emphasis animation presets */
+  animation: ClipAnimationSchema.optional(),
+  /** v2: clip-local keyframes (position/scale/rotation/opacity) */
+  keyframes: z.array(KeyframeSchema).optional(),
 });
 
 /**
@@ -152,6 +168,9 @@ export const TextCardSchema = z.object({
   position: TextPositionSchema.optional(),
   animationIn: TextTransitionSchema.optional(),
   animationOut: TextTransitionSchema.optional(),
+  /** v2: layer animation presets + keyframes (layer-local time) */
+  animation: ClipAnimationSchema.optional(),
+  keyframes: z.array(KeyframeSchema).optional(),
 });
 export type TextCard = z.infer<typeof TextCardSchema>;
 
@@ -188,7 +207,8 @@ export const ExportMetaSchema = z.object({
 
 /** Voyajes project file — shared by GUI and CLI */
 export const VoyajesProjectSchema = z.object({
-  schema: z.literal(1),
+  /** 1 = legacy, 2 = timeline model (parse() migrates 1 → 2) */
+  schema: z.union([z.literal(1), z.literal(2)]),
   title: z.string().min(1),
   aspect: AspectSchema.default("9:16"),
   theme: PackRefSchema,
@@ -199,6 +219,11 @@ export const VoyajesProjectSchema = z.object({
   /** Global default transition when a clip has no transitionOut */
   transition: TransitionKindSchema.optional(),
   transitionEdges: z.array(TransitionEdgeSchema).optional(),
+  /** v2: default transition duration/easing (theme layer) */
+  transitionSpec: TransitionSpecSchema.optional(),
+  /** v2: theme layer — color grade + default clip animation */
+  grade: GradePresetSchema.optional(),
+  defaultAnimation: ClipAnimationSchema.optional(),
   audio: AudioTrackSchema.optional(),
   text: z.array(TextCardSchema).optional(),
   textStyle: TextStyleSchema.optional(),
@@ -212,11 +237,11 @@ export type VoyajesProject = z.infer<typeof VoyajesProjectSchema>;
 export type MediaClip = z.infer<typeof MediaClipSchema>;
 
 export function parseProject(data: unknown): VoyajesProject {
-  return VoyajesProjectSchema.parse(data);
+  return VoyajesProjectSchema.parse(migrateProject(data));
 }
 
 export function safeParseProject(data: unknown) {
-  return VoyajesProjectSchema.safeParse(data);
+  return VoyajesProjectSchema.safeParse(migrateProject(data));
 }
 
 /** Resolve the transition used when entering clip at `toIndex` (from previous). */
@@ -261,3 +286,5 @@ export function isTextCardActive(
   const { start, end } = textCardRange(card, projectEndSec);
   return timeSec >= start && timeSec < end;
 }
+
+export { EasingSchema };

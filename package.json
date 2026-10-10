@@ -1,7 +1,7 @@
 {
   "name": "voyajes",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Voyajes \u2014 photos to films, with feeling. Color & motion-first templated video for humans and robots.",
   "scripts": {
     "dev": "pnpm --filter @voyajes/web dev",
@@ -10,7 +10,8 @@
     "build:cli": "pnpm --filter @voyajes/cli build",
     "build:web": "pnpm --filter @voyajes/web build",
     "voyajes": "pnpm --filter @voyajes/cli start",
-    "lint": "pnpm -r run lint --if-present"
+    "lint": "pnpm -r run lint --if-present",
+    "test": "pnpm --filter @voyajes/core test"
   },
   "engines": {
     "node": ">=18"

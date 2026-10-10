@@ -1,3 +1,6 @@
+import { AnimatedLayer } from "./editor/AnimatedLayer";
+import { themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
+import { easingCss, gradeFilter, type ClipAnimation } from "@voyajes/core";
 import {
   useCallback,
   useEffect,
@@ -140,13 +143,16 @@ export function InvitePlayer({
     playback?.transitionOverride ?? theme.transition;
   const activeTransition = transitionIntoClip(clips, activeIndex, globalTransition);
   const transitionClass = `tx-${activeTransition}`;
-  const kenBurns =
-    active?.kind === "image" && theme.photoMotion !== "off"
-      ? theme.photoMotion === "bold"
-        ? "ken-bold"
-        : "ken-gentle"
-      : "";
+  const layer = themeLayer(theme);
+  const effAnim = playback?.defaultAnimation ?? layer.animation;
+  const shareGrade = gradeFilter(playback?.grade ?? layer.grade);
+  const animFor = (c: { kind: "image" | "video"; animation?: ClipAnimation }) =>
+    c.animation ?? (c.kind === "image" ? effAnim : { ...effAnim, emphasis: undefined });
+  const txSec = transitionSecInto(clips, activeIndex, playback?.transitionSpec, theme);
+  const txEase = transitionEasingInto(clips, activeIndex, playback?.transitionSpec);
 
+  // Ken Burns comes from the theme-layer animation (AnimatedLayer)
+  const kenBurns = "";
   const clipsDuration = useMemo(
     () => clips.reduce((sum, c) => sum + c.durationSec, 0),
     [clips],
@@ -415,9 +421,10 @@ export function InvitePlayer({
               className={`preview-media ${transitionClass} ${kenBurns}`}
               style={
                 {
-                  "--tx-ms": `${theme.transitionDurationMs}ms`,
-                  "--tx-ease":
-                    theme.motion === "snappy"
+                  "--tx-ms": `${Math.round(txSec * 1000)}ms`,
+                  "--tx-ease": txEase
+                    ? easingCss(txEase)
+                    : theme.motion === "snappy"
                       ? "var(--motion-snappy)"
                       : theme.motion === "float" || theme.motion === "cinematic"
                         ? "var(--motion-float)"
@@ -425,17 +432,30 @@ export function InvitePlayer({
                 } as CSSProperties
               }
             >
-              {active.kind === "image" ? (
-                <img src={active.objectUrl} alt="" draggable={false} />
-              ) : (
-                <video
-                  ref={videoRef}
-                  src={active.objectUrl}
-                  muted
-                  playsInline
-                  loop={false}
-                />
-              )}
+              <AnimatedLayer
+                animation={animFor(active)}
+                keyframes={active.keyframes}
+                durationSec={active.durationSec}
+                localSec={0}
+                playing={playing}
+                resetKey={`${active.id}-${transitionKey}`}
+                filter={shareGrade}
+              >
+                {active.kind === "image" ? (
+                  <img src={active.objectUrl} alt="" draggable={false} />
+                ) : (
+                  <video
+                    ref={videoRef}
+                    src={active.objectUrl}
+                    muted
+                    playsInline
+                    loop={false}
+                    onLoadedMetadata={(e) => {
+                      if (active.inSec) e.currentTarget.currentTime = active.inSec;
+                    }}
+                  />
+                )}
+              </AnimatedLayer>
             </div>
           ) : (
             <div className="preview-empty">

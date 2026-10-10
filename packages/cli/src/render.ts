@@ -28,7 +28,7 @@ import type {
   TransitionKind,
   VoyajesProject,
 } from "@voyajes/core";
-import { parsePackRef, TRANSITION_KINDS } from "@voyajes/core";
+import { gradeFfmpeg, parsePackRef, TRANSITION_KINDS } from "@voyajes/core";
 import { defaultImageDuration, snapDurationToBeat } from "./beatSync.js";
 
 export type RenderQuality = "720p" | "1080p" | "4k";
@@ -315,6 +315,10 @@ type PreparedClip = {
   kind: "image" | "video";
   durationSec: number;
   transitionOut?: import("@voyajes/core").TransitionKind;
+  /** v2: trim in-point (video) */
+  inSec?: number;
+  /** v2: per-edge transition duration (gap after this clip) */
+  txSec?: number;
 };
 
 function prepareClips(
@@ -352,6 +356,8 @@ function prepareClips(
       kind,
       durationSec: duration,
       transitionOut: m.transitionOut,
+      inSec: kind === "video" && m.inSec ? m.inSec : undefined,
+      txSec: m.transitionSpec?.durationSec ?? project.transitionSpec?.durationSec,
     });
   }
   // Explicit transitionEdges win over media[].transitionOut when both set
@@ -395,8 +401,11 @@ function buildVideoFilters(
     color?: string;
     position?: string;
   }>,
+  projectGrade?: import("@voyajes/core").GradePreset,
 ): { filterComplex: string; outputLabel: string; totalDuration: number } {
-  const grade = gradeFilter(theme.palette.grade);
+  const grade =
+    gradeFilter(theme.palette.grade) +
+    (projectGrade && gradeFfmpeg(projectGrade) ? `,${gradeFfmpeg(projectGrade)}` : "");
   const parts: string[] = [];
 
   for (let i = 0; i < clips.length; i++) {
@@ -413,22 +422,33 @@ function buildVideoFilters(
     if (useXfade) {
       let prev = "v0";
       let cumulative = clips[0].durationSec;
+      let overlap = 0;
       for (let i = 1; i < clips.length; i++) {
         const out = i === clips.length - 1 ? "vx" : `xf${i}`;
-        const offset = Math.max(0, cumulative - txSec);
+        // Per-edge transition object duration (timeline v2), clamped to clip lengths
+        const edgeSec = Math.max(
+          0.1,
+          Math.min(
+            clips[i - 1].txSec ?? txSec,
+            clips[i - 1].durationSec * 0.8,
+            clips[i].durationSec * 0.8,
+          ),
+        );
+        overlap += edgeSec;
+        const offset = Math.max(0, cumulative - edgeSec);
         const edgeKind =
           clips[i - 1].transitionOut ??
           defaultTransition ??
           theme.transition;
         const name = xfadeName(edgeKind);
         parts.push(
-          `[${prev}][v${i}]xfade=transition=${name}:duration=${txSec}:offset=${offset.toFixed(3)}[${out}]`,
+          `[${prev}][v${i}]xfade=transition=${name}:duration=${edgeSec.toFixed(3)}:offset=${offset.toFixed(3)}[${out}]`,
         );
         cumulative = offset + clips[i].durationSec;
         prev = out;
       }
       composed = "vx";
-      totalDuration -= txSec * (clips.length - 1);
+      totalDuration -= overlap;
     } else {
       const concatIn = clips.map((_, i) => `[v${i}]`).join("");
       parts.push(`${concatIn}concat=n=${clips.length}:v=1:a=0[vx]`);
@@ -613,6 +633,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
           c.absPath,
         );
       } else {
+        if (c.inSec) inputArgs.push("-ss", String(c.inSec));
         inputArgs.push("-t", String(c.durationSec), "-i", c.absPath);
       }
     }
@@ -681,6 +702,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
         withTitle ? title : null,
         defaultTransition,
         overlays,
+        opts.project.grade,
       );
       writeFileSync(join(work, withTitle ? "filter.txt" : "filter-notitle.txt"), built.filterComplex + "\n");
 

@@ -16,6 +16,17 @@ import type {
   TransitionKind,
 } from "@voyajes/core";
 import type { ThemeCard } from "../data/themes";
+import {
+  applyTransformToCanvas,
+  ease,
+  gradeFilter,
+  layerTransformAt,
+  type ClipAnimation,
+  type GradePreset,
+  type Keyframe,
+  type TransitionSpec,
+} from "@voyajes/core";
+import { transitionEasingInto, transitionSecInto } from "./timelineRender";
 import { assetUrl } from "./assetUrl";
 import { buildInviteCardLines } from "./inviteCard";
 
@@ -27,6 +38,11 @@ export type ExportClip = {
   durationSec: number;
   /** Transition used when leaving this clip into the next */
   transitionOut?: TransitionKind | null;
+  /** v2 timeline fields */
+  inSec?: number;
+  transitionSpec?: TransitionSpec;
+  animation?: ClipAnimation;
+  keyframes?: Keyframe[];
 };
 
 export type ExportTextOverlay = {
@@ -40,6 +56,15 @@ export type ExportTextOverlay = {
   position?: TextPosition;
   animationIn?: TextTransition;
   animationOut?: TextTransition;
+  animation?: ClipAnimation;
+  keyframes?: Keyframe[];
+};
+
+/** v2 timeline options shared by WebM + GIF export */
+export type ExportTimelineOptions = {
+  grade?: GradePreset;
+  defaultAnimation?: ClipAnimation;
+  transitionSpec?: TransitionSpec;
 };
 
 export type ExportProgress = {
@@ -105,7 +130,7 @@ export type ExportWebmOptions = {
   audio?: ExportAudioOptions;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
-};
+} & ExportTimelineOptions;
 
 export type ExportWebmResult = {
   blob: Blob;
@@ -677,13 +702,17 @@ function drawTextOverlays(
     const dur = Math.max(0.01, o.end - o.at);
     const localT = timeSec - o.at;
     const alpha = animAlpha(localT, dur, o.animationIn, o.animationOut);
+    const lt = layerTransformAt(o.animation, o.keyframes, localT, dur);
+    ctx.save();
+    applyTransformToCanvas(ctx, lt, w, h);
     drawStyledText(ctx, o.value.trim(), theme, w, h, {
       style: o.style,
       color: o.color,
       position: o.position ?? (o.role === "title" ? "bottom" : "center"),
       role: o.role,
-      alpha,
+      alpha: alpha * ctx.globalAlpha,
     });
+    ctx.restore();
   }
 }
 
@@ -951,7 +980,11 @@ export async function exportSlideshowWebm(
     audio,
     onProgress,
     signal,
+    grade,
+    defaultAnimation,
+    transitionSpec: projectTxSpec,
   } = options;
+  const gradeCss = gradeFilter(grade);
   const inviteLines = buildInviteCardLines(invitation, title);
   const useInviteCards = mode === "invitation" && inviteLines.hasContent;
   const INTRO_SEC = 2.4;
@@ -1177,6 +1210,9 @@ export async function exportSlideshowWebm(
       });
 
       const holdMs = Math.max(400, clip.durationSec * 1000);
+      const clipTxMs = transitionSecInto(clips, i, projectTxSpec, theme) * 1000;
+      const clipEasing = transitionEasingInto(clips, i, projectTxSpec);
+      const clipAnim = clip.animation ?? defaultAnimation;
       const start = performance.now();
       const clipTransition: TransitionKind =
         i === 0
@@ -1197,7 +1233,7 @@ export async function exportSlideshowWebm(
           video.preload = "auto";
           video.src = clip.objectUrl;
           await waitVideoReady(video, signal);
-          video.currentTime = 0;
+          video.currentTime = clip.inSec ?? 0;
           await video.play().catch(() => {
             /* draw still frame if play blocked */
           });
@@ -1213,10 +1249,13 @@ export async function exportSlideshowWebm(
       while (performance.now() - start < holdMs) {
         assertNotAborted(signal);
         const localT = (performance.now() - start) / holdMs;
-        const enterT = Math.min(1, (performance.now() - start) / txMs);
+        const enterT = ease(
+          clipEasing ?? "linear",
+          Math.min(1, (performance.now() - start) / Math.max(1, clipTxMs || txMs)),
+        );
         const tx = transitionOpacity(clipTransition, enterT);
         const ken =
-          clip.kind === "image"
+          clip.kind === "image" && !clipAnim?.emphasis
             ? kenBurnsAt(theme.photoMotion, localT)
             : { scale: 1, ox: 0, oy: 0 };
 
@@ -1238,10 +1277,16 @@ export async function exportSlideshowWebm(
             ctx.transform(1, 0, Math.tan((tx.skewX * Math.PI) / 180), 1, 0, 0);
           }
         }
-        if (tx.brightness !== 1) {
-          ctx.filter = `brightness(${tx.brightness})${tx.blur ? ` blur(${tx.blur}px)` : ""}`;
-        } else if (tx.blur) {
-          ctx.filter = `blur(${tx.blur}px)`;
+        const clipLocalSec = (performance.now() - start) / 1000;
+        const lt = layerTransformAt(clipAnim, clip.keyframes, clipLocalSec, clip.durationSec);
+        applyTransformToCanvas(ctx, lt, width, height);
+        {
+          const parts: string[] = [];
+          if (gradeCss !== "none") parts.push(gradeCss);
+          if (tx.brightness !== 1) parts.push(`brightness(${tx.brightness})`);
+          const b = tx.blur + lt.blur;
+          if (b) parts.push(`blur(${b}px)`);
+          if (parts.length) ctx.filter = parts.join(" ");
         }
 
         if (image) {

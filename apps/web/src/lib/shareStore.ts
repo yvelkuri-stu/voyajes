@@ -21,6 +21,10 @@ export type SharePlaybackSnapshot = {
   watermark: boolean;
   clips: DraftClipMeta[];
   invitation?: InvitationMeta;
+  /** v2 timeline theme layer */
+  grade?: DraftState["grade"];
+  defaultAnimation?: DraftState["defaultAnimation"];
+  transitionSpec?: DraftState["transitionSpec"];
 };
 
 export type ShareRecord = {
@@ -205,6 +209,9 @@ export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
     watermark: draft.watermark,
     clips: draft.clips.map((c) => ({ ...c })),
     ...(invitation ? { invitation } : {}),
+    ...(draft.grade ? { grade: draft.grade } : {}),
+    ...(draft.defaultAnimation ? { defaultAnimation: draft.defaultAnimation } : {}),
+    ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
   };
 }
 

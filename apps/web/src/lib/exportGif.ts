@@ -22,7 +22,10 @@ import {
   type ExportClip,
   type ExportProgress,
   type ExportTextOverlay,
+  type ExportTimelineOptions,
 } from "./exportWebm";
+import { applyTransformToCanvas, ease, gradeFilter, layerTransformAt } from "@voyajes/core";
+import { transitionEasingInto, transitionSecInto } from "./timelineRender";
 
 /** Soft caps — HQ as practical while keeping chat-friendly sizes */
 export const GIF_EXPORT_DEFAULTS = {
@@ -66,7 +69,7 @@ export type ExportGifOptions = {
   preferFormat?: ExportGifFormat;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
-};
+} & ExportTimelineOptions;
 
 export type ExportGifResult = {
   blob: Blob;
@@ -411,13 +414,17 @@ function drawTextOverlays(
     const dur = Math.max(0.01, o.end - o.at);
     const localT = timeSec - o.at;
     const alpha = animAlpha(localT, dur, o.animationIn, o.animationOut);
+    const lt = layerTransformAt(o.animation, o.keyframes, localT, dur);
+    ctx.save();
+    applyTransformToCanvas(ctx, lt, w, h);
     drawStyledText(ctx, o.value.trim(), theme, w, h, {
       style: o.style,
       color: o.color,
       position: o.position ?? (o.role === "title" ? "bottom" : "center"),
       role: o.role,
-      alpha,
+      alpha: alpha * ctx.globalAlpha,
     });
+    ctx.restore();
   }
 }
 
@@ -635,7 +642,11 @@ export async function exportSlideshowGif(
     preferFormat = "gif",
     onProgress,
     signal,
+    grade,
+    defaultAnimation,
+    transitionSpec: projectTxSpec,
   } = options;
+  const gradeCss = gradeFilter(grade);
 
   if (clips.length === 0) {
     throw new Error("Add at least one clip before exporting a GIF");
@@ -703,6 +714,8 @@ export async function exportSlideshowGif(
     startSec: number;
     endSec: number;
     transitionIn: TransitionKind;
+    txSec: number;
+    easing?: import("@voyajes/core").Easing;
   };
   const loaded: Loaded[] = [];
   let cursor = useInviteCards ? INTRO_SEC : 0;
@@ -741,6 +754,8 @@ export async function exportSlideshowGif(
       startSec,
       endSec,
       transitionIn: i === 0 ? "cut" : clips[i - 1]?.transitionOut ?? defaultTransition,
+      txSec: transitionSecInto(clips, i, projectTxSpec, theme) || txSec,
+      easing: transitionEasingInto(clips, i, projectTxSpec),
     });
     cursor = endSec;
   }
@@ -787,10 +802,14 @@ export async function exportSlideshowGif(
     const localStart = active.startSec - (useInviteCards ? INTRO_SEC : 0);
     const hold = Math.max(0.01, active.endSec - active.startSec);
     const localT = Math.min(1, Math.max(0, (mediaTime - localStart) / hold));
-    const enterT = Math.min(1, Math.max(0, (mediaTime - localStart) / txSec));
+    const enterT = ease(
+      active.easing ?? "linear",
+      Math.min(1, Math.max(0, (mediaTime - localStart) / active.txSec)),
+    );
     const tx = transitionOpacity(active.transitionIn, enterT);
+    const clipAnim = active.clip.animation ?? defaultAnimation;
     const ken =
-      active.clip.kind === "image"
+      active.clip.kind === "image" && !clipAnim?.emphasis
         ? kenBurnsAt(theme.photoMotion, localT)
         : { scale: 1, ox: 0, oy: 0 };
 
@@ -806,10 +825,20 @@ export async function exportSlideshowGif(
         ctx.transform(1, 0, Math.tan((tx.skewX * Math.PI) / 180), 1, 0, 0);
       }
     }
-    if (tx.brightness !== 1) {
-      ctx.filter = `brightness(${tx.brightness})${tx.blur ? ` blur(${tx.blur}px)` : ""}`;
-    } else if (tx.blur) {
-      ctx.filter = `blur(${tx.blur}px)`;
+    const lt = layerTransformAt(
+      clipAnim,
+      active.clip.keyframes,
+      Math.max(0, mediaTime - localStart),
+      hold,
+    );
+    applyTransformToCanvas(ctx, lt, width, height);
+    {
+      const parts: string[] = [];
+      if (gradeCss !== "none") parts.push(gradeCss);
+      if (tx.brightness !== 1) parts.push(`brightness(${tx.brightness})`);
+      const b = tx.blur + lt.blur;
+      if (b) parts.push(`blur(${b}px)`);
+      if (parts.length) ctx.filter = parts.join(" ");
     }
 
     if (active.image) {
@@ -827,7 +856,8 @@ export async function exportSlideshowGif(
     } else if (active.video) {
       try {
         const vt = Math.min(
-          Math.max(0, (mediaTime - localStart) % Math.max(active.video.duration || hold, 0.1)),
+          (active.clip.inSec ?? 0) +
+            Math.max(0, (mediaTime - localStart) % Math.max(active.video.duration || hold, 0.1)),
           Math.max(0, (active.video.duration || hold) - 0.05),
         );
         if (Math.abs(active.video.currentTime - vt) > 0.04) {

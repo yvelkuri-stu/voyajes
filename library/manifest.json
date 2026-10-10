@@ -1,0 +1,2079 @@
+{
+  "schema": 1,
+  "libraryVersion": "2026.10.10.1",
+  "generatedAt": "2026-10-07T14:10:00Z",
+  "license": "Voyajes original abstract art & synthetic audio — free to use in Voyajes projects (see LIBRARY.md)",
+  "items": [
+    {
+      "id": "lib.photo.neon-corridor",
+      "title": "Neon Corridor",
+      "kind": "photo",
+      "tags": [
+        "neon",
+        "futuristic",
+        "magenta",
+        "grid"
+      ],
+      "url": "library/photos/neon-corridor.webp",
+      "thumbnail": "library/photos/neon-corridor-thumb.webp"
+    },
+    {
+      "id": "lib.photo.aurora-drift",
+      "title": "Aurora Drift",
+      "kind": "photo",
+      "tags": [
+        "aurora",
+        "ocean",
+        "calm",
+        "waves"
+      ],
+      "url": "library/photos/aurora-drift.webp",
+      "thumbnail": "library/photos/aurora-drift-thumb.webp"
+    },
+    {
+      "id": "lib.photo.magenta-orbit",
+      "title": "Magenta Orbit",
+      "kind": "photo",
+      "tags": [
+        "orbs",
+        "bold",
+        "party",
+        "magenta"
+      ],
+      "url": "library/photos/magenta-orbit.webp",
+      "thumbnail": "library/photos/magenta-orbit-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cyber-horizon",
+      "title": "Cyber Horizon",
+      "kind": "photo",
+      "tags": [
+        "city",
+        "skyline",
+        "indigo",
+        "night"
+      ],
+      "url": "library/photos/cyber-horizon.webp",
+      "thumbnail": "library/photos/cyber-horizon-thumb.webp"
+    },
+    {
+      "id": "lib.photo.prism-cascade",
+      "title": "Prism Cascade",
+      "kind": "photo",
+      "tags": [
+        "prism",
+        "colorful",
+        "abstract"
+      ],
+      "url": "library/photos/prism-cascade.webp",
+      "thumbnail": "library/photos/prism-cascade-thumb.webp"
+    },
+    {
+      "id": "lib.photo.void-bloom",
+      "title": "Void Bloom",
+      "kind": "photo",
+      "tags": [
+        "bloom",
+        "space",
+        "rings",
+        "futuristic"
+      ],
+      "url": "library/photos/void-bloom.webp",
+      "thumbnail": "library/photos/void-bloom-thumb.webp"
+    },
+    {
+      "id": "lib.photo.mint-nebula",
+      "title": "Mint Nebula",
+      "kind": "photo",
+      "tags": [
+        "mint",
+        "nebula",
+        "soft",
+        "travel"
+      ],
+      "url": "library/photos/mint-nebula.webp",
+      "thumbnail": "library/photos/mint-nebula-thumb.webp"
+    },
+    {
+      "id": "lib.photo.solar-flare",
+      "title": "Solar Flare",
+      "kind": "photo",
+      "tags": [
+        "warm",
+        "gold",
+        "flare",
+        "sunset"
+      ],
+      "url": "library/photos/solar-flare.webp",
+      "thumbnail": "library/photos/solar-flare-thumb.webp"
+    },
+    {
+      "id": "lib.photo.glass-city",
+      "title": "Glass City",
+      "kind": "photo",
+      "tags": [
+        "city",
+        "night",
+        "neon",
+        "metro"
+      ],
+      "url": "library/photos/glass-city.webp",
+      "thumbnail": "library/photos/glass-city-thumb.webp"
+    },
+    {
+      "id": "lib.photo.plasma-ring",
+      "title": "Plasma Ring",
+      "kind": "photo",
+      "tags": [
+        "ring",
+        "plasma",
+        "futuristic",
+        "bold"
+      ],
+      "url": "library/photos/plasma-ring.webp",
+      "thumbnail": "library/photos/plasma-ring-thumb.webp"
+    },
+    {
+      "id": "lib.photo.chromatic-mesh",
+      "title": "Chromatic Mesh",
+      "kind": "photo",
+      "tags": [
+        "mesh",
+        "abstract",
+        "colorful"
+      ],
+      "url": "library/photos/chromatic-mesh.webp",
+      "thumbnail": "library/photos/chromatic-mesh-thumb.webp"
+    },
+    {
+      "id": "lib.photo.starfield-pop",
+      "title": "Starfield Pop",
+      "kind": "photo",
+      "tags": [
+        "stars",
+        "space",
+        "celebration",
+        "party"
+      ],
+      "url": "library/photos/starfield-pop.webp",
+      "thumbnail": "library/photos/starfield-pop-thumb.webp"
+    },
+    {
+      "id": "lib.audio.soft-pad",
+      "title": "Soft Pad",
+      "kind": "audio",
+      "tags": [
+        "ambient",
+        "pad",
+        "calm",
+        "loop"
+      ],
+      "url": "library/audio/soft-pad.mp3",
+      "durationSec": 6
+    },
+    {
+      "id": "lib.audio.deep-hum",
+      "title": "Deep Hum",
+      "kind": "audio",
+      "tags": [
+        "bass",
+        "hum",
+        "night",
+        "loop"
+      ],
+      "url": "library/audio/deep-hum.mp3",
+      "durationSec": 5
+    },
+    {
+      "id": "lib.audio.crystal-shimmer",
+      "title": "Crystal Shimmer",
+      "kind": "audio",
+      "tags": [
+        "bright",
+        "shimmer",
+        "party",
+        "loop"
+      ],
+      "url": "library/audio/crystal-shimmer.mp3",
+      "durationSec": 4
+    },
+    {
+      "id": "lib.audio.pink-drift",
+      "title": "Pink Drift",
+      "kind": "audio",
+      "tags": [
+        "noise",
+        "drift",
+        "soft",
+        "loop"
+      ],
+      "url": "library/audio/pink-drift.mp3",
+      "durationSec": 5
+    },
+    {
+      "id": "lib.audio.aurora-wash",
+      "title": "Aurora Wash",
+      "kind": "audio",
+      "tags": [
+        "aurora",
+        "wash",
+        "ocean",
+        "loop"
+      ],
+      "url": "library/audio/aurora-wash.mp3",
+      "durationSec": 5
+    },
+    {
+      "id": "lib.audio.pulse-glow",
+      "title": "Pulse Glow",
+      "kind": "audio",
+      "tags": [
+        "pulse",
+        "glow",
+        "neon",
+        "loop"
+      ],
+      "url": "library/audio/pulse-glow.mp3",
+      "durationSec": 4.5
+    },
+    {
+      "id": "lib.photo.bday-balloons",
+      "title": "Balloon Bash",
+      "kind": "photo",
+      "tags": [
+        "birthday",
+        "party",
+        "balloons",
+        "birthday"
+      ],
+      "sample": true,
+      "url": "library/photos/bday-balloons.webp",
+      "thumbnail": "library/photos/bday-balloons-thumb.webp"
+    },
+    {
+      "id": "lib.photo.bday-confetti",
+      "title": "Confetti Storm",
+      "kind": "photo",
+      "tags": [
+        "birthday",
+        "party",
+        "confetti",
+        "birthday"
+      ],
+      "sample": true,
+      "url": "library/photos/bday-confetti.webp",
+      "thumbnail": "library/photos/bday-confetti-thumb.webp"
+    },
+    {
+      "id": "lib.photo.bday-cake",
+      "title": "Candle Cake",
+      "kind": "photo",
+      "tags": [
+        "birthday",
+        "cake",
+        "candles",
+        "birthday"
+      ],
+      "sample": true,
+      "url": "library/photos/bday-cake.webp",
+      "thumbnail": "library/photos/bday-cake-thumb.webp"
+    },
+    {
+      "id": "lib.photo.wed-rings",
+      "title": "Golden Rings",
+      "kind": "photo",
+      "tags": [
+        "wedding",
+        "rings",
+        "romantic",
+        "wedding"
+      ],
+      "sample": true,
+      "url": "library/photos/wed-rings.webp",
+      "thumbnail": "library/photos/wed-rings-thumb.webp"
+    },
+    {
+      "id": "lib.photo.wed-petals",
+      "title": "Petal Rain",
+      "kind": "photo",
+      "tags": [
+        "wedding",
+        "petals",
+        "garden",
+        "wedding"
+      ],
+      "sample": true,
+      "url": "library/photos/wed-petals.webp",
+      "thumbnail": "library/photos/wed-petals-thumb.webp"
+    },
+    {
+      "id": "lib.photo.wed-arch",
+      "title": "Garden Arch",
+      "kind": "photo",
+      "tags": [
+        "wedding",
+        "arch",
+        "ceremony",
+        "wedding"
+      ],
+      "sample": true,
+      "url": "library/photos/wed-arch.webp",
+      "thumbnail": "library/photos/wed-arch-thumb.webp"
+    },
+    {
+      "id": "lib.photo.anni-hearts",
+      "title": "Floating Hearts",
+      "kind": "photo",
+      "tags": [
+        "anniversary",
+        "love",
+        "hearts",
+        "anniversary"
+      ],
+      "sample": true,
+      "url": "library/photos/anni-hearts.webp",
+      "thumbnail": "library/photos/anni-hearts-thumb.webp"
+    },
+    {
+      "id": "lib.photo.anni-glow",
+      "title": "Candle Glow",
+      "kind": "photo",
+      "tags": [
+        "anniversary",
+        "candles",
+        "warm",
+        "anniversary"
+      ],
+      "sample": true,
+      "url": "library/photos/anni-glow.webp",
+      "thumbnail": "library/photos/anni-glow-thumb.webp"
+    },
+    {
+      "id": "lib.photo.anni-rings",
+      "title": "Twin Rings",
+      "kind": "photo",
+      "tags": [
+        "anniversary",
+        "rings",
+        "anniversary"
+      ],
+      "sample": true,
+      "url": "library/photos/anni-rings.webp",
+      "thumbnail": "library/photos/anni-rings-thumb.webp"
+    },
+    {
+      "id": "lib.photo.baby-clouds",
+      "title": "Moon & Clouds",
+      "kind": "photo",
+      "tags": [
+        "baby-shower",
+        "pastel",
+        "moon",
+        "baby"
+      ],
+      "sample": true,
+      "url": "library/photos/baby-clouds.webp",
+      "thumbnail": "library/photos/baby-clouds-thumb.webp"
+    },
+    {
+      "id": "lib.photo.baby-stars",
+      "title": "Pastel Stars",
+      "kind": "photo",
+      "tags": [
+        "baby-shower",
+        "stars",
+        "pastel",
+        "baby"
+      ],
+      "sample": true,
+      "url": "library/photos/baby-stars.webp",
+      "thumbnail": "library/photos/baby-stars-thumb.webp"
+    },
+    {
+      "id": "lib.photo.baby-bubbles",
+      "title": "Soft Bubbles",
+      "kind": "photo",
+      "tags": [
+        "baby-shower",
+        "bubbles",
+        "soft",
+        "baby"
+      ],
+      "sample": true,
+      "url": "library/photos/baby-bubbles.webp",
+      "thumbnail": "library/photos/baby-bubbles-thumb.webp"
+    },
+    {
+      "id": "lib.photo.party-disco",
+      "title": "Disco Ball",
+      "kind": "photo",
+      "tags": [
+        "party",
+        "night",
+        "disco",
+        "party"
+      ],
+      "sample": true,
+      "url": "library/photos/party-disco.webp",
+      "thumbnail": "library/photos/party-disco-thumb.webp"
+    },
+    {
+      "id": "lib.photo.party-lasers",
+      "title": "Laser Floor",
+      "kind": "photo",
+      "tags": [
+        "party",
+        "neon",
+        "lasers",
+        "party"
+      ],
+      "sample": true,
+      "url": "library/photos/party-lasers.webp",
+      "thumbnail": "library/photos/party-lasers-thumb.webp"
+    },
+    {
+      "id": "lib.photo.party-neon-confetti",
+      "title": "Neon Confetti",
+      "kind": "photo",
+      "tags": [
+        "party",
+        "confetti",
+        "neon",
+        "party"
+      ],
+      "sample": true,
+      "url": "library/photos/party-neon-confetti.webp",
+      "thumbnail": "library/photos/party-neon-confetti-thumb.webp"
+    },
+    {
+      "id": "lib.photo.grad-caps-toss",
+      "title": "Caps Toss",
+      "kind": "photo",
+      "tags": [
+        "graduation",
+        "caps",
+        "celebrate",
+        "graduation"
+      ],
+      "sample": true,
+      "url": "library/photos/grad-caps-toss.webp",
+      "thumbnail": "library/photos/grad-caps-toss-thumb.webp"
+    },
+    {
+      "id": "lib.photo.grad-stars",
+      "title": "Gold Stars",
+      "kind": "photo",
+      "tags": [
+        "graduation",
+        "stars",
+        "gold",
+        "graduation"
+      ],
+      "sample": true,
+      "url": "library/photos/grad-stars.webp",
+      "thumbnail": "library/photos/grad-stars-thumb.webp"
+    },
+    {
+      "id": "lib.photo.grad-sunrise",
+      "title": "Bright Future",
+      "kind": "photo",
+      "tags": [
+        "graduation",
+        "sunrise",
+        "future",
+        "graduation"
+      ],
+      "sample": true,
+      "url": "library/photos/grad-sunrise.webp",
+      "thumbnail": "library/photos/grad-sunrise-thumb.webp"
+    },
+    {
+      "id": "lib.photo.fest-diyas",
+      "title": "Diya Row",
+      "kind": "photo",
+      "tags": [
+        "festival",
+        "diwali",
+        "lights",
+        "festival"
+      ],
+      "sample": true,
+      "url": "library/photos/fest-diyas.webp",
+      "thumbnail": "library/photos/fest-diyas-thumb.webp"
+    },
+    {
+      "id": "lib.photo.fest-rangoli",
+      "title": "Rangoli Bloom",
+      "kind": "photo",
+      "tags": [
+        "festival",
+        "diwali",
+        "rangoli",
+        "festival"
+      ],
+      "sample": true,
+      "url": "library/photos/fest-rangoli.webp",
+      "thumbnail": "library/photos/fest-rangoli-thumb.webp"
+    },
+    {
+      "id": "lib.photo.fest-fireworks",
+      "title": "Festival Fireworks",
+      "kind": "photo",
+      "tags": [
+        "festival",
+        "fireworks",
+        "night",
+        "festival"
+      ],
+      "sample": true,
+      "url": "library/photos/fest-fireworks.webp",
+      "thumbnail": "library/photos/fest-fireworks-thumb.webp"
+    },
+    {
+      "id": "lib.photo.hol-ornaments",
+      "title": "Ornament Swing",
+      "kind": "photo",
+      "tags": [
+        "holiday",
+        "ornaments",
+        "winter",
+        "holiday"
+      ],
+      "sample": true,
+      "url": "library/photos/hol-ornaments.webp",
+      "thumbnail": "library/photos/hol-ornaments-thumb.webp"
+    },
+    {
+      "id": "lib.photo.hol-snowfall",
+      "title": "Snowy Pines",
+      "kind": "photo",
+      "tags": [
+        "holiday",
+        "snow",
+        "pines",
+        "holiday"
+      ],
+      "sample": true,
+      "url": "library/photos/hol-snowfall.webp",
+      "thumbnail": "library/photos/hol-snowfall-thumb.webp"
+    },
+    {
+      "id": "lib.photo.hol-lights",
+      "title": "Twinkle Lights",
+      "kind": "photo",
+      "tags": [
+        "holiday",
+        "lights",
+        "bokeh",
+        "holiday"
+      ],
+      "sample": true,
+      "url": "library/photos/hol-lights.webp",
+      "thumbnail": "library/photos/hol-lights-thumb.webp"
+    },
+    {
+      "id": "lib.photo.trv-peaks",
+      "title": "Sunset Peaks",
+      "kind": "photo",
+      "tags": [
+        "travel",
+        "mountains",
+        "sunset",
+        "travel"
+      ],
+      "sample": true,
+      "url": "library/photos/trv-peaks.webp",
+      "thumbnail": "library/photos/trv-peaks-thumb.webp"
+    },
+    {
+      "id": "lib.photo.trv-ocean",
+      "title": "Ocean Lines",
+      "kind": "photo",
+      "tags": [
+        "travel",
+        "ocean",
+        "waves",
+        "travel"
+      ],
+      "sample": true,
+      "url": "library/photos/trv-ocean.webp",
+      "thumbnail": "library/photos/trv-ocean-thumb.webp"
+    },
+    {
+      "id": "lib.photo.trv-road",
+      "title": "Open Road",
+      "kind": "photo",
+      "tags": [
+        "travel",
+        "road",
+        "adventure",
+        "travel"
+      ],
+      "sample": true,
+      "url": "library/photos/trv-road.webp",
+      "thumbnail": "library/photos/trv-road-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cozy-window",
+      "title": "Morning Window",
+      "kind": "photo",
+      "tags": [
+        "cozy",
+        "home",
+        "brunch",
+        "cozy"
+      ],
+      "sample": true,
+      "url": "library/photos/cozy-window.webp",
+      "thumbnail": "library/photos/cozy-window-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cozy-table",
+      "title": "Dinner Table",
+      "kind": "photo",
+      "tags": [
+        "cozy",
+        "dinner",
+        "candles",
+        "cozy"
+      ],
+      "sample": true,
+      "url": "library/photos/cozy-table.webp",
+      "thumbnail": "library/photos/cozy-table-thumb.webp"
+    },
+    {
+      "id": "lib.photo.cozy-home",
+      "title": "Warm Home",
+      "kind": "photo",
+      "tags": [
+        "cozy",
+        "housewarming",
+        "home",
+        "cozy"
+      ],
+      "sample": true,
+      "url": "library/photos/cozy-home.webp",
+      "thumbnail": "library/photos/cozy-home-thumb.webp"
+    },
+    {
+      "id": "lib.photo.retro-grid",
+      "title": "Retro Grid Sun",
+      "kind": "photo",
+      "tags": [
+        "retro",
+        "vhs",
+        "synthwave",
+        "retro"
+      ],
+      "sample": true,
+      "url": "library/photos/retro-grid.webp",
+      "thumbnail": "library/photos/retro-grid-thumb.webp"
+    },
+    {
+      "id": "lib.photo.retro-checker",
+      "title": "Checker Dance",
+      "kind": "photo",
+      "tags": [
+        "retro",
+        "swing",
+        "vintage",
+        "retro"
+      ],
+      "sample": true,
+      "url": "library/photos/retro-checker.webp",
+      "thumbnail": "library/photos/retro-checker-thumb.webp"
+    },
+    {
+      "id": "lib.photo.retro-gallery",
+      "title": "Gallery Frame",
+      "kind": "photo",
+      "tags": [
+        "minimal",
+        "gallery",
+        "clean",
+        "retro"
+      ],
+      "sample": true,
+      "url": "library/photos/retro-gallery.webp",
+      "thumbnail": "library/photos/retro-gallery-thumb.webp"
+    },
+    {
+      "id": "lib.audio.birthday-bounce",
+      "title": "Birthday Bounce",
+      "kind": "audio",
+      "tags": [
+        "birthday",
+        "party",
+        "upbeat",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/birthday-bounce.mp3",
+      "durationSec": 7.74,
+      "bpm": 124
+    },
+    {
+      "id": "lib.audio.wedding-strings",
+      "title": "Wedding Strings",
+      "kind": "audio",
+      "tags": [
+        "wedding",
+        "romantic",
+        "soft",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/wedding-strings.mp3",
+      "durationSec": 13.33,
+      "bpm": 72
+    },
+    {
+      "id": "lib.audio.lullaby-bells",
+      "title": "Lullaby Bells",
+      "kind": "audio",
+      "tags": [
+        "baby-shower",
+        "gentle",
+        "bells",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/lullaby-bells.mp3",
+      "durationSec": 11.43,
+      "bpm": 84
+    },
+    {
+      "id": "lib.audio.party-pulse",
+      "title": "Party Pulse",
+      "kind": "audio",
+      "tags": [
+        "party",
+        "night",
+        "dance",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/party-pulse.mp3",
+      "durationSec": 7.62,
+      "bpm": 126
+    },
+    {
+      "id": "lib.audio.grad-anthem",
+      "title": "Grad Anthem",
+      "kind": "audio",
+      "tags": [
+        "graduation",
+        "uplifting",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/grad-anthem.mp3",
+      "durationSec": 8.73,
+      "bpm": 110
+    },
+    {
+      "id": "lib.audio.festival-lights",
+      "title": "Festival Lights",
+      "kind": "audio",
+      "tags": [
+        "festival",
+        "diwali",
+        "bells",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/festival-lights.mp3",
+      "durationSec": 9.6,
+      "bpm": 100
+    },
+    {
+      "id": "lib.audio.holiday-chimes",
+      "title": "Holiday Chimes",
+      "kind": "audio",
+      "tags": [
+        "holiday",
+        "winter",
+        "chimes",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/holiday-chimes.mp3",
+      "durationSec": 10.0,
+      "bpm": 96
+    },
+    {
+      "id": "lib.audio.travel-breeze",
+      "title": "Travel Breeze",
+      "kind": "audio",
+      "tags": [
+        "travel",
+        "breezy",
+        "acoustic",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/travel-breeze.mp3",
+      "durationSec": 9.8,
+      "bpm": 98
+    },
+    {
+      "id": "lib.audio.cozy-keys",
+      "title": "Cozy Keys",
+      "kind": "audio",
+      "tags": [
+        "cozy",
+        "dinner",
+        "brunch",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/cozy-keys.mp3",
+      "durationSec": 12.0,
+      "bpm": 80
+    },
+    {
+      "id": "lib.audio.love-waltz",
+      "title": "Love Waltz",
+      "kind": "audio",
+      "tags": [
+        "anniversary",
+        "romantic",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/love-waltz.mp3",
+      "durationSec": 10.67,
+      "bpm": 90
+    },
+    {
+      "id": "lib.audio.retro-groove",
+      "title": "Retro Groove",
+      "kind": "audio",
+      "tags": [
+        "retro",
+        "vhs",
+        "funk",
+        "loop"
+      ],
+      "sample": true,
+      "url": "library/audio/retro-groove.mp3",
+      "durationSec": 8.89,
+      "bpm": 108
+    },
+    {
+      "id": "lib.audio.stinger-sparkle",
+      "title": "Sparkle Stinger",
+      "kind": "audio",
+      "tags": [
+        "stinger",
+        "sparkle",
+        "magic"
+      ],
+      "sample": true,
+      "url": "library/audio/stinger-sparkle.mp3",
+      "durationSec": 1.6
+    },
+    {
+      "id": "lib.audio.stinger-whoosh",
+      "title": "Whoosh Stinger",
+      "kind": "audio",
+      "tags": [
+        "stinger",
+        "whoosh",
+        "transition"
+      ],
+      "sample": true,
+      "url": "library/audio/stinger-whoosh.mp3",
+      "durationSec": 1.6
+    },
+    {
+      "id": "lib.audio.stinger-chime",
+      "title": "Chime Stinger",
+      "kind": "audio",
+      "tags": [
+        "stinger",
+        "chime",
+        "reveal"
+      ],
+      "sample": true,
+      "url": "library/audio/stinger-chime.mp3",
+      "durationSec": 1.6
+    },
+    {
+      "id": "lib.photo.tpl-birthday-blast-1",
+      "title": "Birthday Blast 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "birthday-blast",
+        "genz"
+      ],
+      "url": "library/photos/tpl-birthday-blast-1.webp",
+      "thumbnail": "library/photos/tpl-birthday-blast-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-birthday-blast-2",
+      "title": "Birthday Blast 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "birthday-blast",
+        "genz"
+      ],
+      "url": "library/photos/tpl-birthday-blast-2.webp",
+      "thumbnail": "library/photos/tpl-birthday-blast-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-birthday-blast-3",
+      "title": "Birthday Blast 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "birthday-blast",
+        "genz"
+      ],
+      "url": "library/photos/tpl-birthday-blast-3.webp",
+      "thumbnail": "library/photos/tpl-birthday-blast-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-candle-wish-1",
+      "title": "Candle Wish 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "candle-wish",
+        "genz"
+      ],
+      "url": "library/photos/tpl-candle-wish-1.webp",
+      "thumbnail": "library/photos/tpl-candle-wish-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-candle-wish-2",
+      "title": "Candle Wish 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "candle-wish",
+        "genz"
+      ],
+      "url": "library/photos/tpl-candle-wish-2.webp",
+      "thumbnail": "library/photos/tpl-candle-wish-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-candle-wish-3",
+      "title": "Candle Wish 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "candle-wish",
+        "genz"
+      ],
+      "url": "library/photos/tpl-candle-wish-3.webp",
+      "thumbnail": "library/photos/tpl-candle-wish-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-kids-party-pop-1",
+      "title": "Kids Party Pop 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "kids-party-pop",
+        "genz"
+      ],
+      "url": "library/photos/tpl-kids-party-pop-1.webp",
+      "thumbnail": "library/photos/tpl-kids-party-pop-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-kids-party-pop-2",
+      "title": "Kids Party Pop 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "kids-party-pop",
+        "genz"
+      ],
+      "url": "library/photos/tpl-kids-party-pop-2.webp",
+      "thumbnail": "library/photos/tpl-kids-party-pop-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-kids-party-pop-3",
+      "title": "Kids Party Pop 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "birthday",
+        "kids-party-pop",
+        "genz"
+      ],
+      "url": "library/photos/tpl-kids-party-pop-3.webp",
+      "thumbnail": "library/photos/tpl-kids-party-pop-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-garden-soiree-1",
+      "title": "Garden Soirée 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "wedding",
+        "garden-soiree",
+        "genz"
+      ],
+      "url": "library/photos/tpl-garden-soiree-1.webp",
+      "thumbnail": "library/photos/tpl-garden-soiree-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-garden-soiree-2",
+      "title": "Garden Soirée 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "wedding",
+        "garden-soiree",
+        "genz"
+      ],
+      "url": "library/photos/tpl-garden-soiree-2.webp",
+      "thumbnail": "library/photos/tpl-garden-soiree-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-garden-soiree-3",
+      "title": "Garden Soirée 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "wedding",
+        "garden-soiree",
+        "genz"
+      ],
+      "url": "library/photos/tpl-garden-soiree-3.webp",
+      "thumbnail": "library/photos/tpl-garden-soiree-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-wedding-vows-1",
+      "title": "Wedding Vows 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "wedding",
+        "wedding-vows",
+        "genz"
+      ],
+      "url": "library/photos/tpl-wedding-vows-1.webp",
+      "thumbnail": "library/photos/tpl-wedding-vows-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-wedding-vows-2",
+      "title": "Wedding Vows 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "wedding",
+        "wedding-vows",
+        "genz"
+      ],
+      "url": "library/photos/tpl-wedding-vows-2.webp",
+      "thumbnail": "library/photos/tpl-wedding-vows-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-wedding-vows-3",
+      "title": "Wedding Vows 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "wedding",
+        "wedding-vows",
+        "genz"
+      ],
+      "url": "library/photos/tpl-wedding-vows-3.webp",
+      "thumbnail": "library/photos/tpl-wedding-vows-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-anniversary-glow-1",
+      "title": "Anniversary Glow 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "anniversary",
+        "anniversary-glow",
+        "genz"
+      ],
+      "url": "library/photos/tpl-anniversary-glow-1.webp",
+      "thumbnail": "library/photos/tpl-anniversary-glow-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-anniversary-glow-2",
+      "title": "Anniversary Glow 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "anniversary",
+        "anniversary-glow",
+        "genz"
+      ],
+      "url": "library/photos/tpl-anniversary-glow-2.webp",
+      "thumbnail": "library/photos/tpl-anniversary-glow-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-anniversary-glow-3",
+      "title": "Anniversary Glow 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "anniversary",
+        "anniversary-glow",
+        "genz"
+      ],
+      "url": "library/photos/tpl-anniversary-glow-3.webp",
+      "thumbnail": "library/photos/tpl-anniversary-glow-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-blush-story-1",
+      "title": "Blush Story 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "anniversary",
+        "blush-story",
+        "genz"
+      ],
+      "url": "library/photos/tpl-blush-story-1.webp",
+      "thumbnail": "library/photos/tpl-blush-story-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-blush-story-2",
+      "title": "Blush Story 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "anniversary",
+        "blush-story",
+        "genz"
+      ],
+      "url": "library/photos/tpl-blush-story-2.webp",
+      "thumbnail": "library/photos/tpl-blush-story-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-blush-story-3",
+      "title": "Blush Story 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "anniversary",
+        "blush-story",
+        "genz"
+      ],
+      "url": "library/photos/tpl-blush-story-3.webp",
+      "thumbnail": "library/photos/tpl-blush-story-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-baby-shower-bloom-1",
+      "title": "Baby Shower Bloom 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "baby",
+        "baby-shower-bloom",
+        "genz"
+      ],
+      "url": "library/photos/tpl-baby-shower-bloom-1.webp",
+      "thumbnail": "library/photos/tpl-baby-shower-bloom-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-baby-shower-bloom-2",
+      "title": "Baby Shower Bloom 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "baby",
+        "baby-shower-bloom",
+        "genz"
+      ],
+      "url": "library/photos/tpl-baby-shower-bloom-2.webp",
+      "thumbnail": "library/photos/tpl-baby-shower-bloom-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-baby-shower-bloom-3",
+      "title": "Baby Shower Bloom 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "baby",
+        "baby-shower-bloom",
+        "genz"
+      ],
+      "url": "library/photos/tpl-baby-shower-bloom-3.webp",
+      "thumbnail": "library/photos/tpl-baby-shower-bloom-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-grad-caps-1",
+      "title": "Grad Caps 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "graduation",
+        "grad-caps",
+        "genz"
+      ],
+      "url": "library/photos/tpl-grad-caps-1.webp",
+      "thumbnail": "library/photos/tpl-grad-caps-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-grad-caps-2",
+      "title": "Grad Caps 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "graduation",
+        "grad-caps",
+        "genz"
+      ],
+      "url": "library/photos/tpl-grad-caps-2.webp",
+      "thumbnail": "library/photos/tpl-grad-caps-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-grad-caps-3",
+      "title": "Grad Caps 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "graduation",
+        "grad-caps",
+        "genz"
+      ],
+      "url": "library/photos/tpl-grad-caps-3.webp",
+      "thumbnail": "library/photos/tpl-grad-caps-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-holiday-sparkle-1",
+      "title": "Holiday Sparkle 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "holiday",
+        "holiday-sparkle",
+        "genz"
+      ],
+      "url": "library/photos/tpl-holiday-sparkle-1.webp",
+      "thumbnail": "library/photos/tpl-holiday-sparkle-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-holiday-sparkle-2",
+      "title": "Holiday Sparkle 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "holiday",
+        "holiday-sparkle",
+        "genz"
+      ],
+      "url": "library/photos/tpl-holiday-sparkle-2.webp",
+      "thumbnail": "library/photos/tpl-holiday-sparkle-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-holiday-sparkle-3",
+      "title": "Holiday Sparkle 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "holiday",
+        "holiday-sparkle",
+        "genz"
+      ],
+      "url": "library/photos/tpl-holiday-sparkle-3.webp",
+      "thumbnail": "library/photos/tpl-holiday-sparkle-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-diwali-lights-1",
+      "title": "Diwali Lights 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "festival",
+        "diwali-lights",
+        "genz"
+      ],
+      "url": "library/photos/tpl-diwali-lights-1.webp",
+      "thumbnail": "library/photos/tpl-diwali-lights-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-diwali-lights-2",
+      "title": "Diwali Lights 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "festival",
+        "diwali-lights",
+        "genz"
+      ],
+      "url": "library/photos/tpl-diwali-lights-2.webp",
+      "thumbnail": "library/photos/tpl-diwali-lights-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-diwali-lights-3",
+      "title": "Diwali Lights 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "festival",
+        "diwali-lights",
+        "genz"
+      ],
+      "url": "library/photos/tpl-diwali-lights-3.webp",
+      "thumbnail": "library/photos/tpl-diwali-lights-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-housewarming-glow-1",
+      "title": "Housewarming Glow 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "housewarming-glow",
+        "genz"
+      ],
+      "url": "library/photos/tpl-housewarming-glow-1.webp",
+      "thumbnail": "library/photos/tpl-housewarming-glow-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-housewarming-glow-2",
+      "title": "Housewarming Glow 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "housewarming-glow",
+        "genz"
+      ],
+      "url": "library/photos/tpl-housewarming-glow-2.webp",
+      "thumbnail": "library/photos/tpl-housewarming-glow-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-housewarming-glow-3",
+      "title": "Housewarming Glow 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "housewarming-glow",
+        "genz"
+      ],
+      "url": "library/photos/tpl-housewarming-glow-3.webp",
+      "thumbnail": "library/photos/tpl-housewarming-glow-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-dinner-table-1",
+      "title": "Dinner Table 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "dinner-table",
+        "genz"
+      ],
+      "url": "library/photos/tpl-dinner-table-1.webp",
+      "thumbnail": "library/photos/tpl-dinner-table-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-dinner-table-2",
+      "title": "Dinner Table 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "dinner-table",
+        "genz"
+      ],
+      "url": "library/photos/tpl-dinner-table-2.webp",
+      "thumbnail": "library/photos/tpl-dinner-table-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-dinner-table-3",
+      "title": "Dinner Table 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "dinner-table",
+        "genz"
+      ],
+      "url": "library/photos/tpl-dinner-table-3.webp",
+      "thumbnail": "library/photos/tpl-dinner-table-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-brunch-breeze-1",
+      "title": "Brunch Breeze 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "brunch-breeze",
+        "genz"
+      ],
+      "url": "library/photos/tpl-brunch-breeze-1.webp",
+      "thumbnail": "library/photos/tpl-brunch-breeze-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-brunch-breeze-2",
+      "title": "Brunch Breeze 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "brunch-breeze",
+        "genz"
+      ],
+      "url": "library/photos/tpl-brunch-breeze-2.webp",
+      "thumbnail": "library/photos/tpl-brunch-breeze-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-brunch-breeze-3",
+      "title": "Brunch Breeze 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "brunch-breeze",
+        "genz"
+      ],
+      "url": "library/photos/tpl-brunch-breeze-3.webp",
+      "thumbnail": "library/photos/tpl-brunch-breeze-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-midnight-metro-1",
+      "title": "Midnight Metro 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "midnight-metro",
+        "genz"
+      ],
+      "url": "library/photos/tpl-midnight-metro-1.webp",
+      "thumbnail": "library/photos/tpl-midnight-metro-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-midnight-metro-2",
+      "title": "Midnight Metro 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "midnight-metro",
+        "genz"
+      ],
+      "url": "library/photos/tpl-midnight-metro-2.webp",
+      "thumbnail": "library/photos/tpl-midnight-metro-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-midnight-metro-3",
+      "title": "Midnight Metro 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "midnight-metro",
+        "genz"
+      ],
+      "url": "library/photos/tpl-midnight-metro-3.webp",
+      "thumbnail": "library/photos/tpl-midnight-metro-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-strobe-night-1",
+      "title": "Strobe Night 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "strobe-night",
+        "genz"
+      ],
+      "url": "library/photos/tpl-strobe-night-1.webp",
+      "thumbnail": "library/photos/tpl-strobe-night-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-strobe-night-2",
+      "title": "Strobe Night 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "strobe-night",
+        "genz"
+      ],
+      "url": "library/photos/tpl-strobe-night-2.webp",
+      "thumbnail": "library/photos/tpl-strobe-night-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-strobe-night-3",
+      "title": "Strobe Night 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "strobe-night",
+        "genz"
+      ],
+      "url": "library/photos/tpl-strobe-night-3.webp",
+      "thumbnail": "library/photos/tpl-strobe-night-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-acid-drop-1",
+      "title": "Acid Drop 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "acid-drop",
+        "genz"
+      ],
+      "url": "library/photos/tpl-acid-drop-1.webp",
+      "thumbnail": "library/photos/tpl-acid-drop-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-acid-drop-2",
+      "title": "Acid Drop 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "acid-drop",
+        "genz"
+      ],
+      "url": "library/photos/tpl-acid-drop-2.webp",
+      "thumbnail": "library/photos/tpl-acid-drop-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-acid-drop-3",
+      "title": "Acid Drop 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "acid-drop",
+        "genz"
+      ],
+      "url": "library/photos/tpl-acid-drop-3.webp",
+      "thumbnail": "library/photos/tpl-acid-drop-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-pulse-reels-1",
+      "title": "Pulse Reels 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "pulse-reels",
+        "genz"
+      ],
+      "url": "library/photos/tpl-pulse-reels-1.webp",
+      "thumbnail": "library/photos/tpl-pulse-reels-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-pulse-reels-2",
+      "title": "Pulse Reels 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "pulse-reels",
+        "genz"
+      ],
+      "url": "library/photos/tpl-pulse-reels-2.webp",
+      "thumbnail": "library/photos/tpl-pulse-reels-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-pulse-reels-3",
+      "title": "Pulse Reels 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "party",
+        "pulse-reels",
+        "genz"
+      ],
+      "url": "library/photos/tpl-pulse-reels-3.webp",
+      "thumbnail": "library/photos/tpl-pulse-reels-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-sunlit-drift-1",
+      "title": "Sunlit Drift 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "sunlit-drift",
+        "genz"
+      ],
+      "url": "library/photos/tpl-sunlit-drift-1.webp",
+      "thumbnail": "library/photos/tpl-sunlit-drift-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-sunlit-drift-2",
+      "title": "Sunlit Drift 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "sunlit-drift",
+        "genz"
+      ],
+      "url": "library/photos/tpl-sunlit-drift-2.webp",
+      "thumbnail": "library/photos/tpl-sunlit-drift-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-sunlit-drift-3",
+      "title": "Sunlit Drift 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "sunlit-drift",
+        "genz"
+      ],
+      "url": "library/photos/tpl-sunlit-drift-3.webp",
+      "thumbnail": "library/photos/tpl-sunlit-drift-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-coastal-bounce-1",
+      "title": "Coastal Bounce 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "coastal-bounce",
+        "genz"
+      ],
+      "url": "library/photos/tpl-coastal-bounce-1.webp",
+      "thumbnail": "library/photos/tpl-coastal-bounce-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-coastal-bounce-2",
+      "title": "Coastal Bounce 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "coastal-bounce",
+        "genz"
+      ],
+      "url": "library/photos/tpl-coastal-bounce-2.webp",
+      "thumbnail": "library/photos/tpl-coastal-bounce-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-coastal-bounce-3",
+      "title": "Coastal Bounce 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "coastal-bounce",
+        "genz"
+      ],
+      "url": "library/photos/tpl-coastal-bounce-3.webp",
+      "thumbnail": "library/photos/tpl-coastal-bounce-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mint-travel-1",
+      "title": "Mint Travel 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "mint-travel",
+        "genz"
+      ],
+      "url": "library/photos/tpl-mint-travel-1.webp",
+      "thumbnail": "library/photos/tpl-mint-travel-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mint-travel-2",
+      "title": "Mint Travel 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "mint-travel",
+        "genz"
+      ],
+      "url": "library/photos/tpl-mint-travel-2.webp",
+      "thumbnail": "library/photos/tpl-mint-travel-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mint-travel-3",
+      "title": "Mint Travel 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "mint-travel",
+        "genz"
+      ],
+      "url": "library/photos/tpl-mint-travel-3.webp",
+      "thumbnail": "library/photos/tpl-mint-travel-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-travel-postcard-1",
+      "title": "Travel Postcard 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "travel-postcard",
+        "genz"
+      ],
+      "url": "library/photos/tpl-travel-postcard-1.webp",
+      "thumbnail": "library/photos/tpl-travel-postcard-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-travel-postcard-2",
+      "title": "Travel Postcard 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "travel-postcard",
+        "genz"
+      ],
+      "url": "library/photos/tpl-travel-postcard-2.webp",
+      "thumbnail": "library/photos/tpl-travel-postcard-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-travel-postcard-3",
+      "title": "Travel Postcard 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "travel-postcard",
+        "genz"
+      ],
+      "url": "library/photos/tpl-travel-postcard-3.webp",
+      "thumbnail": "library/photos/tpl-travel-postcard-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-field-notes-1",
+      "title": "Field Notes 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "field-notes",
+        "genz"
+      ],
+      "url": "library/photos/tpl-field-notes-1.webp",
+      "thumbnail": "library/photos/tpl-field-notes-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-field-notes-2",
+      "title": "Field Notes 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "field-notes",
+        "genz"
+      ],
+      "url": "library/photos/tpl-field-notes-2.webp",
+      "thumbnail": "library/photos/tpl-field-notes-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-field-notes-3",
+      "title": "Field Notes 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "travel",
+        "field-notes",
+        "genz"
+      ],
+      "url": "library/photos/tpl-field-notes-3.webp",
+      "thumbnail": "library/photos/tpl-field-notes-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-golden-recap-1",
+      "title": "Golden Recap 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "golden-recap",
+        "genz"
+      ],
+      "url": "library/photos/tpl-golden-recap-1.webp",
+      "thumbnail": "library/photos/tpl-golden-recap-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-golden-recap-2",
+      "title": "Golden Recap 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "golden-recap",
+        "genz"
+      ],
+      "url": "library/photos/tpl-golden-recap-2.webp",
+      "thumbnail": "library/photos/tpl-golden-recap-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-golden-recap-3",
+      "title": "Golden Recap 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "golden-recap",
+        "genz"
+      ],
+      "url": "library/photos/tpl-golden-recap-3.webp",
+      "thumbnail": "library/photos/tpl-golden-recap-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-lounge-edit-1",
+      "title": "Lounge Edit 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "lounge-edit",
+        "genz"
+      ],
+      "url": "library/photos/tpl-lounge-edit-1.webp",
+      "thumbnail": "library/photos/tpl-lounge-edit-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-lounge-edit-2",
+      "title": "Lounge Edit 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "lounge-edit",
+        "genz"
+      ],
+      "url": "library/photos/tpl-lounge-edit-2.webp",
+      "thumbnail": "library/photos/tpl-lounge-edit-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-lounge-edit-3",
+      "title": "Lounge Edit 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "cozy",
+        "lounge-edit",
+        "genz"
+      ],
+      "url": "library/photos/tpl-lounge-edit-3.webp",
+      "thumbnail": "library/photos/tpl-lounge-edit-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-gallery-quiet-1",
+      "title": "Gallery Quiet 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "gallery-quiet",
+        "genz"
+      ],
+      "url": "library/photos/tpl-gallery-quiet-1.webp",
+      "thumbnail": "library/photos/tpl-gallery-quiet-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-gallery-quiet-2",
+      "title": "Gallery Quiet 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "gallery-quiet",
+        "genz"
+      ],
+      "url": "library/photos/tpl-gallery-quiet-2.webp",
+      "thumbnail": "library/photos/tpl-gallery-quiet-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-gallery-quiet-3",
+      "title": "Gallery Quiet 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "gallery-quiet",
+        "genz"
+      ],
+      "url": "library/photos/tpl-gallery-quiet-3.webp",
+      "thumbnail": "library/photos/tpl-gallery-quiet-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-vhs-party-1",
+      "title": "VHS Party 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "vhs-party",
+        "genz"
+      ],
+      "url": "library/photos/tpl-vhs-party-1.webp",
+      "thumbnail": "library/photos/tpl-vhs-party-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-vhs-party-2",
+      "title": "VHS Party 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "vhs-party",
+        "genz"
+      ],
+      "url": "library/photos/tpl-vhs-party-2.webp",
+      "thumbnail": "library/photos/tpl-vhs-party-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-vhs-party-3",
+      "title": "VHS Party 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "vhs-party",
+        "genz"
+      ],
+      "url": "library/photos/tpl-vhs-party-3.webp",
+      "thumbnail": "library/photos/tpl-vhs-party-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-swing-retro-1",
+      "title": "Swing Retro 1",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "swing-retro",
+        "genz"
+      ],
+      "url": "library/photos/tpl-swing-retro-1.webp",
+      "thumbnail": "library/photos/tpl-swing-retro-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-swing-retro-2",
+      "title": "Swing Retro 2",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "swing-retro",
+        "genz"
+      ],
+      "url": "library/photos/tpl-swing-retro-2.webp",
+      "thumbnail": "library/photos/tpl-swing-retro-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-swing-retro-3",
+      "title": "Swing Retro 3",
+      "kind": "photo",
+      "genz": true,
+      "sample": true,
+      "tags": [
+        "retro",
+        "swing-retro",
+        "genz"
+      ],
+      "url": "library/photos/tpl-swing-retro-3.webp",
+      "thumbnail": "library/photos/tpl-swing-retro-3-thumb.webp"
+    }
+  ]
+}

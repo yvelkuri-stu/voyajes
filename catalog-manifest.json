@@ -1,0 +1,1525 @@
+{
+  "schema": 1,
+  "catalogVersion": "2026.10.06.7",
+  "etag": "W/\"vj-20261006-7\"",
+  "generatedAt": "2026-10-07T04:35:00Z",
+  "channels": {
+    "stable": {
+      "minApp": "0.1.0"
+    },
+    "beta": {
+      "minApp": "0.1.0"
+    }
+  },
+  "packs": [
+    {
+      "id": "theme.neon-night",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Neon Night",
+      "description": "Magenta glow, snappy cuts, city-after-dark energy.",
+      "tier": "free",
+      "tags": [
+        "neon",
+        "night",
+        "bold",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#0A0614",
+        "surface": "#1A0F2E",
+        "accent": "#E84AFF",
+        "text": "#F8F0FF",
+        "grade": "magenta-crush"
+      },
+      "motion": "snappy",
+      "transition": "whip",
+      "transitionDurationMs": 220,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.neon-pulse-118",
+        "audio.hyperfun-128"
+      ],
+      "sizeBytes": 128000,
+      "hash": "sha256:neon-night-v2"
+    },
+    {
+      "id": "theme.soft-film",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Soft Film",
+      "description": "Warm grain, float easing, memory-reel calm.",
+      "tier": "free",
+      "tags": [
+        "warm",
+        "film",
+        "memory",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#1A1410",
+        "surface": "#2A221C",
+        "accent": "#F5C542",
+        "text": "#F4F1EC",
+        "grade": "warm-halation"
+      },
+      "motion": "float",
+      "transition": "dissolve",
+      "transitionDurationMs": 480,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.warm-acoustic-092",
+        "audio.lobby-time-096"
+      ],
+      "sizeBytes": 132000,
+      "hash": "sha256:soft-film-v2"
+    },
+    {
+      "id": "theme.ocean-pop",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Ocean Pop",
+      "description": "Indigo → mint gradients, soft push transitions.",
+      "tier": "free",
+      "tags": [
+        "ocean",
+        "travel",
+        "fresh",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#06141C",
+        "surface": "#0E2430",
+        "accent": "#3DDC97",
+        "text": "#E8F7FF",
+        "grade": "teal-pop"
+      },
+      "motion": "soft",
+      "transition": "push",
+      "transitionDurationMs": 360,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.ocean-drift-084",
+        "audio.warm-acoustic-092"
+      ],
+      "sizeBytes": 140000,
+      "hash": "sha256:ocean-pop-v2"
+    },
+    {
+      "id": "theme.golden-hour",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Golden Hour",
+      "description": "Coral sun, cinematic ease, light-leak cuts.",
+      "tier": "free",
+      "tags": [
+        "sunset",
+        "travel",
+        "cinematic",
+        "16:9"
+      ],
+      "palette": {
+        "bg": "#1C1008",
+        "surface": "#2E1A0C",
+        "accent": "#FF6B4A",
+        "text": "#FFF5EB",
+        "grade": "golden-hour"
+      },
+      "motion": "cinematic",
+      "transition": "light-leak",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.spy-glass-100",
+        "audio.warm-acoustic-092"
+      ],
+      "sizeBytes": 145000,
+      "hash": "sha256:golden-hour-v2"
+    },
+    {
+      "id": "theme.retro-vhs",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Retro VHS",
+      "description": "CRT magenta/teal, whip cuts, tracking-noise nostalgia.",
+      "tier": "free",
+      "tags": [
+        "vhs",
+        "retro",
+        "80s",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#12081A",
+        "surface": "#1E1030",
+        "accent": "#FF2D95",
+        "text": "#E8FFF6",
+        "grade": "vhs-crush"
+      },
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 180,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.funk-loop-104",
+        "audio.neon-pulse-118"
+      ],
+      "sizeBytes": 136000,
+      "hash": "sha256:retro-vhs-v1"
+    },
+    {
+      "id": "theme.minimal-white",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Minimal White",
+      "description": "Gallery white, soft fades to black, quiet product polish.",
+      "tier": "free",
+      "tags": [
+        "minimal",
+        "clean",
+        "product",
+        "1:1"
+      ],
+      "palette": {
+        "bg": "#F4F2EE",
+        "surface": "#FFFFFF",
+        "accent": "#2A2A2A",
+        "text": "#121212",
+        "grade": "clean-lift"
+      },
+      "motion": "soft",
+      "transition": "fade-black",
+      "transitionDurationMs": 420,
+      "photoMotion": "off",
+      "suggestedBeatIds": [
+        "audio.lobby-time-096",
+        "audio.ocean-drift-084"
+      ],
+      "sizeBytes": 118000,
+      "hash": "sha256:minimal-white-v1"
+    },
+    {
+      "id": "theme.cyber-lime",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Cyber Lime",
+      "description": "Acid lime on void black, zoom-through punches.",
+      "tier": "spark",
+      "tags": [
+        "cyber",
+        "lime",
+        "tech",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#050A04",
+        "surface": "#0E1A0C",
+        "accent": "#B8FF3D",
+        "text": "#F5FFE8",
+        "grade": "lime-crush"
+      },
+      "motion": "snappy",
+      "transition": "zoom-through",
+      "transitionDurationMs": 260,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.hyperfun-128",
+        "audio.neon-pulse-118"
+      ],
+      "sizeBytes": 134000,
+      "hash": "sha256:cyber-lime-v1"
+    },
+    {
+      "id": "theme.rose-quartz",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Rose Quartz",
+      "description": "Blush pink haze, float easing, soft slide-up reveals.",
+      "tier": "free",
+      "tags": [
+        "rose",
+        "soft",
+        "lifestyle",
+        "4:5"
+      ],
+      "palette": {
+        "bg": "#1A1014",
+        "surface": "#2A1820",
+        "accent": "#F2A7C3",
+        "text": "#FFF0F5",
+        "grade": "rose-mist"
+      },
+      "motion": "float",
+      "transition": "slide-up",
+      "transitionDurationMs": 440,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.warm-acoustic-092",
+        "audio.lobby-time-096"
+      ],
+      "sizeBytes": 130000,
+      "hash": "sha256:rose-quartz-v1"
+    },
+    {
+      "id": "theme.documentary-grain",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Documentary Grain",
+      "description": "Muted earth tones, fade-black, observational calm.",
+      "tier": "free",
+      "tags": [
+        "doc",
+        "grain",
+        "story",
+        "16:9"
+      ],
+      "palette": {
+        "bg": "#141210",
+        "surface": "#221E1A",
+        "accent": "#C4A574",
+        "text": "#EDE6DC",
+        "grade": "doc-grain"
+      },
+      "motion": "cinematic",
+      "transition": "fade-black",
+      "transitionDurationMs": 560,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.spy-glass-100",
+        "audio.ocean-drift-084"
+      ],
+      "sizeBytes": 142000,
+      "hash": "sha256:documentary-grain-v1"
+    },
+    {
+      "id": "theme.party-strobe",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Party Strobe",
+      "description": "Hot coral + violet strobes, flash cuts, dance-floor punch.",
+      "tier": "spark",
+      "tags": [
+        "party",
+        "strobe",
+        "dance",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#0C0418",
+        "surface": "#1A0830",
+        "accent": "#FF3D81",
+        "text": "#FFF5FF",
+        "grade": "strobe-pop"
+      },
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 140,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.carefree-140",
+        "audio.hyperfun-128",
+        "audio.funk-loop-104"
+      ],
+      "sizeBytes": 138000,
+      "hash": "sha256:party-strobe-v1"
+    },
+    {
+      "id": "template.midnight-metro",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Midnight Metro",
+      "description": "City-after-dark punch: snappy whip cuts, neon pulse, bold title pops.",
+      "tier": "free",
+      "tags": [
+        "night",
+        "urban",
+        "reels",
+        "9:16"
+      ],
+      "themeId": "theme.neon-night",
+      "motion": "snappy",
+      "transition": "glitch",
+      "transitionDurationMs": 220,
+      "photoMotion": "bold",
+      "beatId": "audio.neon-pulse-118",
+      "beatSync": "hard",
+      "textStyle": "mono-tech",
+      "textTransition": "pop",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-midnight-metro-v1"
+    },
+    {
+      "id": "template.sunlit-drift",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Sunlit Drift",
+      "description": "Memory-reel calm: float dissolves, warm acoustic, soft serif fades.",
+      "tier": "free",
+      "tags": [
+        "warm",
+        "memory",
+        "film",
+        "9:16"
+      ],
+      "themeId": "theme.soft-film",
+      "motion": "float",
+      "transition": "whip",
+      "transitionDurationMs": 480,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "script-soft",
+      "textTransition": "fade",
+      "aspect": "9:16",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-sunlit-drift-v1"
+    },
+    {
+      "id": "template.coastal-bounce",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Coastal Bounce",
+      "description": "Travel fresh: soft pushes, ocean drift, clean sans slide-ups.",
+      "tier": "free",
+      "tags": [
+        "travel",
+        "ocean",
+        "fresh",
+        "9:16"
+      ],
+      "themeId": "theme.ocean-pop",
+      "motion": "soft",
+      "transition": "zoom-through",
+      "transitionDurationMs": 360,
+      "photoMotion": "gentle",
+      "beatId": "audio.ocean-drift-084",
+      "beatSync": "medium",
+      "textStyle": "bold-impact",
+      "textTransition": "slide-up",
+      "aspect": "9:16",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-coastal-bounce-v1"
+    },
+    {
+      "id": "template.golden-recap",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Golden Recap",
+      "description": "Cinematic sunset: light-leak cuts, spy glass, soft serif dissolves.",
+      "tier": "free",
+      "tags": [
+        "sunset",
+        "cinematic",
+        "recap",
+        "16:9"
+      ],
+      "themeId": "theme.golden-hour",
+      "motion": "cinematic",
+      "transition": "flash",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "beatId": "audio.spy-glass-100",
+      "beatSync": "soft",
+      "textStyle": "kinetic-outline",
+      "textTransition": "dissolve",
+      "aspect": "16:9",
+      "durationTargetSec": 60,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-golden-recap-v1"
+    },
+    {
+      "id": "template.vhs-party",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "VHS Party",
+      "description": "80s dance floor: flash cuts, funk loop, vintage poster flash-ins.",
+      "tier": "free",
+      "tags": [
+        "vhs",
+        "party",
+        "retro",
+        "9:16"
+      ],
+      "themeId": "theme.retro-vhs",
+      "motion": "snappy",
+      "transition": "glitch",
+      "transitionDurationMs": 180,
+      "photoMotion": "bold",
+      "beatId": "audio.funk-loop-104",
+      "beatSync": "hard",
+      "textStyle": "mono-tech",
+      "textTransition": "flash-in",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-vhs-party-v1"
+    },
+    {
+      "id": "template.gallery-quiet",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Gallery Quiet",
+      "description": "Product polish: fade-to-black, lobby lounge, clean sans fades.",
+      "tier": "free",
+      "tags": [
+        "minimal",
+        "product",
+        "clean",
+        "1:1"
+      ],
+      "themeId": "theme.minimal-white",
+      "motion": "soft",
+      "transition": "zoom-through",
+      "transitionDurationMs": 420,
+      "photoMotion": "off",
+      "beatId": "audio.lobby-time-096",
+      "beatSync": "off",
+      "textStyle": "clean-sans",
+      "textTransition": "fade",
+      "aspect": "1:1",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-gallery-quiet-v1"
+    },
+    {
+      "id": "template.acid-drop",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Acid Drop",
+      "description": "Tech punch: zoom-through cuts, hyperfun, mono tech scale-bounce.",
+      "tier": "spark",
+      "tags": [
+        "cyber",
+        "tech",
+        "lime",
+        "9:16"
+      ],
+      "themeId": "theme.cyber-lime",
+      "motion": "snappy",
+      "transition": "glitch",
+      "transitionDurationMs": 260,
+      "photoMotion": "bold",
+      "beatId": "audio.hyperfun-128",
+      "beatSync": "hard",
+      "textStyle": "mono-tech",
+      "textTransition": "scale-bounce",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-acid-drop-v1"
+    },
+    {
+      "id": "template.blush-story",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Blush Story",
+      "description": "Lifestyle soft: slide-up reveals, warm acoustic, script soft entrances.",
+      "tier": "free",
+      "tags": [
+        "rose",
+        "lifestyle",
+        "soft",
+        "4:5"
+      ],
+      "themeId": "theme.rose-quartz",
+      "motion": "float",
+      "transition": "whip",
+      "transitionDurationMs": 440,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "caption-pill",
+      "textTransition": "slide-up",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-blush-story-v1"
+    },
+    {
+      "id": "template.field-notes",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Field Notes",
+      "description": "Observational doc: fade-black, spy glass, caption pill typewriter.",
+      "tier": "free",
+      "tags": [
+        "doc",
+        "story",
+        "grain",
+        "16:9"
+      ],
+      "themeId": "theme.documentary-grain",
+      "motion": "cinematic",
+      "transition": "glitch",
+      "transitionDurationMs": 560,
+      "photoMotion": "gentle",
+      "beatId": "audio.spy-glass-100",
+      "beatSync": "soft",
+      "textStyle": "mono-tech",
+      "textTransition": "typewriter",
+      "aspect": "16:9",
+      "durationTargetSec": 60,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-field-notes-v1"
+    },
+    {
+      "id": "template.strobe-night",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Strobe Night",
+      "description": "Dance-floor energy: flash cuts, carefree beat, kinetic outline pops.",
+      "tier": "spark",
+      "tags": [
+        "party",
+        "dance",
+        "strobe",
+        "9:16"
+      ],
+      "themeId": "theme.party-strobe",
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 140,
+      "photoMotion": "bold",
+      "beatId": "audio.carefree-140",
+      "beatSync": "hard",
+      "textStyle": "kinetic-outline",
+      "textTransition": "pop",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-strobe-night-v1"
+    },
+    {
+      "id": "template.swing-retro",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Swing Retro",
+      "description": "Vintage groove: whip cuts, hot swing, vintage poster whip-ins.",
+      "tier": "free",
+      "tags": [
+        "jazz",
+        "vintage",
+        "swing",
+        "9:16"
+      ],
+      "themeId": "theme.retro-vhs",
+      "motion": "snappy",
+      "transition": "spin",
+      "transitionDurationMs": 200,
+      "photoMotion": "bold",
+      "beatId": "audio.hot-swing-180",
+      "beatSync": "medium",
+      "textStyle": "vintage-poster",
+      "textTransition": "whip-in",
+      "aspect": "9:16",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-swing-retro-v1"
+    },
+    {
+      "id": "template.mint-travel",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Mint Travel",
+      "description": "Wanderlust edit: soft dissolves, ocean drift, caption pill fades.",
+      "tier": "free",
+      "tags": [
+        "travel",
+        "mint",
+        "vlog",
+        "9:16"
+      ],
+      "themeId": "theme.ocean-pop",
+      "motion": "soft",
+      "transition": "whip",
+      "transitionDurationMs": 400,
+      "photoMotion": "gentle",
+      "beatId": "audio.ocean-drift-084",
+      "beatSync": "medium",
+      "textStyle": "caption-pill",
+      "textTransition": "fade",
+      "aspect": "9:16",
+      "durationTargetSec": 60,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-mint-travel-v1"
+    },
+    {
+      "id": "template.lounge-edit",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Lounge Edit",
+      "description": "Chill lifestyle: float dissolves, lobby time, script soft dissolves.",
+      "tier": "free",
+      "tags": [
+        "lounge",
+        "chill",
+        "lifestyle",
+        "1:1"
+      ],
+      "themeId": "theme.soft-film",
+      "motion": "float",
+      "transition": "whip",
+      "transitionDurationMs": 500,
+      "photoMotion": "gentle",
+      "beatId": "audio.lobby-time-096",
+      "beatSync": "soft",
+      "textStyle": "caption-pill",
+      "textTransition": "dissolve",
+      "aspect": "1:1",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-lounge-edit-v1"
+    },
+    {
+      "id": "template.pulse-reels",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Pulse Reels",
+      "description": "Vertical kinetic: zoom-through, neon pulse, kinetic outline whip-ins.",
+      "tier": "spark",
+      "tags": [
+        "reels",
+        "tiktok",
+        "kinetic",
+        "9:16"
+      ],
+      "themeId": "theme.neon-night",
+      "motion": "snappy",
+      "transition": "zoom-through",
+      "transitionDurationMs": 240,
+      "photoMotion": "bold",
+      "beatId": "audio.neon-pulse-118",
+      "beatSync": "hard",
+      "textStyle": "kinetic-outline",
+      "textTransition": "whip-in",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-pulse-reels-v1"
+    },
+    {
+      "id": "template.birthday-blast",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Birthday Blast",
+      "description": "Birthday invitation: party-strobe flashes, Hyperfun beat, bold-impact titles — ready to RSVP.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "birthday",
+        "party",
+        "9:16"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.party-strobe",
+      "motion": "snappy",
+      "transition": "zoom-through",
+      "transitionDurationMs": 160,
+      "photoMotion": "bold",
+      "beatId": "audio.hyperfun-128",
+      "beatSync": "hard",
+      "textStyle": "bold-impact",
+      "textTransition": "pop",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-birthday-blast-v2",
+      "eventType": "Birthday",
+      "defaultTitle": "Birthday bash 🎉",
+      "defaultOverlays": [
+        {
+          "value": "You're invited!",
+          "role": "title"
+        },
+        {
+          "value": "🎉 🎂",
+          "role": "caption"
+        }
+      ],
+      "vibe": "Neon party strobes · hard beat · bold RSVP titles",
+      "eventEmoji": "🎉",
+      "defaultEmojis": [
+        "🎉",
+        "🎂",
+        "🥳"
+      ],
+      "hostPlaceholder": "Host name"
+    },
+    {
+      "id": "template.garden-soiree",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Garden Soirée",
+      "description": "Garden / bridal invitation: rose-quartz float, slide-up reveals, Warm Acoustic — outdoor soirées.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "wedding",
+        "garden",
+        "4:5"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.rose-quartz",
+      "motion": "float",
+      "transition": "whip",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "script-soft",
+      "textTransition": "slide-up",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-garden-soiree-v2",
+      "eventType": "Wedding",
+      "defaultTitle": "Garden soirée 🌸",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "🌸 Join us",
+          "role": "caption"
+        }
+      ],
+      "vibe": "Rose float · soft slide · warm acoustic garden feel",
+      "eventEmoji": "🌸",
+      "defaultEmojis": [
+        "🌸",
+        "🥂"
+      ],
+      "hostPlaceholder": "Hosts"
+    },
+    {
+      "id": "template.candle-wish",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Candle Wish",
+      "description": "Intimate birthday invitation: golden-hour light-leaks, soft serif titles, Lobby Time — candles & wishes.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "birthday",
+        "intimate",
+        "1:1"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.golden-hour",
+      "motion": "cinematic",
+      "transition": "flash",
+      "transitionDurationMs": 440,
+      "photoMotion": "gentle",
+      "beatId": "audio.lobby-time-096",
+      "beatSync": "medium",
+      "textStyle": "script-soft",
+      "textTransition": "fade",
+      "aspect": "1:1",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-candle-wish-v2",
+      "eventType": "Birthday",
+      "defaultTitle": "Candle wish 🕯️",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "🕯️ ✨",
+          "role": "caption"
+        }
+      ],
+      "vibe": "Golden candlelight · light-leaks · intimate toast",
+      "eventEmoji": "🕯️",
+      "defaultEmojis": [
+        "🕯️",
+        "✨"
+      ],
+      "hostPlaceholder": "Your name"
+    },
+    {
+      "id": "template.wedding-vows",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Wedding Vows",
+      "description": "Wedding invitation: rose-quartz, heart-wipe romance, script-soft titles, Warm Acoustic.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "wedding",
+        "romantic",
+        "4:5"
+      ],
+      "mode": "invitation",
+      "eventType": "Wedding",
+      "defaultTitle": "You're invited 💍",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "💍 Join us",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.rose-quartz",
+      "motion": "float",
+      "transition": "flash",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "vintage-poster",
+      "textTransition": "fade",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-wedding-vows-v2",
+      "vibe": "Soft rose · heart wipe · script vows & warm strings",
+      "eventEmoji": "💍",
+      "defaultEmojis": [
+        "💍",
+        "🤍"
+      ],
+      "hostPlaceholder": "Partner names"
+    },
+    {
+      "id": "template.baby-shower-bloom",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Baby Shower Bloom",
+      "description": "Baby shower invitation: soft-film pastels, soft-bloom transitions, gentle Lobby Time.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "baby-shower",
+        "family",
+        "1:1"
+      ],
+      "mode": "invitation",
+      "eventType": "Baby shower",
+      "defaultTitle": "Baby shower 👶",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "👶 💕",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.soft-film",
+      "motion": "float",
+      "transition": "zoom-through",
+      "transitionDurationMs": 540,
+      "photoMotion": "gentle",
+      "beatId": "audio.lobby-time-096",
+      "beatSync": "soft",
+      "textStyle": "caption-pill",
+      "textTransition": "pop",
+      "aspect": "1:1",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-baby-shower-bloom-v2",
+      "vibe": "Pastel soft-film · gentle bloom · sweet pops",
+      "eventEmoji": "👶",
+      "defaultEmojis": [
+        "👶",
+        "💕",
+        "🎀"
+      ],
+      "hostPlaceholder": "Parents-to-be"
+    },
+    {
+      "id": "template.housewarming-glow",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Housewarming Glow",
+      "description": "Housewarming invitation: golden-hour warmth, slide-right welcome, Ocean Drift beat.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "housewarming",
+        "home",
+        "9:16"
+      ],
+      "mode": "invitation",
+      "eventType": "Housewarming",
+      "defaultTitle": "Open house 🏡",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "🏡 Come say hi",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.golden-hour",
+      "motion": "cinematic",
+      "transition": "whip",
+      "transitionDurationMs": 380,
+      "photoMotion": "gentle",
+      "beatId": "audio.ocean-drift-084",
+      "beatSync": "medium",
+      "textStyle": "caption-pill",
+      "textTransition": "slide-up",
+      "aspect": "9:16",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-housewarming-glow-v2",
+      "vibe": "Golden open-house · slide-right welcome · ocean drift",
+      "eventEmoji": "🏡",
+      "defaultEmojis": [
+        "🏡",
+        "🔑"
+      ],
+      "hostPlaceholder": "Homeowners"
+    },
+    {
+      "id": "template.grad-caps",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Grad Caps",
+      "description": "Graduation invitation: ocean-pop energy, circle-wipe reveals, Carefree beat.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "graduation",
+        "celebrate",
+        "9:16"
+      ],
+      "mode": "invitation",
+      "eventType": "Graduation",
+      "defaultTitle": "Graduation! 🎓",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "🎓 Celebrate",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.ocean-pop",
+      "motion": "snappy",
+      "transition": "glitch",
+      "transitionDurationMs": 460,
+      "photoMotion": "bold",
+      "beatId": "audio.carefree-140",
+      "beatSync": "hard",
+      "textStyle": "kinetic-outline",
+      "textTransition": "pop",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-grad-caps-v2",
+      "vibe": "Ocean pop · circle wipe · celebrate hard",
+      "eventEmoji": "🎓",
+      "defaultEmojis": [
+        "🎓",
+        "🥳"
+      ],
+      "hostPlaceholder": "Graduate"
+    },
+    {
+      "id": "template.holiday-sparkle",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Holiday Sparkle",
+      "description": "Holiday / NYE invitation: neon-night glow, short glitch sparkle, Neon Pulse beat.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "holiday",
+        "party",
+        "9:16"
+      ],
+      "mode": "invitation",
+      "eventType": "Holiday party",
+      "defaultTitle": "Holiday party ✨",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "🎄 ✨",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.neon-night",
+      "motion": "snappy",
+      "transition": "flash",
+      "transitionDurationMs": 280,
+      "photoMotion": "bold",
+      "beatId": "audio.neon-pulse-118",
+      "beatSync": "hard",
+      "textStyle": "bold-impact",
+      "textTransition": "whip-in",
+      "aspect": "9:16",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-holiday-sparkle-v2",
+      "vibe": "Neon winter · glitch sparkle · whip-in titles",
+      "eventEmoji": "🎄",
+      "defaultEmojis": [
+        "🎄",
+        "✨",
+        "❄️"
+      ],
+      "hostPlaceholder": "Hosts"
+    },
+    {
+      "id": "template.dinner-table",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Dinner Table",
+      "description": "Dinner invitation: documentary grain, blur-fade elegance, Lobby Time — supper clubs.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "dinner",
+        "intimate",
+        "4:5"
+      ],
+      "mode": "invitation",
+      "eventType": "Dinner party",
+      "defaultTitle": "Dinner invitation 🍽️",
+      "defaultOverlays": [
+        {
+          "value": "Join us for dinner",
+          "role": "title"
+        },
+        {
+          "value": "🍽️",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.documentary-grain",
+      "motion": "cinematic",
+      "transition": "flash",
+      "transitionDurationMs": 460,
+      "photoMotion": "gentle",
+      "beatId": "audio.lobby-time-096",
+      "beatSync": "soft",
+      "textStyle": "script-soft",
+      "textTransition": "fade",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-dinner-table-v2",
+      "vibe": "Documentary grain · blur-fade · soft supper club",
+      "eventEmoji": "🍽️",
+      "defaultEmojis": [
+        "🍽️",
+        "🍷"
+      ],
+      "hostPlaceholder": "Chef / host"
+    },
+    {
+      "id": "template.kids-party-pop",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Kids Party Pop",
+      "description": "Kids party invitation: cyber-lime bounce, spin transitions, Hyperfun beat.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "kids",
+        "birthday",
+        "party",
+        "1:1"
+      ],
+      "mode": "invitation",
+      "eventType": "Kids party",
+      "defaultTitle": "Party time! 🎈",
+      "defaultOverlays": [
+        {
+          "value": "You're invited!",
+          "role": "title"
+        },
+        {
+          "value": "🎈 🎂 🎉",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.cyber-lime",
+      "motion": "snappy",
+      "transition": "spin",
+      "transitionDurationMs": 400,
+      "photoMotion": "bold",
+      "beatId": "audio.hyperfun-128",
+      "beatSync": "hard",
+      "textStyle": "bold-impact",
+      "textTransition": "scale-bounce",
+      "aspect": "1:1",
+      "durationTargetSec": 15,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-kids-party-pop-v2",
+      "vibe": "Cyber-lime bounce · spin-in · hyperfun chaos",
+      "eventEmoji": "🎈",
+      "defaultEmojis": [
+        "🎈",
+        "🎂",
+        "🎉"
+      ],
+      "hostPlaceholder": "Parents"
+    },
+    {
+      "id": "template.brunch-breeze",
+      "kind": "template",
+      "version": "1.1.0",
+      "name": "Brunch Breeze",
+      "description": "Brunch invitation: minimal-white calm, circle-wipe reveals, Funk Loop beat.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "brunch",
+        "daytime",
+        "1:1"
+      ],
+      "mode": "invitation",
+      "eventType": "Brunch",
+      "defaultTitle": "Brunch? ☕",
+      "defaultOverlays": [
+        {
+          "value": "You're invited",
+          "role": "title"
+        },
+        {
+          "value": "☕ 🥐",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.minimal-white",
+      "motion": "soft",
+      "transition": "whip",
+      "transitionDurationMs": 460,
+      "photoMotion": "gentle",
+      "beatId": "audio.funk-loop-104",
+      "beatSync": "medium",
+      "textStyle": "caption-pill",
+      "textTransition": "slide-up",
+      "aspect": "1:1",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-brunch-breeze-v2",
+      "vibe": "Minimal daylight · circle wipe · funky brunch",
+      "eventEmoji": "☕",
+      "defaultEmojis": [
+        "☕",
+        "🥐"
+      ],
+      "hostPlaceholder": "Host"
+    },
+    {
+      "id": "template.anniversary-glow",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Anniversary Glow",
+      "description": "Anniversary invitation: soft rose bloom, heart-wipe, Warm Acoustic — years together.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "anniversary",
+        "romantic",
+        "4:5"
+      ],
+      "mode": "invitation",
+      "eventType": "Anniversary",
+      "eventEmoji": "🥂",
+      "vibe": "Rose bloom · heart wipe · warm toast for years together",
+      "defaultTitle": "Happy anniversary 🥂",
+      "hostPlaceholder": "Partners",
+      "defaultEmojis": [
+        "🥂",
+        "💕"
+      ],
+      "defaultOverlays": [
+        {
+          "value": "Happy anniversary",
+          "role": "title"
+        },
+        {
+          "value": "🥂 💕",
+          "role": "caption"
+        }
+      ],
+      "themeId": "theme.rose-quartz",
+      "motion": "float",
+      "transition": "heart-wipe",
+      "transitionDurationMs": 520,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "script-soft",
+      "textTransition": "fade",
+      "aspect": "4:5",
+      "durationTargetSec": 30,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-anniversary-glow-v1"
+    },
+    {
+      "id": "audio.warm-acoustic-092",
+      "kind": "audio-beat",
+      "version": "1.1.0",
+      "name": "Warm Acoustic",
+      "bpm": 92,
+      "mood": [
+        "warm",
+        "acoustic"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/warm-acoustic.mp3",
+      "beatmapUrl": "/catalog/beats/warm-acoustic.json",
+      "sizeBytes": 193569,
+      "attribution": "Kevin MacLeod — Easy Lemon (CC BY 3.0)",
+      "previewNote": "12s loop from Easy Lemon"
+    },
+    {
+      "id": "audio.neon-pulse-118",
+      "kind": "audio-beat",
+      "version": "1.1.0",
+      "name": "Neon Pulse",
+      "bpm": 118,
+      "mood": [
+        "neon",
+        "energetic"
+      ],
+      "license": "creator",
+      "tier": "spark",
+      "previewUrl": "/catalog/previews/neon-pulse.mp3",
+      "beatmapUrl": "/catalog/beats/neon-pulse.json",
+      "sizeBytes": 193573,
+      "attribution": "Kevin MacLeod — Electrodoodle (CC BY 3.0)",
+      "previewNote": "12s loop from Electrodoodle"
+    },
+    {
+      "id": "audio.ocean-drift-084",
+      "kind": "audio-beat",
+      "version": "1.1.0",
+      "name": "Ocean Drift",
+      "bpm": 84,
+      "mood": [
+        "calm",
+        "ocean"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/ocean-drift.mp3",
+      "beatmapUrl": "/catalog/beats/ocean-drift.json",
+      "sizeBytes": 225367,
+      "attribution": "Kevin MacLeod — Floating Cities (CC BY 3.0)",
+      "previewNote": "14s loop from Floating Cities"
+    },
+    {
+      "id": "audio.funk-loop-104",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Funk Loop",
+      "bpm": 104,
+      "mood": [
+        "funk",
+        "groove",
+        "retro"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/funk-loop.mp3",
+      "beatmapUrl": "/catalog/beats/funk-loop.json",
+      "sizeBytes": 193590,
+      "attribution": "Kevin MacLeod — Funk Game Loop (CC BY 3.0)",
+      "previewNote": "12s loop from Funk Game Loop"
+    },
+    {
+      "id": "audio.hyperfun-128",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Hyperfun",
+      "bpm": 128,
+      "mood": [
+        "party",
+        "upbeat",
+        "playful"
+      ],
+      "license": "creator",
+      "tier": "spark",
+      "previewUrl": "/catalog/previews/hyperfun.mp3",
+      "beatmapUrl": "/catalog/beats/hyperfun.json",
+      "sizeBytes": 193568,
+      "attribution": "Kevin MacLeod — Hyperfun (CC BY 3.0)",
+      "previewNote": "12s loop from Hyperfun"
+    },
+    {
+      "id": "audio.hot-swing-180",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Hot Swing",
+      "bpm": 180,
+      "mood": [
+        "jazz",
+        "swing",
+        "vintage"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/hot-swing.mp3",
+      "beatmapUrl": "/catalog/beats/hot-swing.json",
+      "sizeBytes": 193580,
+      "attribution": "Kevin MacLeod — Hot Swing (CC BY 3.0)",
+      "previewNote": "12s loop from Hot Swing"
+    },
+    {
+      "id": "audio.lobby-time-096",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Lobby Time",
+      "bpm": 96,
+      "mood": [
+        "lounge",
+        "chill",
+        "soft"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/lobby-time.mp3",
+      "beatmapUrl": "/catalog/beats/lobby-time.json",
+      "sizeBytes": 193621,
+      "attribution": "Kevin MacLeod — Lobby Time (CC BY 3.0)",
+      "previewNote": "12s loop from Lobby Time"
+    },
+    {
+      "id": "audio.spy-glass-100",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Spy Glass",
+      "bpm": 100,
+      "mood": [
+        "cinematic",
+        "documentary",
+        "tense"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/spy-glass.mp3",
+      "beatmapUrl": "/catalog/beats/spy-glass.json",
+      "sizeBytes": 193619,
+      "attribution": "Kevin MacLeod — Spy Glass (CC BY 3.0)",
+      "previewNote": "12s loop from Spy Glass"
+    },
+    {
+      "id": "audio.carefree-140",
+      "kind": "audio-beat",
+      "version": "1.0.0",
+      "name": "Carefree",
+      "bpm": 140,
+      "mood": [
+        "party",
+        "bright",
+        "dance"
+      ],
+      "license": "creator",
+      "tier": "free",
+      "previewUrl": "/catalog/previews/carefree.mp3",
+      "beatmapUrl": "/catalog/beats/carefree.json",
+      "sizeBytes": 193623,
+      "attribution": "Kevin MacLeod — Carefree (CC BY 3.0)",
+      "previewNote": "12s loop from Carefree"
+    },
+    {
+      "id": "motion.float-soft",
+      "kind": "motion",
+      "version": "1.0.0",
+      "name": "Float Soft",
+      "tier": "free",
+      "tags": [
+        "float",
+        "soft"
+      ]
+    },
+    {
+      "id": "template.diwali-lights",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Diwali Lights",
+      "description": "Festival invitation: glowing diyas, rangoli bloom, fireworks and bell-drone music.",
+      "tier": "free",
+      "tags": [
+        "invitation",
+        "festival",
+        "diwali",
+        "9:16"
+      ],
+      "mode": "invitation",
+      "themeId": "theme.golden-hour",
+      "motion": "float",
+      "transition": "zoom-through",
+      "transitionDurationMs": 600,
+      "photoMotion": "gentle",
+      "beatId": "audio.warm-acoustic-092",
+      "beatSync": "soft",
+      "textStyle": "vintage-poster",
+      "textTransition": "fade",
+      "aspect": "9:16",
+      "durationTargetSec": 9,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-diwali-lights-v1",
+      "eventType": "Festival",
+      "defaultTitle": "Diwali Night ✨",
+      "defaultOverlays": [
+        {
+          "value": "Join us for Diwali",
+          "role": "title"
+        }
+      ],
+      "vibe": "Warm diyas · rangoli · fireworks",
+      "eventEmoji": "🪔",
+      "defaultEmojis": [
+        "🪔",
+        "✨",
+        "🎆"
+      ],
+      "hostPlaceholder": "Host name"
+    },
+    {
+      "id": "template.travel-postcard",
+      "kind": "template",
+      "version": "1.0.0",
+      "name": "Travel Postcard",
+      "description": "Trip recap: sunset peaks, ocean lines, open road — breezy acoustic loop.",
+      "tier": "free",
+      "tags": [
+        "travel",
+        "postcard",
+        "vlog",
+        "9:16"
+      ],
+      "themeId": "theme.ocean-pop",
+      "motion": "soft",
+      "transition": "whip",
+      "transitionDurationMs": 500,
+      "photoMotion": "gentle",
+      "beatId": "audio.ocean-drift-084",
+      "beatSync": "soft",
+      "textStyle": "vintage-poster",
+      "textTransition": "slide-up",
+      "aspect": "9:16",
+      "durationTargetSec": 8,
+      "sizeBytes": 48000,
+      "hash": "sha256:tpl-travel-postcard-v1"
+    }
+  ],
+  "tombstones": []
+}

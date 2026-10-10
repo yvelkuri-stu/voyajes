@@ -126,6 +126,33 @@ export function Timeline(p: Props) {
   const audioEnd = p.audio.reduce((m, a) => Math.max(m, a.at + a.durationSec), 0);
   const width = Math.max(total, audioEnd) * pxPerSec + 140;
 
+  // Edge swipes: when the timeline is already scrolled to an end, a further
+  // horizontal swipe would chain to the browser (back/forward nav). Swallow it.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let sx = 0, sy = 0, axis: "x" | "y" | null = null;
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      sx = t.clientX; sy = t.clientY; axis = null;
+    };
+    const onMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (!axis && Math.abs(dx) + Math.abs(dy) > 6) axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (axis !== "x" || !e.cancelable) return;
+      const atStart = el.scrollLeft <= 0 && dx > 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && dx < 0;
+      if (atStart || atEnd) e.preventDefault();
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+    };
+  }, []);
+
   // Prevent page scroll while a touch drag is lifted (long-press)
   useEffect(() => {
     const el = laneRef.current;

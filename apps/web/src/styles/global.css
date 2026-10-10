@@ -4433,3 +4433,38 @@ html.minimalist-mode .ai-ambient {
 /* Timeline swipes must never trigger browser back/forward overscroll nav */
 .vj-tl-scroll { overscroll-behavior-x: contain; }
 html:has(.vj-tl-scroll), body:has(.vj-tl-scroll) { overscroll-behavior-x: none; }
+
+/* ───────────── v0.5.1 mobile fit: no page-level sideways scroll ───────────── */
+/* Grid tracks were `1fr` (= minmax(auto,1fr)), so the timeline's min-content
+   width (toolbar row + lanes) stretched the whole column to ~550–690px. */
+.compose-layout { grid-template-columns: minmax(0, 1fr) 300px; }
+.compose-layout > *, .compose-root, .main, .app-shell > * { min-width: 0; }
+@media (max-width: 900px) { .compose-layout { grid-template-columns: minmax(0, 1fr); } }
+.compose-root.is-minimalist .compose-layout { grid-template-columns: minmax(0, 1fr); }
+.vj-tl, .vj-tl-body, .vj-tl-scroll { min-width: 0; max-width: 100%; }
+img, video, canvas, svg { max-width: 100%; }
+
+/* Timeline toolbar: wrap into icon rows on phones; tap targets ≥ 40px */
+@media (max-width: 640px) {
+  .vj-tl-toolbar { flex-wrap: wrap; overflow-x: visible; row-gap: 2px; }
+  .vj-tl-btn { min-width: 40px; min-height: 40px; justify-content: center; padding: 4px 6px; }
+  .vj-tl-btn-label { display: none; }
+  .vj-tl-sep { display: none; }
+  .vj-tl-time { flex: 1 0 auto; text-align: center; }
+}
+
+/* Gestures: horizontal swipes stay inside the timeline (no browser back/forward) */
+.vj-tl-scroll { overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+.vj-tl { overscroll-behavior-x: contain; }
+html, body { overscroll-behavior-x: none; overflow-x: clip; }
+/* keep the timeline off the screen edge so iOS edge-swipe-back is less likely */
+@media (max-width: 640px) {
+  .vj-tl { margin-left: 6px; margin-right: 6px; }
+}
+
+/* Long unbroken strings (file names, links, status) never widen the page */
+.status-line, .preview-meta-strip, .muted, .vj-insp-body, .media-importer-sheet { overflow-wrap: anywhere; }
+.preview-meta-strip { flex-wrap: wrap; }
+.media-importer-sheet { max-width: 100vw; box-sizing: border-box; }
+.invite-tpl-gallery { grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); }
+.vj-insp-chips, .vj-insp-kf-grid { flex-wrap: wrap; min-width: 0; }

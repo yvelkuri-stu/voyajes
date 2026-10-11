@@ -101,6 +101,8 @@ def sticker(img, paint, outline=10, shadow=True):
     return Image.alpha_composite(Image.alpha_composite(img, white), l)
 
 def word(img, text, fnt, size, xy, fill, rot=0, outline="#000000", stroke=6, sticky=True):
+    # these display fonts are Latin-only: drop symbols they can't draw (no tofu boxes)
+    text = "".join(ch for ch in text if ord(ch) < 0x2000).strip() or "yay!"
     l = layer(); d = ImageDraw.Draw(l); f = font(fnt, size)
     d.text(xy, text, font=f, fill=H(fill) + (255,), stroke_width=stroke, stroke_fill=H(outline) + (255,), anchor="mm")
     if rot: l = l.rotate(rot, center=xy, resample=Image.BICUBIC)
@@ -269,7 +271,58 @@ def ART():
         c1="#1a0033", c2="#ff2a6d", glow="#05d9e8", acc=["#ff2a6d", "#05d9e8", "#f9c80e"])
     A["template.swing-retro"] = T("checker", ["checker", "stars", "faces"], ["grain", "halftone"], [("SWING!", "shrikhand"), ("ba-dum", "bangers"), ("✦", "luckiest")],
         c1="#fff3b0", c2="#e09f3e", acc=["#9e2a2b", "#540b0e", "#ffffff"])
+    # v0.6 "starting point" stories — 5 shots each
+    A["template.weekend-goa"] = T("holo", ["waves", "sunrays", "faces", "road", "sparkle"], ["pop", "grain"],
+        [("GOA!", "luckiest"), ("sun's out", "marker"), ("susegad", "shrikhand"), ("scooter szn", "bangers"), ("till next time", "marker")],
+        holo=["#ff9e00", "#ff5400", "#00f5d4", "#00bbf9", "#fee440"], acc=["#fee440", "#ffffff", "#ff006e", "#00f5d4"])
+    A["template.road-trip-recap"] = T("film", ["stars", "mountains", "sunrays", "road", "road"], ["grain", "leak"],
+        [("ROAD TRIP", "luckiest"), ("mile 214", "pixel"), ("snack stop", "marker"), ("are we there?", "bangers"), ("home ✦", "shrikhand")],
+        c1="#ffcf99", c2="#e76f51", c3="#264653", acc=["#ffffff", "#f4a261", "#2a9d8f"], leak="#ffb703")
+    A["template.wedding-weekend"] = T("chrome", ["disco", "petals", "hearts", "rings", "sparkle"], ["sparkle", "grain"],
+        [("WEDDING WKND", "monoton"), ("mehendi", "shrikhand"), ("i do!", "marker"), ("forever", "bangers"), ("just married", "shrikhand")],
+        tint="#ffd6e8", acc=["#ffffff", "#ffc8dd", "#cdb4db", "#ffafcc"])
+    A["template.family-holiday"] = T("checker", ["sunrays", "faces", "waves", "house", "hearts"], ["pop"],
+        [("FAMILY TRIP", "luckiest"), ("day one", "marker"), ("best day", "bangers"), ("lazy mornings", "marker"), ("love you all", "shrikhand")],
+        c1="#bde0fe", c2="#ffc8dd", acc=["#ff006e", "#fb5607", "#3a86ff", "#ffbe0b"])
     return A
+
+FOCUS_PACKS = {
+    "template.weekend-goa": dict(name="Weekend in Goa", description="Beach weekend story: sun, scooters, sunsets — bright Ocean Pop look with whip cuts.",
+        tags=["travel", "beach", "goa", "weekend", "9:16"], themeId="theme.ocean-pop", motion="snappy", photoMotion="gentle",
+        beatId="audio.ocean-drift-084", mood="travel", grade="teal-orange", audio="lib:lib.audio.travel-breeze",
+        title="Weekend in Goa", caption="Swap in your beach days"),
+    "template.road-trip-recap": dict(name="Road Trip Recap", description="Miles, snacks, views — film-grain road movie recap with zoom punches.",
+        tags=["travel", "road-trip", "recap", "9:16"], themeId="theme.golden-hour", motion="soft", photoMotion="gentle",
+        beatId="audio.ocean-drift-084", mood="travel", grade="film", audio="lib:lib.audio.retro-groove",
+        title="Road trip recap", caption="Every mile, one story"),
+    "template.wedding-weekend": dict(name="Wedding Weekend", description="Mehendi to dance floor — chrome sparkle, flash cuts, warm strings.",
+        tags=["wedding", "weekend", "celebration", "9:16"], themeId="theme.rose-quartz", motion="float", photoMotion="gentle",
+        beatId="audio.warm-acoustic-092", mood="wedding", grade="dreamy", audio="lib:lib.audio.wedding-strings",
+        title="Wedding weekend", caption="Three days, all the feels"),
+    "template.family-holiday": dict(name="Family Holiday", description="Sunny family trip: big smiles, lazy mornings, pop stickers and bouncy cuts.",
+        tags=["family", "holiday", "travel", "9:16"], themeId="theme.ocean-pop", motion="snappy", photoMotion="gentle",
+        beatId="audio.ocean-drift-084", mood="travel", grade="vivid", audio="lib:lib.audio.cozy-keys",
+        title="Family holiday", caption="Our favourite people"),
+}
+
+def ensure_focus(cat, samples):
+    """Create catalog packs + base samples for the v0.6 starting-point templates."""
+    have = {p["id"] for p in cat["packs"]}
+    for tid, d in FOCUS_PACKS.items():
+        if tid not in have:
+            cat["packs"].append({"id": tid, "kind": "template", "version": "1.0.0", "name": d["name"], "description": d["description"],
+                "tier": "free", "tags": d["tags"], "themeId": d["themeId"], "motion": d["motion"], "transition": PUNCH[tid][0],
+                "transitionDurationMs": 450, "photoMotion": d["photoMotion"], "beatId": d["beatId"], "beatSync": "medium",
+                "textStyle": PUNCH[tid][1], "textTransition": "pop", "aspect": "9:16", "durationTargetSec": 15,
+                "sizeBytes": 60000, "hash": f"sha256:{tid}-v1"})
+        samples["samples"][tid] = {
+            "mood": d["mood"], "grade": d["grade"],
+            "clips": [{"media": "", "durationSec": 3.2} for _ in range(5)],
+            "audio": [{"ref": d["audio"], "at": 0, "durationSec": 14, "volume": 0.8, "fadeInSec": 0.4, "fadeOutSec": 1.4, "loop": True, "label": None},
+                      {"ref": "lib:lib.audio.stinger-whoosh", "at": 0.15, "durationSec": 1.5, "volume": 0.5, "loop": False, "label": None}],
+            "text": [{"role": "title", "value": d["title"], "at": 0.2, "end": 2.9, "position": "center", "animation": {"in": "pop", "emphasis": "float"}},
+                     {"role": "caption", "value": d["caption"], "at": 9.6, "end": 12.6, "position": "lower-third", "animation": {"in": "slide-up"}}],
+        }
 
 def paint_motif(name, img, rnd, pal, seed):
     acc = pal["acc"]
@@ -334,7 +387,7 @@ def make_image(tid, art, i):
     txt, fnt = art["words"][i]
     size = 92 if len(txt) <= 6 else 64 if len(txt) <= 10 else 46
     if fnt == "pixel": size = int(size * 0.55)
-    corner = [(S * 0.5, S * 0.16), (S * 0.68, S * 0.84), (S * 0.32, S * 0.15)][i]
+    corner = [(S * 0.5, S * 0.16), (S * 0.68, S * 0.84), (S * 0.32, S * 0.15), (S * 0.5, S * 0.85), (S * 0.62, S * 0.14)][i % 5]
     img = word(img, txt, fnt, size, corner, rnd.choice(art["acc"] + ["#ffffff"]), rot=rnd.choice([-8, -5, 4, 7]))
     return img.convert("RGB")
 
@@ -353,6 +406,8 @@ PUNCH = {  # template → (transition, textStyle)
     "template.field-notes": ("glitch", "mono-tech"), "template.golden-recap": ("flash", "kinetic-outline"),
     "template.lounge-edit": ("whip", "caption-pill"), "template.gallery-quiet": ("zoom-through", "clean-sans"),
     "template.vhs-party": ("glitch", "mono-tech"), "template.swing-retro": ("spin", "vintage-poster"),
+    "template.weekend-goa": ("whip", "bold-impact"), "template.road-trip-recap": ("zoom-through", "vintage-poster"),
+    "template.wedding-weekend": ("flash", "script-soft"), "template.family-holiday": ("whip", "caption-pill"),
 }
 PUNCH_ANIMS = [{"in": "pop", "emphasis": "ken-burns", "inSec": 0.35}, {"in": "zoom-in", "emphasis": "pulse", "inSec": 0.3},
                {"in": "slide-up", "emphasis": "ken-burns-out", "inSec": 0.35}]
@@ -362,7 +417,11 @@ def main():
     man_path = os.path.join(LIB, "manifest.json"); man = json.load(open(man_path))
     items = [i for i in man["items"] if not i.get("genz")]
     sp = os.path.join(LIB, "samples.json"); samples = json.load(open(sp))
-    cat = json.load(open(os.path.join(ROOT, "catalog", "manifest.json")))
+    cat_path = os.path.join(ROOT, "catalog", "manifest.json")
+    cat = json.load(open(cat_path))
+    ensure_focus(cat, samples)
+    json.dump(cat, open(cat_path, "w"), indent=2, ensure_ascii=False)
+    shutil.copy(cat_path, os.path.join(ROOT, "apps", "web", "public", "catalog-manifest.json"))
     tpls = {p["id"]: p for p in cat["packs"] if p["kind"] == "template"}
     missing = [t for t in tpls if t not in art]
     assert not missing, missing
@@ -370,7 +429,8 @@ def main():
         slug = tid.replace("template.", "")
         smp = samples["samples"][tid]
         tx, ts = PUNCH[tid]
-        for i in range(3):
+        nshots = len(a["motifs"])
+        for i in range(nshots):
             img = make_image(tid, a, i)
             name = f"tpl-{slug}-{i + 1}"
             img.save(os.path.join(LIB, "photos", f"{name}.webp"), "WEBP", quality=58, method=6)
@@ -379,10 +439,10 @@ def main():
                           "tags": [smp["mood"], slug, "genz"], "url": f"library/photos/{name}.webp", "thumbnail": f"library/photos/{name}-thumb.webp"})
             c = smp["clips"][i]
             c["media"] = f"lib.photo.{name}"
-            c["animation"] = PUNCH_ANIMS[i]
-            c["transitionOut"] = tx if i < 2 else None
+            c["animation"] = PUNCH_ANIMS[i % 3]
+            c["transitionOut"] = tx if i < nshots - 1 else None
             c["transitionSpec"] = {"durationSec": 0.45 if tx in ("whip", "flash", "glitch") else 0.6, "easing": "back-out" if tx in ("zoom-through", "spin") else "ease-in-out"}
-        smp["preview"] = [f"library/photos/tpl-{slug}-{i + 1}-thumb.webp" for i in range(3)]
+        smp["preview"] = [f"library/photos/tpl-{slug}-{i + 1}-thumb.webp" for i in range(nshots)]
         smp["cover"] = smp["preview"][0]
         smp["textStyle"] = ts
         smp["transition"] = tx
@@ -391,7 +451,7 @@ def main():
             t["animation"]["in"] = "pop" if t["role"] == "title" else "slide-up"
         # recompute total with new transition lengths
         hold = smp["clips"][0]["durationSec"]; txd = smp["clips"][0]["transitionSpec"]["durationSec"]
-        smp["durationSec"] = round(hold * 3 - txd * 2, 2)
+        smp["durationSec"] = round(hold * nshots - txd * (nshots - 1), 2)
         smp["audio"][0]["durationSec"] = smp["durationSec"]
     man["items"] = items
     man["libraryVersion"] = "2026.10.10.1"
@@ -400,7 +460,7 @@ def main():
     json.dump(samples, open(sp, "w"), indent=1, ensure_ascii=False)
     if os.path.exists(PUB): shutil.rmtree(PUB)
     shutil.copytree(LIB, PUB)
-    print("templates", len(art), "images", len(art) * 3)
+    print("templates", len(art), "images", sum(len(a["motifs"]) for a in art.values()))
 
 if __name__ == "__main__":
     main()

@@ -935,10 +935,12 @@ export function Share() {
 
   if (!ready) {
     return (
-      <div className="share-page">
-        <p className="muted" style={{ textAlign: "center" }}>
-          Loading share…
-        </p>
+      <div className="share-page share-loading" aria-busy="true">
+        <div className="share-loading-card">
+          <Logo size={44} />
+          <div className="share-loading-bar" aria-hidden><span /></div>
+          <p className="muted">Opening your story…</p>
+        </div>
       </div>
     );
   }

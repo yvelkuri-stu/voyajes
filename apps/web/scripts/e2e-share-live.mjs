@@ -115,6 +115,13 @@ await scenario('voyage · 4 big noisy photos (link must shrink, not break)', asy
   await p.goto(BASE + '/create'); await p.waitForTimeout(1500);
   await p.locator('input[type=file]').first().setInputFiles(BIG); await p.waitForTimeout(3000);
 });
+await scenario('story · Home → Make a story → wizard → Breeze', async (p) => {
+  await p.goto(BASE + '/'); await p.waitForTimeout(1200);
+  await p.locator('[data-home-story]').click(); await p.waitForTimeout(1000);
+  await p.locator('[data-wizard-theme]').nth(2).click(); await p.waitForTimeout(300);
+  await p.locator('[data-wizard-input]').setInputFiles([A, B, C]);
+  await p.waitForSelector('.vj-wizard', { state: 'detached', timeout: 30000 }); await p.waitForTimeout(1200);
+});
 await scenario('invitation · untouched template sample (library media only)', async (p) => {
   await p.goto(BASE + '/create?mode=invitation'); await p.waitForTimeout(1500);
   await openTemplate(p, 'Diwali');

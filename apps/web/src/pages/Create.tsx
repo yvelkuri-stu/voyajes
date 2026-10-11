@@ -1,3 +1,8 @@
+import { recorderFormatLabel } from "../lib/exportWebm";
+import { StoryWizard } from "../components/StoryWizard";
+import { analyzeMedia, type MediaFacts } from "../lib/breezeAnalyze";
+import { breezePlan, type BreezeItem } from "@voyajes/core";
+import { loadPrefs } from "../lib/prefsStore";
 import {
   Fragment,
   useCallback,
@@ -235,7 +240,7 @@ function aspectCss(aspect: Aspect): string {
 export function Create() {
   const [params, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { prefs } = usePrefs();
+  const { prefs, setPro } = usePrefs();
   const ai = useAiActivity();
   const kidsMode = prefs.kidsMode;
   const themes = kidsMode
@@ -397,7 +402,7 @@ export function Create() {
   const [projectTxSpec, setProjectTxSpec] = useState<TransitionSpec | undefined>(undefined);
   const [selection, setSelection] = useState<TLSelection>(null);
   const [appliedChip, setAppliedChip] = useState<{ label: string; snap: EditorSnapshot | null } | null>(null);
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(() => loadPrefs().pro);
   const [audioClips, setAudioClips] = useState<AudioClip[] | undefined>(undefined);
   /** inline, non-blocking "keep your media vs load sample" choice */
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
@@ -448,6 +453,7 @@ export function Create() {
   clipsRef.current = clips;
   layoutRef.current = layout;
   const minimalist = prefs.minimalistMode;
+  const pro = prefs.pro;
 
   const trackElapsed = (layout.starts[activeIndex] ?? 0) + elapsed;
 
@@ -1449,6 +1455,134 @@ export function Create() {
     setMiniSheet(null);
     setStatus("Blank project · add photos, video and sound");
   }, []);
+
+  // ───────── Breeze auto-compose (v0.6) ─────────
+  const factsRef = useRef(new Map<string, MediaFacts>());
+  const [breezeBusy, setBreezeBusy] = useState(false);
+  const [breezeInfo, setBreezeInfo] = useState<{ seed: number; variant: string; dropped: number; total: number } | null>(null);
+  const runBreeze = useCallback(
+    async (seed: number = 1) => {
+      const list = clipsRef.current.filter((c) => !c.placeholder);
+      if (list.length === 0) {
+        setStatus("Add a few photos first — Breeze builds the story from them");
+        return;
+      }
+      setBreezeBusy(true);
+      try {
+        const items: BreezeItem[] = [];
+        for (let i = 0; i < list.length; i++) {
+          const c = list[i];
+          let f = factsRef.current.get(c.id);
+          if (!f) {
+            try {
+              const blob = (await getBlob(c.id)) ?? (await (await fetch(c.objectUrl)).blob());
+              f = await analyzeMedia(blob, c.kind);
+            } catch {
+              f = {};
+            }
+            factsRef.current.set(c.id, f);
+          }
+          items.push({ id: c.id, name: c.fileName, kind: c.kind, order: i, sourceSec: c.sourceSec, ...f });
+        }
+        const bpm = getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm;
+        const plan = breezePlan(items, {
+          seed,
+          bpm,
+          themeTransition: (theme.transition as TransitionKind) ?? "dissolve",
+          themeAnimation: themeLayer(theme).animation,
+        });
+        const snap = historyRef.current?.checkpoint() ?? null;
+        const byId = new Map(list.map((c) => [c.id, c]));
+        const next: LiveClip[] = plan.clips.map((pc) => ({
+          ...(byId.get(pc.id) as LiveClip),
+          durationSec: pc.durationSec,
+          ...(pc.inSec != null ? { inSec: pc.inSec } : {}),
+          transitionOut: pc.transitionOut,
+          transitionSpec: pc.transitionSpec,
+          animation: pc.animation,
+          keyframes: undefined,
+        }));
+        // keep dropped media around (at the end, excluded) — no: Breeze shows them in the import sheet;
+        // here the story only uses the picks. Users can re-add from the importer.
+        const starts: number[] = [];
+        let t = 0;
+        next.forEach((c, i) => {
+          starts.push(t);
+          t += c.durationSec - (i < next.length - 1 && c.transitionOut ? c.transitionSpec?.durationSec ?? 0.5 : 0);
+        });
+        const total = Math.round(t * 100) / 100;
+        const mk = (role: DraftTextOverlay["role"], value: string, at: number, end: number, position: TextPosition, anim: TextTransition): DraftTextOverlay => ({
+          id: newClipId(),
+          role,
+          value,
+          at,
+          end,
+          style: textStyle,
+          color: "#ffffff",
+          position,
+          animationIn: anim,
+          animationOut: "fade",
+        });
+        const texts: DraftTextOverlay[] = [mk("title", plan.title, 0.2, Math.min(3.2, total), "center", "pop")];
+        if (plan.subtitle) texts.push(mk("subtitle", plan.subtitle, 0.6, Math.min(3.2, total), "lower-third", "slide-up"));
+        for (const cap of plan.captions) {
+          const at = starts[cap.clipIndex] ?? 0;
+          texts.push(mk("caption", cap.text, at + 0.2, Math.min(total, at + 1.8), "bottom", "slide-up"));
+        }
+        setPlaying(false);
+        setClips(next);
+        setTextOverlays(texts);
+        setTemplateId(undefined);
+        setAudioClips([
+          { id: `aud-breeze-${seed}`, ref: audioTrackRef, at: 0, durationSec: total, fadeOutSec: 1.2, label: audioLabelFor(audioTrackRef) },
+        ]);
+        if (plan.place && /^Untitled/.test(title)) setTitle(plan.title);
+        setSelection(null);
+        setActiveIndex(0);
+        setElapsed(0);
+        setBreezeInfo({ seed, variant: plan.variant, dropped: plan.dropped.length, total });
+        setAppliedChip({ label: `Breeze · ${plan.variant}`, snap });
+        setStatus(
+          `Breeze · ${next.length} clips · ${total.toFixed(0)}s${plan.dropped.length ? ` · skipped ${plan.dropped.length} (duplicates/blurry)` : ""}`,
+        );
+        window.setTimeout(() => {
+          setPlaying(true);
+        }, 60);
+      } finally {
+        setBreezeBusy(false);
+      }
+    },
+    [audioTrackRef, selectedBeat.bpm, theme, textStyle, title],
+  );
+
+  // Tapping something on the timeline = "Edit" it (basic controls; Pro stays hidden)
+  useEffect(() => {
+    if (selection) setInspectorOpen(true);
+  }, [selection]);
+
+  // First-run / "Make a story" wizard → import → Breeze plays automatically
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const autoBreezeRef = useRef(false);
+  useEffect(() => {
+    if (!hydrated) return;
+    // Home's "Make a story" (and first visits from Home) arrive with ?onboard=1
+    if (projectMode !== "invitation" && params.get("onboard") === "1") setWizardOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, params.get("onboard")]);
+  const closeWizard = useCallback(() => {
+    setWizardOpen(false);
+    try {
+      localStorage.setItem("voyajes.onboarded.v1", "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    if (!autoBreezeRef.current) return;
+    if (clips.filter((c) => !c.placeholder).length === 0) return;
+    autoBreezeRef.current = false;
+    void runBreeze(1).then(() => closeWizard());
+  }, [clips, runBreeze, closeWizard]);
 
   const applyTemplate = useCallback(
     (tpl: TemplateCard) => {
@@ -2791,7 +2925,35 @@ export function Create() {
   const kenBurns = "";
 
   return (
-    <div className={`compose-root${minimalist ? " is-minimalist" : ""}`}>
+    <>
+    {wizardOpen && (
+      <StoryWizard
+        themes={themes}
+        currentThemeId={themeId}
+        busy={breezeBusy || autoBreezeRef.current}
+        onClose={closeWizard}
+        onPickTheme={(t) => {
+          setThemeId(t.id);
+          const sb = t.suggestedBeatIds?.[0];
+          const b = sb ? getBeatById(sb) : undefined;
+          if (b) setAudioTrackRef(b.packRef);
+          setTransitionOverride(null);
+          setGrade(undefined);
+          setDefaultAnimation(undefined);
+          setProjectTxSpec(undefined);
+        }}
+        onFiles={(files) => {
+          autoBreezeRef.current = true;
+          setBreezeBusy(true);
+          // start a clean story from these photos
+          setClips((prev) => prev.filter((c) => !c.placeholder));
+          setTextOverlays([]);
+          setTemplateId(undefined);
+          void importFiles(files);
+        }}
+      />
+    )}
+    <div className={`compose-root${minimalist ? " is-minimalist" : ""}${pro ? " is-pro" : " is-simple"}`}>
       <div className="compose-header">
         <div className="compose-header-main">
           <h1 className="display compose-title">
@@ -2848,42 +3010,42 @@ export function Create() {
           </div>
         </div>
         <div className="compose-actions">
-          <button type="button" className="btn btn-ghost" onClick={downloadProjectJson}>
-            Export JSON
-          </button>
           <button
             type="button"
             className={`btn btn-ghost${exporting || ai.kind === "export" ? " is-pulsing" : ""}`}
             disabled={exporting}
-            title="Choose YouTube / TikTok / Instagram presets, then export WebM"
+            data-save-video
+            title="Save a video for Reels / Stories / WhatsApp"
             onClick={() => setExportPanelOpen((o) => !o)}
             aria-busy={exporting}
           >
-            {exporting
-              ? `Exporting ${Math.round((exportProgress?.ratio ?? 0) * 100)}%`
-              : "Export…"}
+            {exporting ? `Saving ${Math.round((exportProgress?.ratio ?? 0) * 100)}%` : "⇩ Save video"}
           </button>
           {exporting && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={cancelExport}
-              title="Cancel browser export"
-            >
+            <button type="button" className="btn btn-ghost" onClick={cancelExport} title="Cancel export">
               Cancel
             </button>
           )}
           <button type="button" className="btn btn-primary" onClick={openShare}>
-            Share
+            Share link
           </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => void shareToWhatsApp()}
-            title="Share invite via WhatsApp (prefers GIF when available; lighter than video)"
-          >
-            WhatsApp
-          </button>
+          <details className="vj-more">
+            <summary className="btn btn-ghost" aria-label="More">⋯</summary>
+            <div className="vj-more-menu" role="menu">
+              <button type="button" role="menuitem" onClick={() => void shareToWhatsApp()}>
+                WhatsApp invite
+              </button>
+              <button type="button" role="menuitem" onClick={downloadProjectJson}>
+                Export project JSON (CLI)
+              </button>
+              <Link role="menuitem" to="/themes">
+                Browse all themes &amp; templates
+              </Link>
+              <button type="button" role="menuitem" onClick={() => setPro(!pro)}>
+                {pro ? "Hide Pro controls" : "Show Pro controls"}
+              </button>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -2931,36 +3093,6 @@ export function Create() {
           >
             <span aria-hidden>𝐓</span>
             <span className="icon-tool-tip">Text</span>
-          </button>
-          <button
-            type="button"
-            className="icon-tool"
-            title="Export presets & WebM"
-            aria-label="Export"
-            onClick={() => setExportPanelOpen((o) => !o)}
-          >
-            <span aria-hidden>⇩</span>
-            <span className="icon-tool-tip">Export</span>
-          </button>
-          <button
-            type="button"
-            className="icon-tool"
-            title="Share voyage / invite"
-            aria-label="Share"
-            onClick={openShare}
-          >
-            <span aria-hidden>↗</span>
-            <span className="icon-tool-tip">Share</span>
-          </button>
-          <button
-            type="button"
-            className="icon-tool"
-            title="Story coach"
-            aria-label="Story coach"
-            onClick={runStoryCoach}
-          >
-            <span aria-hidden>✨</span>
-            <span className="icon-tool-tip">Coach</span>
           </button>
         </div>
       )}
@@ -3128,7 +3260,7 @@ export function Create() {
               flexWrap: "wrap",
             }}
           >
-            <h3 style={{ margin: 0 }}>Export for social</h3>
+            <h3 style={{ margin: 0 }}>Save video</h3>
             <button
               type="button"
               className="btn btn-ghost"
@@ -3138,9 +3270,44 @@ export function Create() {
               Close
             </button>
           </div>
+          <div className="vj-save-quick" role="group" aria-label="Video shape">
+            {([
+              ["9:16", "Reels / Stories", "instagram-reels"],
+              ["1:1", "Square", "instagram-feed"],
+              ["16:9", "Wide", "youtube"],
+            ] as const).map(([asp, label, dest]) => (
+              <button
+                key={asp}
+                type="button"
+                className={`vj-save-shape${aspect === asp ? " is-on" : ""}`}
+                onClick={() => {
+                  applyExportDestination(dest as ExportDestination);
+                  setDurationTargetSec(undefined);
+                }}
+              >
+                <span className={`vj-shape vj-shape-${asp.replace(":", "x")}`} aria-hidden />
+                <strong>{label}</strong>
+                <span className="muted">{asp}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary vj-save-go"
+            data-save-go
+            disabled={clips.length === 0 || exporting}
+            onClick={() => void exportVideo()}
+          >
+            {exporting ? `Saving ${Math.round((exportProgress?.ratio ?? 0) * 100)}%` : `⇩ Save video · ${recorderFormatLabel()} · ${aspect}`}
+          </button>
+          <button type="button" className="btn btn-ghost" disabled={clips.length === 0 || exporting} onClick={() => void exportGif()}>
+            GIF (lighter, for chats)
+          </button>
+          <details className="vj-save-more">
+            <summary className="muted">More formats &amp; options</summary>
           <p className="muted" style={{ fontSize: "0.85rem", marginTop: 6 }}>
-            Pick a destination to set aspect + suggested filename. Browser records
-            WebM (VP9/Opus when supported). CLI:{" "}
+            Pick a destination to set aspect + suggested filename. Records
+            MP4 when this browser supports it, else WebM. CLI:{" "}
             <code style={{ fontSize: "0.75rem" }}>
               {cliFlagsForPreset(getExportPreset(exportDestination))}
             </code>
@@ -3308,13 +3475,14 @@ export function Create() {
           <p className="muted" style={{ fontSize: "0.75rem", margin: "8px 0 0" }}>
             {GIF_SIZE_HINT}. Prefer GIF for WhatsApp / friend try-out when video feels heavy.
           </p>
+          </details>
         </div>
       )}
 
       <div className="compose-layout">
         <div>
           <div
-            className={`dropzone${dragOver ? " drag-over" : ""}${minimalist ? " dropzone-mini" : ""}`}
+            className={`dropzone${dragOver ? " drag-over" : ""}${minimalist ? " dropzone-mini" : ""}${clips.length ? " has-clips" : ""}`}
             onDragEnter={(e) => {
               e.preventDefault();
               setDragOver(true);
@@ -3563,6 +3731,34 @@ export function Create() {
           </div>
           </div>
 
+          {projectMode !== "invitation" && clips.some((c) => !c.placeholder) && (
+            <div className="vj-breeze-bar" aria-label="Breeze auto-compose">
+              <button
+                type="button"
+                className="btn btn-primary vj-breeze-main"
+                data-breeze
+                disabled={breezeBusy}
+                onClick={() => void runBreeze(breezeInfo ? breezeInfo.seed + 1 : 1)}
+              >
+                {breezeBusy ? "✨ Composing…" : breezeInfo ? "🔀 Remix" : "✨ Make my story"}
+              </button>
+              <button
+                type="button"
+                className={`btn btn-ghost${inspectorOpen ? " is-on" : ""}`}
+                data-finetune
+                onClick={() => setInspectorOpen((o) => !o)}
+              >
+                {inspectorOpen ? "Done" : "Fine-tune"}
+              </button>
+              {breezeInfo && (
+                <span className="muted vj-breeze-note">
+                  {breezeInfo.variant} cut · {Math.round(breezeInfo.total)}s on the beat
+                  {breezeInfo.dropped ? ` · skipped ${breezeInfo.dropped} duplicate/blurry` : ""} · Remix for another take
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="preview-meta-strip" aria-label="Preview details">
             <span className="preview-meta-title">{title.trim() || (projectMode === "invitation" ? "You're invited!" : "Untitled voyage")}</span>
             <span className="preview-meta-bits muted">
@@ -3681,7 +3877,7 @@ export function Create() {
           />
 
           <section
-            className={`vj-inspector${minimalist ? " is-compact" : ""}${inspectorOpen ? "" : " is-collapsed"}`}
+            className={`vj-inspector${pro ? "" : " is-simple"}${minimalist ? " is-compact" : ""}${inspectorOpen ? "" : " is-collapsed"}`}
             aria-label="Inspector"
           >
             <button
@@ -3715,7 +3911,20 @@ export function Create() {
                         ? "sound · volume · fades · ducking"
                         : "grade · default motion · transitions"}
               </span>
-              <span aria-hidden className="vj-insp-caret">{inspectorOpen ? "▾" : "▸"}</span>
+              <span className="vj-insp-caret vj-insp-edit">{inspectorOpen ? "Done" : "Edit"}</span>
+            </button>
+            <button
+              type="button"
+              className={`vj-pro-toggle${pro ? " is-on" : ""}`}
+              aria-pressed={pro}
+              data-pro-toggle
+              title="Pro: keyframes, easing, per-gap transitions, clip motion"
+              onClick={() => {
+                setPro(!pro);
+                if (!pro) setInspectorOpen(true);
+              }}
+            >
+              Pro
             </button>
 
             {inspectorOpen && (
@@ -3828,6 +4037,7 @@ export function Create() {
                         </div>
                       </InspectorSection>
                     )}
+                    {pro && (<>
                     <AnimationPicker
                       value={selClip.animation ?? animFor(selClip)}
                       onChange={(a) => patchClip(selClip.id, { animation: a })}
@@ -3850,10 +4060,11 @@ export function Create() {
                       onSeekLocal={(t) => seekTo((starts[selectedClipIndex] ?? 0) + t)}
                       compact={minimalist}
                     />
+                    </>)}
                   </>
                 )}
 
-                {selGap >= 0 && (
+                {pro && selGap >= 0 && (
                   <TransitionBrowser
                     kinds={TRANSITIONS}
                     current={clips[selGap]?.transitionOut ?? null}
@@ -3914,6 +4125,7 @@ export function Create() {
                         </label>
                       </div>
                     </InspectorSection>
+                    {pro && (<>
                     <AnimationPicker
                       value={selText.animation}
                       onChange={(a) => patchText(selText.id, { animation: a })}
@@ -3927,6 +4139,7 @@ export function Create() {
                       onSeekLocal={(t) => seekTo(selText.at + t)}
                       compact={minimalist}
                     />
+                    </>)}
                   </>
                 )}
 
@@ -4037,6 +4250,7 @@ export function Create() {
                       sampleUrl={clips.find((c) => c.kind === "image")?.objectUrl}
                       compact={minimalist}
                     />
+                    {pro && (<>
                     <InspectorSection title="Default clip motion" hint="clips without their own animation" compact={minimalist}>
                       <AnimationPicker value={effectiveAnim} onChange={setDefaultAnimation} compact={minimalist} />
                     </InspectorSection>
@@ -4055,7 +4269,8 @@ export function Create() {
                         </span>
                       </label>
                     </InspectorSection>
-                    <p className="vj-insp-hint">Tap a clip, ✦ gap, text or ♪ on the timeline to edit it.</p>
+                    </>)}
+                    <p className="vj-insp-hint">{pro ? "Tap a clip, ✦ gap, text or ♪ on the timeline to edit it." : "The theme handles motion & transitions. Turn on Pro for keyframes, easing and per-gap transitions."}</p>
                   </>
                 )}
               </div>
@@ -5112,5 +5327,6 @@ export function Create() {
         }
       />
     </div>
+    </>
   );
 }

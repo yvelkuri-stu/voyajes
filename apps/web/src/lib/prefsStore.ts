@@ -14,6 +14,8 @@ export type Prefs = {
    * Default ON for new sessions (no prefs key yet).
    */
   minimalistMode: boolean;
+  /** v0.6: show pro editing controls (keyframes, easing, per-gap transitions…) */
+  pro: boolean;
 };
 
 export type MemoryMoment = {
@@ -34,26 +36,38 @@ const DEFAULTS: Prefs = {
   reduceMotion: false,
   largeTargets: false,
   minimalistMode: true,
+  pro: false,
 };
 
+/** v0.6 Focus: Kids Mode is dormant — flip VITE_KIDS_MODE=1 to bring the UI back. */
+export const FEATURE_KIDS = import.meta.env.VITE_KIDS_MODE === "1";
+
+function osReducedMotion(): boolean {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
 export function loadPrefs(): Prefs {
+  let parsed: Partial<Prefs> = {};
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return { ...DEFAULTS };
-    const parsed = JSON.parse(raw) as Partial<Prefs>;
-    return {
-      kidsMode: Boolean(parsed.kidsMode),
-      reduceMotion: Boolean(parsed.reduceMotion),
-      largeTargets: Boolean(parsed.largeTargets) || Boolean(parsed.kidsMode),
-      // Existing users without the key keep classic; new installs get DEFAULTS.minimalistMode
-      minimalistMode:
-        typeof parsed.minimalistMode === "boolean"
-          ? parsed.minimalistMode
-          : false,
-    };
+    if (raw) parsed = JSON.parse(raw) as Partial<Prefs>;
   } catch {
-    return { ...DEFAULTS };
+    /* ignore */
   }
+  // v0.6: one layout (minimalist), motion follows the OS, Kids only behind a flag.
+  // Old prefs (Classic, Kids, manual "Still") migrate silently by being ignored.
+  const kids = FEATURE_KIDS && Boolean(parsed.kidsMode);
+  return {
+    kidsMode: kids,
+    reduceMotion: osReducedMotion(),
+    largeTargets: kids,
+    minimalistMode: true,
+    pro: Boolean(parsed.pro),
+  };
 }
 
 export function savePrefs(next: Prefs): void {

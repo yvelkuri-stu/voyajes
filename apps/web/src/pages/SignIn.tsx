@@ -36,7 +36,44 @@ function safeNext(raw: string | null): string {
   return raw;
 }
 
+/** Full provider / QR / OTP suite — dormant; enable with VITE_AUTH_SUITE=1 (see docs/auth.md). */
+export const FEATURE_AUTH_SUITE = import.meta.env.VITE_AUTH_SUITE === "1";
+
+/** v0.6 Focus: a simple local session — no accounts, no codes. */
 export function SignIn() {
+  return FEATURE_AUTH_SUITE ? <SignInFull /> : <SignInSimple />;
+}
+
+function SignInSimple() {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const nextPath = safeNext(params.get("next"));
+  return (
+    <div className="home-focus">
+      <section className="home-hero" style={{ maxWidth: 420 }}>
+        <h1 className="display home-title" style={{ fontSize: "2rem" }}>Keep going</h1>
+        <p className="muted home-sub">
+          Voyajes keeps your stories on this device — no account needed. Accounts and cloud sync come later.
+        </p>
+        <div className="home-actions">
+          <button
+            type="button"
+            className="btn btn-primary home-cta"
+            data-demo-signin
+            onClick={() => {
+              signInDemo("github");
+              navigate(nextPath);
+            }}
+          >
+            Continue on this device
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SignInFull() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const nextPath = safeNext(params.get("next"));

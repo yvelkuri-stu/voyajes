@@ -191,7 +191,7 @@ export function Themes() {
             })}
           </div>
 
-          <aside className="panel">
+          {prefs.pro && (<aside className="panel">
             <h3>Token inspector</h3>
             {selectedTheme && (
               <>
@@ -276,7 +276,7 @@ export function Themes() {
                 </dl>
               </>
             )}
-          </aside>
+          </aside>)}
         </div>
       ) : (
         <div className="compose-layout">
@@ -351,7 +351,7 @@ export function Themes() {
             })}
           </div>
 
-          <aside className="panel">
+          {prefs.pro && (<aside className="panel">
             <h3>Template pack</h3>
             {selectedTemplate && (
               <>
@@ -469,7 +469,7 @@ export function Themes() {
                 </div>
               </>
             )}
-          </aside>
+          </aside>)}
         </div>
       )}
     </div>

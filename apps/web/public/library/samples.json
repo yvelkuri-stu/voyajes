@@ -3009,6 +3009,526 @@
    "cover": "library/photos/tpl-travel-postcard-1-thumb.webp",
    "textStyle": "vintage-poster",
    "transition": "whip"
+  },
+  "template.weekend-goa": {
+   "mood": "travel",
+   "grade": "teal-orange",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-weekend-goa-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-weekend-goa-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-weekend-goa-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-weekend-goa-4",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-weekend-goa-5",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.travel-breeze",
+     "at": 0,
+     "durationSec": 14.2,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.5,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Weekend in Goa",
+     "at": 0.2,
+     "end": 2.9,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Swap in your beach days",
+     "at": 9.6,
+     "end": 12.6,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "preview": [
+    "library/photos/tpl-weekend-goa-1-thumb.webp",
+    "library/photos/tpl-weekend-goa-2-thumb.webp",
+    "library/photos/tpl-weekend-goa-3-thumb.webp",
+    "library/photos/tpl-weekend-goa-4-thumb.webp",
+    "library/photos/tpl-weekend-goa-5-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-weekend-goa-1-thumb.webp",
+   "textStyle": "bold-impact",
+   "transition": "whip",
+   "durationSec": 14.2
+  },
+  "template.road-trip-recap": {
+   "mood": "travel",
+   "grade": "film",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-road-trip-recap-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "back-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-road-trip-recap-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "back-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-road-trip-recap-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "back-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-road-trip-recap-4",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "back-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-road-trip-recap-5",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "back-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.retro-groove",
+     "at": 0,
+     "durationSec": 13.6,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.5,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Road trip recap",
+     "at": 0.2,
+     "end": 2.9,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Every mile, one story",
+     "at": 9.6,
+     "end": 12.6,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "preview": [
+    "library/photos/tpl-road-trip-recap-1-thumb.webp",
+    "library/photos/tpl-road-trip-recap-2-thumb.webp",
+    "library/photos/tpl-road-trip-recap-3-thumb.webp",
+    "library/photos/tpl-road-trip-recap-4-thumb.webp",
+    "library/photos/tpl-road-trip-recap-5-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-road-trip-recap-1-thumb.webp",
+   "textStyle": "vintage-poster",
+   "transition": "zoom-through",
+   "durationSec": 13.6
+  },
+  "template.wedding-weekend": {
+   "mood": "wedding",
+   "grade": "dreamy",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-wedding-weekend-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-wedding-weekend-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-wedding-weekend-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-wedding-weekend-4",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "flash",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-wedding-weekend-5",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.wedding-strings",
+     "at": 0,
+     "durationSec": 14.2,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.5,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Wedding weekend",
+     "at": 0.2,
+     "end": 2.9,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Three days, all the feels",
+     "at": 9.6,
+     "end": 12.6,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "preview": [
+    "library/photos/tpl-wedding-weekend-1-thumb.webp",
+    "library/photos/tpl-wedding-weekend-2-thumb.webp",
+    "library/photos/tpl-wedding-weekend-3-thumb.webp",
+    "library/photos/tpl-wedding-weekend-4-thumb.webp",
+    "library/photos/tpl-wedding-weekend-5-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-wedding-weekend-1-thumb.webp",
+   "textStyle": "script-soft",
+   "transition": "flash",
+   "durationSec": 14.2
+  },
+  "template.family-holiday": {
+   "mood": "travel",
+   "grade": "vivid",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-family-holiday-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-family-holiday-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-family-holiday-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.35
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-family-holiday-4",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "ken-burns",
+      "inSec": 0.35
+     },
+     "transitionOut": "whip",
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-family-holiday-5",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "pulse",
+      "inSec": 0.3
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.45,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.cozy-keys",
+     "at": 0,
+     "durationSec": 14.2,
+     "volume": 0.8,
+     "fadeInSec": 0.4,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-whoosh",
+     "at": 0.15,
+     "durationSec": 1.5,
+     "volume": 0.5,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "Family holiday",
+     "at": 0.2,
+     "end": 2.9,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "Our favourite people",
+     "at": 9.6,
+     "end": 12.6,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    }
+   ],
+   "preview": [
+    "library/photos/tpl-family-holiday-1-thumb.webp",
+    "library/photos/tpl-family-holiday-2-thumb.webp",
+    "library/photos/tpl-family-holiday-3-thumb.webp",
+    "library/photos/tpl-family-holiday-4-thumb.webp",
+    "library/photos/tpl-family-holiday-5-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-family-holiday-1-thumb.webp",
+   "textStyle": "caption-pill",
+   "transition": "whip",
+   "durationSec": 14.2
   }
  }
 }

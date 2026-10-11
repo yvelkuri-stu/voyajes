@@ -38,8 +38,13 @@ export function usePrefs() {
     setPrefs(updatePrefs({ minimalistMode: on }));
   }, []);
 
+  const setPro = useCallback((on: boolean) => {
+    setPrefs(updatePrefs({ pro: on }));
+  }, []);
+
   return {
     prefs,
+    setPro,
     setKidsMode,
     setReduceMotion,
     setLargeTargets,

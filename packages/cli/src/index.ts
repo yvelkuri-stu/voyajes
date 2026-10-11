@@ -28,6 +28,9 @@ import {
   TRANSITION_KINDS,
   TEXT_STYLE_KINDS,
   TEXT_TRANSITION_KINDS,
+  breezePlan,
+  parseExif,
+  type BreezeItem,
 } from "@voyajes/core";
 import {
   findFfmpeg,
@@ -686,6 +689,67 @@ program
       }
     },
   );
+
+program
+  .command("breeze")
+  .description("Auto-compose a 15–30s story from a folder of photos/videos (EXIF order, beat-aligned) — then `voyajes render` it")
+  .argument("<dir>", "Folder with JPG/PNG/WebP/MP4/MOV files")
+  .option("-o, --out <file>", "Project JSON path", "voyajes.project.json")
+  .option("--theme <id>", "Theme id", "theme.ocean-pop")
+  .option("--seed <n>", "Variation (Remix) seed", "1")
+  .action((dir: string, opts: { out: string; theme: string; seed: string }) => {
+    const manifest = loadManifest();
+    const theme = manifest.packs.find((p) => p.id === opts.theme && p.kind === "theme") as any;
+    if (!theme) {
+      console.error(`Unknown theme ${opts.theme}`);
+      process.exit(1);
+    }
+    const beatId: string = theme.suggestedBeatIds?.[0] ?? "audio.ocean-drift-084";
+    const beat = manifest.packs.find((p) => p.id === beatId) as any;
+    const abs = resolve(dir);
+    const files = readdirSync(abs).filter((f) => /\.(jpe?g|png|webp|mp4|mov|webm)$/i.test(f));
+    if (!files.length) {
+      console.error("No photos/videos found");
+      process.exit(1);
+    }
+    const items: BreezeItem[] = files.map((f, i) => {
+      const kind = /\.(mp4|mov|webm)$/i.test(f) ? "video" : "image";
+      let exif = {};
+      if (/\.jpe?g$/i.test(f)) {
+        const b = readFileSync(join(abs, f));
+        exif = parseExif(b.buffer.slice(b.byteOffset, b.byteOffset + Math.min(b.byteLength, 262144)));
+      }
+      return { id: f, name: f, kind, order: i, ...exif };
+    });
+    const plan = breezePlan(items, {
+      seed: Number(opts.seed) || 1,
+      bpm: beat?.bpm ?? 100,
+      themeTransition: (theme.transition ?? "dissolve") as TransitionKind,
+    });
+    const project = {
+      schema: 3,
+      title: plan.title,
+      aspect: "9:16",
+      theme: `${theme.id}@${theme.version ?? "1.0.0"}`,
+      transition: theme.transition,
+      media: plan.clips.map((c) => ({
+        path: relative(dirname(resolve(opts.out)), join(abs, c.id)) || c.id,
+        mute: true,
+        durationSec: c.durationSec,
+        ...(c.inSec != null ? { inSec: c.inSec } : {}),
+        animation: c.animation,
+        ...(c.transitionOut ? { transitionOut: c.transitionOut } : {}),
+        ...(c.transitionSpec ? { transitionSpec: c.transitionSpec } : {}),
+      })),
+      text: [
+        { at: 0.2, end: Math.min(3.2, plan.totalSec), role: "title", value: plan.title, position: "center" },
+        ...(plan.subtitle ? [{ at: 0.6, end: Math.min(3.2, plan.totalSec), role: "subtitle", value: plan.subtitle, position: "lower-third" }] : []),
+      ],
+      audio: { track: `${beatId}@${beat?.version ?? "1.0.0"}`, beatSync: "off", ducking: true },
+    };
+    writeFileSync(resolve(opts.out), JSON.stringify(project, null, 2));
+    console.log(`${resolve(opts.out)}\n${plan.variant} cut · ${plan.clips.length} clips · ${plan.totalSec}s${plan.dropped.length ? ` · skipped ${plan.dropped.length}` : ""} · "${plan.title}"${plan.subtitle ? ` · ${plan.subtitle}` : ""}\nNext: voyajes render ${opts.out} -o story.mp4`);
+  });
 
 program
   .command("template")

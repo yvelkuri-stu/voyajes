@@ -169,10 +169,23 @@ function assertNotAborted(signal?: AbortSignal) {
   }
 }
 
-export function pickRecorderMime(withAudio = false): {
+export function pickRecorderMime(withAudio = false, preferMp4 = true): {
   mimeType: string;
   extension: "webm" | "mp4";
 } {
+  // v0.6: MP4 (H.264/AAC) first — plays everywhere (WhatsApp, Instagram, iOS).
+  // Safari and Chrome 126+ record MP4; older browsers fall back to WebM.
+  const mp4: Array<{ mimeType: string; extension: "webm" | "mp4" }> = withAudio
+    ? [
+        { mimeType: "video/mp4;codecs=avc1.42E01F,mp4a.40.2", extension: "mp4" },
+        { mimeType: "video/mp4;codecs=avc1,mp4a.40.2", extension: "mp4" },
+        { mimeType: "video/mp4", extension: "mp4" },
+      ]
+    : [
+        { mimeType: "video/mp4;codecs=avc1.42E01F", extension: "mp4" },
+        { mimeType: "video/mp4;codecs=avc1", extension: "mp4" },
+        { mimeType: "video/mp4", extension: "mp4" },
+      ];
   const videoOnly: Array<{ mimeType: string; extension: "webm" | "mp4" }> = [
     { mimeType: "video/webm;codecs=vp9", extension: "webm" },
     { mimeType: "video/webm;codecs=vp8", extension: "webm" },
@@ -187,7 +200,7 @@ export function pickRecorderMime(withAudio = false): {
     { mimeType: "video/webm", extension: "webm" },
     { mimeType: "video/mp4", extension: "mp4" },
   ];
-  const candidates = withAudio ? withOpus : videoOnly;
+  const candidates = [...(preferMp4 ? mp4 : []), ...(withAudio ? withOpus : videoOnly)];
   if (typeof MediaRecorder === "undefined") {
     throw new Error("MediaRecorder is not supported in this browser");
   }
@@ -1515,4 +1528,13 @@ export async function exportSlideshowWebm(
     audioMuxed,
     audioWarning,
   };
+}
+
+/** "MP4" when this browser can record it, else "WebM" (UI label). */
+export function recorderFormatLabel(): "MP4" | "WebM" {
+  try {
+    return pickRecorderMime(true).extension === "mp4" ? "MP4" : "WebM";
+  } catch {
+    return "WebM";
+  }
 }

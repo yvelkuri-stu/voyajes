@@ -36,6 +36,10 @@ export function MediaImporter({
   const [tag, setTag] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  // v0.6: multi-select staging — sort by date/name, tap to drop, then add
+  const [staged, setStaged] = useState<{ file: File; url: string; off: boolean }[] | null>(null);
+  const [sortBy, setSortBy] = useState<"date" | "name">("date");
+  const [dragging, setDragging] = useState(false);
 
   const tags = useMemo(() => libraryTags(), []);
   const items = useMemo(() => {
@@ -49,6 +53,30 @@ export function MediaImporter({
 
   if (!open) return null;
 
+  const stage = (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length <= 1 || mode === "audio") {
+      onImportFiles(list);
+      onClose();
+      return;
+    }
+    setStaged(list.map((file) => ({ file, url: URL.createObjectURL(file), off: false })));
+  };
+  const sortedStage = staged
+    ? [...staged].sort((a, b) =>
+        sortBy === "name"
+          ? a.file.name.localeCompare(b.file.name, undefined, { numeric: true })
+          : a.file.lastModified - b.file.lastModified,
+      )
+    : [];
+  const commitStage = () => {
+    const pick = sortedStage.filter((x) => !x.off).map((x) => x.file);
+    staged?.forEach((x) => URL.revokeObjectURL(x.url));
+    setStaged(null);
+    if (pick.length) onImportFiles(pick);
+    onClose();
+  };
+
   const accept =
     mode === "audio"
       ? "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/ogg,audio/aac,.mp3,.wav,.m4a,.ogg"
@@ -57,9 +85,8 @@ export function MediaImporter({
         : "image/*,video/mp4,video/webm,video/quicktime,.mov,.m4v,audio/mpeg,audio/wav,audio/ogg,.mp3,.wav,.m4a";
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) onImportFiles(e.target.files);
+    if (e.target.files?.length) stage(Array.from(e.target.files));
     e.target.value = "";
-    onClose();
   };
 
   return (
@@ -128,8 +155,67 @@ export function MediaImporter({
           )}
         </div>
 
-        {tab === "device" && (
-          <div className="media-importer-body">
+        {tab === "device" && staged && (
+          <div className="media-importer-body" data-stage>
+            <div className="vj-stage-bar">
+              <span>
+                <strong>{staged.filter((x) => !x.off).length}</strong> of {staged.length} selected · tap to remove
+              </span>
+              <span className="vj-stage-sort" role="group" aria-label="Sort">
+                <button type="button" className={`chip${sortBy === "date" ? " chip-active" : ""}`} onClick={() => setSortBy("date")}>
+                  Date
+                </button>
+                <button type="button" className={`chip${sortBy === "name" ? " chip-active" : ""}`} onClick={() => setSortBy("name")}>
+                  Name
+                </button>
+              </span>
+            </div>
+            <div className="vj-stage-grid">
+              {sortedStage.map((x) => (
+                <button
+                  key={x.url}
+                  type="button"
+                  className={`vj-stage-item${x.off ? " is-off" : ""}`}
+                  aria-pressed={!x.off}
+                  title={x.file.name}
+                  onClick={() => setStaged((st) => st!.map((y) => (y === x ? { ...y, off: !y.off } : y)))}
+                >
+                  {x.file.type.startsWith("video/") ? (
+                    <video src={x.url} muted playsInline preload="metadata" />
+                  ) : (
+                    <img src={x.url} alt="" loading="lazy" />
+                  )}
+                  <span className="vj-stage-x" aria-hidden>{x.off ? "＋" : "✕"}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              data-stage-add
+              style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
+              disabled={!staged.some((x) => !x.off)}
+              onClick={commitStage}
+            >
+              Add {staged.filter((x) => !x.off).length}
+            </button>
+          </div>
+        )}
+
+        {tab === "device" && !staged && (
+          <div
+            className={`media-importer-body${dragging ? " is-drag" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              if (e.dataTransfer.files.length) stage(e.dataTransfer.files);
+            }}
+          >
             <input
               ref={fileRef}
               type="file"
@@ -157,7 +243,7 @@ export function MediaImporter({
             </p>
             <div className="media-importer-empty">
               <span aria-hidden>🖼️</span>
-              <p>Nothing selected yet — pick files or switch to the library.</p>
+              <p>Nothing selected yet — pick several at once (or drop them here). You can sort and remove before adding.</p>
             </div>
           </div>
         )}

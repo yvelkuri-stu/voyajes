@@ -39,6 +39,8 @@ const SESSION_CACHE_PREFIX = "voyajes.portable.cache.v1:";
 export type PortableMediaEntry = {
   /** JPEG (or original image) data URL */
   dataUrl: string;
+  /** v0.7 cloud voyages: media lives in R2 instead of the link */
+  url?: string;
   /** Playback kind after packing (videos may be coerced to image stills) */
   kind: "image" | "video" | "audio";
   /** Original clip was video; link embeds a poster still */
@@ -308,6 +310,11 @@ function stripShareForPack(record: ShareRecord): ShareRecord {
   return share;
 }
 
+/** v0.7: a full-quality pack for cloud publishing (media goes to R2, not the link). */
+export function buildCloudPack(record: ShareRecord): Promise<PortablePackV1> {
+  return buildPackAtQuality(record, QUALITY_HIGH, 999);
+}
+
 async function buildPackAtQuality(
   record: ShareRecord,
   preset: QualityPreset,
@@ -494,7 +501,7 @@ function dataUrlToObjectUrl(dataUrl: string): string {
 export function hydratePortablePack(pack: PortablePackV1): HydratedPortable {
   const objectUrls: Record<string, string> = {};
   for (const [id, entry] of Object.entries(pack.media)) {
-    objectUrls[id] = dataUrlToObjectUrl(entry.dataUrl);
+    objectUrls[id] = entry.url ? entry.url : dataUrlToObjectUrl(entry.dataUrl);
   }
 
   const share = stripShareForPack(pack.share);

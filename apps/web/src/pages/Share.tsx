@@ -1,3 +1,16 @@
+import {
+  apiEnabled,
+  isCloudId,
+  fetchVoyage,
+  fetchSocial,
+  shortUrlFor,
+  hostSecretFor,
+  cloudIdForLocal,
+  publishPack,
+  type ApiError,
+} from "../lib/api";
+import { AttendingRibbon, GuestSocial, HostManage } from "../components/CloudPanels";
+import { buildCloudPack } from "../lib/portableShare";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { brand } from "@voyajes/core";
@@ -184,6 +197,10 @@ export function Share() {
   const [portableBusy, setPortableBusy] = useState(false);
   const [portablePack, setPortablePack] = useState<PortablePackV1 | null>(null);
   const [fromPortableHash, setFromPortableHash] = useState(false);
+  // v0.7 cloud (short links)
+  const [cloudId, setCloudId] = useState<string | null>(null);
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [cloudBusy, setCloudBusy] = useState<string | null>(null);
   const [portableHashError, setPortableHashError] = useState(false);
   const [portableFlags, setPortableFlags] = useState<BuildPortableResult | null>(null);
   const portableObjectUrlsRef = useRef<Record<string, string>>({});
@@ -281,6 +298,33 @@ export function Share() {
           // Do NOT loadDraft / ensureShareFromDraft / navigate — keep URL intact
           setPortableHashError(true);
           setFromPortableHash(false);
+          setRecord(null);
+          setReady(true);
+          return;
+        }
+      }
+
+      // 2) Cloud short link /v/<cloudId> (v0.7)
+      if (isCloudId(routeId)) {
+        if (!apiEnabled()) {
+          setCloudError("This short link needs Voyajes cloud, which isn't enabled in this build.");
+          setRecord(null);
+          setReady(true);
+          return;
+        }
+        try {
+          const v = await fetchVoyage(routeId as string);
+          if (cancelled) return;
+          setCloudId(v.id);
+          applyHydratedPack(v.pack, shortUrlFor(v.id));
+          return;
+        } catch (err) {
+          if (cancelled) return;
+          setCloudError(
+            (err as ApiError).status === 404
+              ? "This story was removed by its host, or the link is mistyped."
+              : "Can't reach Voyajes cloud right now — try again in a moment.",
+          );
           setRecord(null);
           setReady(true);
           return;
@@ -422,6 +466,29 @@ export function Share() {
     !fromPortableHash &&
     !!record?.posterMime?.startsWith("video/") &&
     !!posterUrl;
+
+  const hostCloudId = useMemo(() => {
+    if (cloudId && hostSecretFor(cloudId)) return cloudId;
+    return record && apiEnabled() ? cloudIdForLocal(record.id) ?? null : null;
+  }, [cloudId, record, cloudBusy]);
+  const publishCloud = useCallback(async () => {
+    if (!record) return;
+    setCloudBusy("Publishing…");
+    try {
+      const pack = await buildCloudPack(record);
+      const r = await publishPack(pack, {
+        localShareId: record.id,
+        existingId: hostCloudId ?? undefined,
+        onProgress: (m) => setCloudBusy(m),
+      });
+      await navigator.clipboard.writeText(r.shortUrl).catch(() => {});
+      setStatus(`Short link copied · ${r.shortUrl}`);
+    } catch (err) {
+      setStatus(`Could not publish — ${(err as Error).message}. The long link still works.`);
+    } finally {
+      setCloudBusy(null);
+    }
+  }, [record, hostCloudId]);
 
   const copy = useCallback(async () => {
     if (!record) return;
@@ -952,12 +1019,16 @@ export function Share() {
         <div className="share-empty-card">
           <Logo size={36} />
           <h1 className="display" style={{ margin: "16px 0 8px" }}>
-            {truncatedInvite
-              ? "This invite link was cut off or damaged"
-              : "This link has no invite attached"}
+            {cloudError
+              ? "Couldn't open this story"
+              : truncatedInvite
+                ? "This invite link was cut off or damaged"
+                : "This link has no invite attached"}
           </h1>
           <p className="muted" style={{ marginTop: 0 }}>
-            {truncatedInvite ? (
+            {cloudError ? (
+              <>{cloudError}</>
+            ) : truncatedInvite ? (
               <>
                 Chat apps often truncate long links. Ask the host to use{" "}
                 <strong>Download invite pack</strong> or{" "}
@@ -1082,12 +1153,19 @@ export function Share() {
           </div>
         )}
 
-        <GuestEngageDrawer
-          shareId={record.id}
-          shareReactions={shareReactions}
-          myReacts={myReacts}
-          onReact={onShareReact}
-        />
+        {cloudId && portablePack ? (
+          <>
+            <AttendingRibbonLive cloudId={cloudId} />
+            <GuestSocial cloudId={cloudId} pack={portablePack} isInvite />
+          </>
+        ) : (
+          <GuestEngageDrawer
+            shareId={record.id}
+            shareReactions={shareReactions}
+            myReacts={myReacts}
+            onReact={onShareReact}
+          />
+        )}
 
         <footer className="invite-discreet-footer">
           <Logo size={22} />
@@ -1407,6 +1485,23 @@ export function Share() {
                     ? "Preparing link…"
                     : "Copy invite link"}
               </button>
+              {apiEnabled() && !fromPortableHash && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  data-publish
+                  disabled={!!cloudBusy}
+                  onClick={() => void publishCloud()}
+                  title="Upload to Voyajes cloud: short link, guest photos, reactions, RSVPs"
+                >
+                  {cloudBusy ?? (hostCloudId ? "☁ Update short link" : "☁ Get short link")}
+                </button>
+              )}
+              {hostCloudId && (
+                <span className="muted vj-small-text" data-short-link>
+                  {shortUrlFor(hostCloudId)}
+                </span>
+              )}
               {!fromPortableHash && portablePack && (
                 <button
                   type="button"
@@ -1529,7 +1624,14 @@ export function Share() {
               </div>
             )}
 
-            {!locked && <CommentThread shareId={record.id} />}
+            {hostCloudId && portablePack && <HostManage cloudId={hostCloudId} pack={portablePack} />}
+            {cloudId && portablePack && !locked && (
+              <>
+                <AttendingRibbonLive cloudId={cloudId} />
+                <GuestSocial cloudId={cloudId} pack={portablePack} isInvite={isInvitation} />
+              </>
+            )}
+            {!cloudId && !locked && <CommentThread shareId={record.id} />}
           </div>
         </div>
 
@@ -1626,4 +1728,22 @@ export function ShareBootstrap() {
       </p>
     </div>
   );
+}
+
+function AttendingRibbonLive({ cloudId }: { cloudId: string }) {
+  const [names, setNames] = useState<string[]>([]);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetchSocial(cloudId)
+        .then((s) => alive && setNames(s.attending))
+        .catch(() => {});
+    void load();
+    const t = setInterval(load, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [cloudId]);
+  return <AttendingRibbon names={names} />;
 }

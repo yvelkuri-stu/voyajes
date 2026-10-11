@@ -1,0 +1,23 @@
+{
+  "name": "@voyajes/api",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=dist/worker.js",
+    "typecheck": "tsc --noEmit",
+    "dev": "wrangler dev --local --persist-to .wrangler/state",
+    "test": "npm run build && vitest run && MEDIA_MODE=d1 vitest run",
+    "db:migrate:local": "wrangler d1 migrations apply voyajes --local",
+    "db:migrate:remote": "wrangler d1 migrations apply voyajes --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "esbuild": "^0.24.0",
+    "miniflare": "^4.20250101.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.0.0"
+  }
+}

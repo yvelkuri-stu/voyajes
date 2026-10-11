@@ -1,0 +1,21 @@
+name = "voyajes-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://yvelkuri-stu.github.io,http://localhost:5173,http://localhost:4310,http://127.0.0.1:4310"
+# PUBLIC_BASE is the worker's own origin (used to build media + upload URLs); set at deploy
+PUBLIC_BASE = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "voyajes"
+database_id = "00000000-0000-0000-0000-000000000000" # replaced by scripts/deploy-api.sh
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "voyajes-media"
+
+# SIGNING_KEY (secret): `wrangler secret put SIGNING_KEY` — HMAC key for upload URLs

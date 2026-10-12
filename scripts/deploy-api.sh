@@ -45,6 +45,11 @@ if ! $W secret list --config "$CFG" 2>/dev/null | grep -q ADMIN_SECRET; then
   [ -s "$SECRET_FILE" ] || (umask 077; openssl rand -hex 32 | tr -d '\n' > "$SECRET_FILE")
   $W secret put ADMIN_SECRET --config "$CFG" < "$SECRET_FILE" >/dev/null
 fi
+# VAPID_PRIVATE_JWK signs Web Push requests. Generated once, piped straight into the secret (never printed).
+if ! $W secret list --config "$CFG" 2>/dev/null | grep -q VAPID_PRIVATE_JWK; then
+  node -e 'crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},true,["sign"]).then(k=>crypto.subtle.exportKey("jwk",k.privateKey)).then(j=>process.stdout.write(JSON.stringify({kty:j.kty,crv:j.crv,d:j.d,x:j.x,y:j.y})))' \
+    | $W secret put VAPID_PRIVATE_JWK --config "$CFG" >/dev/null
+fi
 echo "admin_secret_file=$SECRET_FILE"
 echo "media=$([ "$R2" = 1 ] && echo r2 || echo d1)"
 echo "url=$URL"

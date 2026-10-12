@@ -1,6 +1,6 @@
 {
   "name": "@voyajes/web",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,11 +12,13 @@
     "test:fresh": "node scripts/e2e-fresh.mjs",
     "test:themes": "node scripts/e2e-themes.mjs",
     "test:cloud": "node scripts/e2e-cloud.mjs",
-    "test:onelink": "node scripts/e2e-onelink.mjs"
+    "test:onelink": "node scripts/e2e-onelink.mjs",
+    "test:aftermovie": "node scripts/e2e-aftermovie.mjs"
   },
   "dependencies": {
     "@voyajes/core": "workspace:*",
     "gifenc": "1.0.3",
+    "mp4-muxer": "^5.2.2",
     "qrcode-generator": "^2.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

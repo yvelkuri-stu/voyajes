@@ -61,6 +61,8 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api/],
+        // v1.0 Web Push handler (public/push-sw.js)
+        importScripts: ["push-sw.js"],
       },
       devOptions: {
         enabled: false,

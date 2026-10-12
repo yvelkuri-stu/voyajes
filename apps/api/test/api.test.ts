@@ -22,17 +22,26 @@ const call = async (path: string, init: RequestInit & { json?: unknown } = {}) =
 const pack = (title = "Goa") => ({ v: 1, share: { id: "vj_x", title, mode: "voyage", playback: { clips: [{ id: "c1", kind: "image" }] } }, media: {} });
 const DEV = "device_abcdefgh1";
 
+const pushed: { url: string; auth: string }[] = [];
+let vapidJwk = "";
 beforeAll(async () => {
+  const k = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign"])) as CryptoKeyPair;
+  const j = await crypto.subtle.exportKey("jwk", k.privateKey);
+  vapidJwk = JSON.stringify({ kty: j.kty, crv: j.crv, d: j.d, x: j.x, y: j.y });
   mf = new Miniflare({
+    outboundService: async (r: any) => {
+      pushed.push({ url: r.url, auth: r.headers.get("Authorization") ?? "" });
+      return new Response(null, { status: r.url.includes("gone") ? 410 : 201 });
+    },
     modules: true,
     scriptPath: "dist/worker.js",
     compatibilityDate: "2025-01-01",
     d1Databases: ["DB"],
     ...(process.env.MEDIA_MODE === "d1" ? {} : { r2Buckets: ["MEDIA"] }),
-    bindings: { ALLOWED_ORIGINS: ORIGIN, SIGNING_KEY: "test-key", ADMIN_SECRET: "admin-test-secret", APP_URL: "https://app.test/voyajes", ANDROID_PACKAGE: "app.voyajes.twa", ANDROID_SHA256: "AA:BB", APPLE_APP_IDS: "TEAM.app.voyajes" },
+    bindings: { ALLOWED_ORIGINS: ORIGIN, SIGNING_KEY: "test-key", ADMIN_SECRET: "admin-test-secret", APP_URL: "https://app.test/voyajes", ANDROID_PACKAGE: "app.voyajes.twa", ANDROID_SHA256: "AA:BB", APPLE_APP_IDS: "TEAM.app.voyajes", VAPID_PRIVATE_JWK: vapidJwk },
   });
   const db = await mf.getD1Database("DB");
-  const sql = ["0001_init.sql", "0002_blob_fallback.sql", "0003_one_link.sql"].map((f) => readFileSync(`migrations/${f}`, "utf8")).join(";\n").replace(/--.*$/gm, "");
+  const sql = ["0001_init.sql", "0002_blob_fallback.sql", "0003_one_link.sql", "0004_after_movie.sql"].map((f) => readFileSync(`migrations/${f}`, "utf8")).join(";\n").replace(/--.*$/gm, "");
   for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) await db.prepare(stmt).run();
 });
 afterAll(async () => { await mf?.dispose(); });
@@ -251,6 +260,81 @@ describe("v0.9 One Link", () => {
     expect(a.data[0].target).toMatchObject({ package_name: "app.voyajes.twa", sha256_cert_fingerprints: ["AA:BB"] });
     const i = await call("/.well-known/apple-app-site-association");
     expect(i.data.applinks.details[0].appIDs).toEqual(["TEAM.app.voyajes"]);
-    expect((await call("/health")).data.version).toBe("0.9.0");
+    expect((await call("/health")).data.version).toBe("1.0.0");
+  });
+});
+
+describe("v1.0 After-Movie", () => {
+  const H = (s: string) => ({ Authorization: `Bearer ${s}` });
+  let id = "", secret = "", past = "";
+  const FCM = "https://fcm.googleapis.com/fcm/send/abc123";
+  beforeAll(() => { ipOverride = "10.10.0.1"; });
+  const inv = (start: string) => ({ v: 1, share: { id: "vj_z", title: "Beach Party", mode: "invitation", playback: { clips: [{ id: "c1", kind: "image" }], invitation: { eventName: "Beach Party", eventStart: start } } }, media: {} });
+  const drop = async (vid: string, dev: string) => {
+    const s = await call(`/voyages/${vid}/drops`, { method: "POST", json: { deviceId: dev, name: "Zo", mime: "image/jpeg", size: 4, purpose: "live" } });
+    expect(s.status).toBe(201);
+    const u = new URL(s.data.uploadUrl);
+    expect((await call(u.pathname + u.search, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: new Uint8Array([255, 216, 255, 1]) })).status).toBe(200);
+    return s.data.dropId as string;
+  };
+  it("serves the VAPID public key", async () => {
+    const r = await call("/push/key");
+    expect(r.data.supported).toBe(true);
+    const raw = Buffer.from(r.data.publicKey, "base64url");
+    expect(raw.length).toBe(65);
+    expect(raw[0]).toBe(4);
+  });
+  it("live camera drops are open for invitations; the live wall lists them", async () => {
+    const r = await call("/voyages", { method: "POST", json: { title: "Beach Party", mode: "invitation", pack: inv("2030-07-01T18:00:00Z") } });
+    id = r.data.id; secret = r.data.hostSecret;
+    const a = await drop(id, "device_live_a1"), b = await drop(id, "device_live_b1");
+    const w = await call(`/voyages/${id}/live`);
+    expect(w.data.drops.map((d: any) => d.id).sort()).toEqual([a, b].sort());
+    expect(w.data.aftermovieAt).toBeNull();
+    expect(w.data.eventEnd).toBe(Date.parse("2030-07-01T18:00:00Z") + 6 * 3600_000);
+    // crowd votes toggle per device and rank the cut
+    expect((await call(`/voyages/${id}/votes`, { method: "POST", json: { deviceId: "device_voter_1", dropId: b } })).data).toEqual({ voted: true, votes: 1 });
+    expect((await call(`/voyages/${id}/votes`, { method: "POST", json: { deviceId: "device_voter_2", dropId: b } })).data.votes).toBe(2);
+    expect((await call(`/voyages/${id}/votes`, { method: "POST", json: { deviceId: "device_voter_2", dropId: b } })).data).toEqual({ voted: false, votes: 1 });
+    expect((await call(`/voyages/${id}/votes`, { method: "POST", json: { deviceId: "device_voter_2", dropId: "nope" } })).status).toBe(404);
+    const w2 = await call(`/voyages/${id}/live?deviceId=device_voter_1`);
+    expect(w2.data.drops.find((d: any) => d.id === b)).toMatchObject({ votes: 1, mine: true });
+  });
+  it("push subscribe accepts only real push services", async () => {
+    expect((await call(`/voyages/${id}/push`, { method: "POST", json: { deviceId: "device_live_a1", endpoint: "https://evil.example/x" } })).status).toBe(400);
+    expect((await call(`/voyages/${id}/push`, { method: "POST", json: { deviceId: "device_live_a1", endpoint: FCM } })).status).toBe(201);
+    await call(`/voyages/${id}/push`, { method: "POST", json: { deviceId: "device_live_b1", endpoint: "https://fcm.googleapis.com/fcm/send/gone" } });
+  });
+  it("host releases the after-movie → in-app notice + VAPID push; dead subs pruned", async () => {
+    expect((await call(`/voyages/${id}/aftermovie`, { method: "POST", json: {} })).status).toBe(403);
+    pushed.length = 0;
+    const r = await call(`/voyages/${id}/aftermovie`, { method: "POST", headers: H(secret), json: {} });
+    expect(r.data.notified).toBe(true);
+    expect(r.data.pushed).toBe(1);
+    expect(pushed.map((p) => p.url).sort()).toEqual([FCM, "https://fcm.googleapis.com/fcm/send/gone"].sort());
+    expect(pushed[0].auth).toMatch(/^vapid t=[\w-]+\.[\w-]+\.[\w-]+, k=[\w-]{87}$/);
+    const again = await call(`/voyages/${id}/aftermovie`, { method: "POST", headers: H(secret), json: {} });
+    expect(again.data.notified).toBe(false);
+    const n = await call(`/voyages/${id}/notices`);
+    expect(n.data.notices[0]).toMatchObject({ kind: "aftermovie" });
+    const sn = await call("/push/notices", { method: "POST", json: { endpoint: FCM } });
+    expect(sn.data.notices[0].url).toBe(`https://app.test/voyajes/v/${id}?aftermovie=1`);
+    expect((await call("/push/notices", { method: "POST", json: { endpoint: "https://fcm.googleapis.com/fcm/send/gone" } })).data.notices).toEqual([]);
+    expect((await call(`/voyages/${id}/social`)).data.aftermovieAt).toBeGreaterThan(0);
+    // host updates also notify
+    await call(`/voyages/${id}/updates`, { method: "POST", headers: H(secret), json: { body: "Thanks for coming!" } });
+    expect((await call(`/voyages/${id}/notices`)).data.notices[0]).toMatchObject({ kind: "update", body: "Thanks for coming!" });
+  });
+  it("cron releases after-movies for ended events with drops only", async () => {
+    const r = await call("/voyages", { method: "POST", json: { title: "Past Party", mode: "invitation", pack: inv("2020-01-01T18:00:00Z") } });
+    past = r.data.id;
+    const empty = (await call("/voyages", { method: "POST", json: { title: "Empty", mode: "invitation", pack: inv("2020-01-01T18:00:00Z") } })).data.id;
+    await drop(past, "device_past_a1");
+    const w = await mf.getWorker();
+    await (w as any).scheduled({ cron: "*/15 * * * *" });
+    await new Promise((r) => setTimeout(r, 300));
+    expect((await call(`/voyages/${past}/live`)).data.aftermovieAt).toBeGreaterThan(0);
+    expect((await call(`/voyages/${empty}/live`)).data.aftermovieAt).toBeNull();
+    expect((await call(`/voyages/${id}/live`)).data.aftermovieAt).toBeGreaterThan(0);
   });
 });

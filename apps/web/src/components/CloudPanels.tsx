@@ -30,6 +30,7 @@ import { ReportSheet, type ReportTarget } from "./Moderation";
 import { EventActions } from "./EventActions";
 import { QrCardsPanel } from "./QrCardsPanel";
 import { cardInfoFromPack, renderCover } from "../lib/cards";
+import { AfterMovieHost } from "./AfterMovie";
 
 const ago = (t: number) => {
   const m = Math.round((Date.now() - t) / 60000);
@@ -437,6 +438,7 @@ export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: P
   return (
     <section className="vj-manage" aria-label="Manage" data-manage>
       <h3>Manage</h3>
+      {isInvite && <AfterMovieHost cloudId={cloudId} pack={cur} />}
       <label className="toggle-row">
         <input type="checkbox" checked={h.dropsEnabled} data-drops-toggle onChange={(e) => void setDrops(cloudId, e.target.checked).then(load)} />
         <span>Let guests add photos (up to {h.dropsMax} each)</span>

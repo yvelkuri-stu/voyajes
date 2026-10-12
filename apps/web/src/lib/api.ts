@@ -160,6 +160,8 @@ export type Social = {
   rsvpDeadline?: number | null;
   rsvpClosed?: boolean;
   blocked?: boolean;
+  aftermovieAt?: number | null;
+  eventEnd?: number | null;
 };
 export const fetchSocial = (id: string) => req<Social>(`/voyages/${id}/social?deviceId=${deviceId()}`);
 export const react = (id: string, emoji: string) => req(`/voyages/${id}/reactions`, { method: "POST", json: { emoji, deviceId: deviceId() } });
@@ -173,7 +175,7 @@ export const rsvp = (id: string, body: { name: string; answer: "yes" | "no" | "m
   req(`/voyages/${id}/rsvp`, { method: "POST", json: { ...body, deviceId: deviceId() } });
 
 /** Guest photo drop: ask for a signed slot, then PUT the file to it. */
-export async function dropFile(id: string, file: File, name?: string, purpose?: "rsvp"): Promise<{ key: string; url: string }> {
+export async function dropFile(id: string, file: File, name?: string, purpose?: "rsvp" | "live"): Promise<{ key: string; url: string }> {
   const mime = file.type || (/\.png$/i.test(file.name) ? "image/png" : "image/jpeg");
   const slot = await req<{ uploadUrl: string; key: string; url: string }>(`/voyages/${id}/drops`, {
     method: "POST",
@@ -229,4 +231,27 @@ export async function attachPreview(id: string, blob: Blob, field: "coverKey" | 
   });
   await req(`/voyages/${id}`, { method: "PATCH", secret: sec(id), json: { [field]: up.key } });
   return up.url;
+}
+
+// ───────── v1.0 After-Movie ─────────
+export type LiveDrop = { id: string; name: string | null; mime: string; url: string; createdAt: number; votes: number; mine: boolean };
+export type LiveWall = { title: string; drops: LiveDrop[]; aftermovieAt: number | null; aftermovieUrl: string | null; eventEnd: number | null };
+export const fetchLive = (id: string) => req<LiveWall>(`/voyages/${id}/live?deviceId=${deviceId()}`, { timeoutMs: 10000 });
+export const vote = (id: string, dropId: string) => req<{ voted: boolean; votes: number }>(`/voyages/${id}/votes`, { method: "POST", json: { deviceId: deviceId(), dropId } });
+export const releaseAfterMovie = (id: string, key?: string | null) =>
+  req<{ ok: boolean; aftermovieAt: number; aftermovieUrl: string | null; notified: boolean; pushed: number }>(`/voyages/${id}/aftermovie`, { method: "POST", secret: sec(id), json: key === undefined ? {} : { key } });
+export type Notice = { id: string; kind: "aftermovie" | "update"; title: string; body: string; created_at: number };
+export const fetchNotices = (id: string, since = 0) => req<{ notices: Notice[] }>(`/voyages/${id}/notices?since=${since}`);
+export const fetchPushKey = () => req<{ publicKey: string | null; supported: boolean }>(`/push/key`);
+export const subscribePush = (id: string, endpoint: string) => req(`/voyages/${id}/push`, { method: "POST", json: { deviceId: deviceId(), endpoint } });
+/** Host: upload a rendered after-movie file (optional — guests can always watch the live cut). */
+export async function uploadAfterMovie(id: string, blob: Blob): Promise<string | null> {
+  const up = await req<{ key: string; url: string }>(`/voyages/${id}/media`, {
+    method: "POST",
+    secret: sec(id),
+    headers: { "Content-Type": (blob.type || "video/webm").split(";")[0] },
+    body: blob,
+    timeoutMs: 120000,
+  });
+  return (await releaseAfterMovie(id, up.key)).aftermovieUrl;
 }

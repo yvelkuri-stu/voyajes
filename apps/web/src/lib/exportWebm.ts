@@ -39,6 +39,7 @@ import {
 import { scheduleAudio, type ResolvedAudioClip } from "./timelineAudio";
 import { assetUrl } from "./assetUrl";
 import { buildInviteCardLines } from "./inviteCard";
+import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 
 export type ExportClip = {
   id: string;
@@ -157,6 +158,8 @@ export type ExportWebmOptions = {
   audio?: ExportAudioOptions;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
+  /** v1.0: "auto" uses WebCodecs (faster than real time) when it can, else MediaRecorder */
+  engine?: "auto" | "webcodecs" | "mediarecorder";
 } & ExportTimelineOptions;
 
 export type ExportWebmResult = {
@@ -171,6 +174,10 @@ export type ExportWebmResult = {
   audioMuxed: boolean;
   /** Soft warning when audio was requested but video-only was exported */
   audioWarning?: string;
+  /** v1.0: which encoder produced the file */
+  engine?: "webcodecs" | "mediarecorder";
+  /** wall-clock encode time */
+  elapsedMs?: number;
 };
 
 function assertNotAborted(signal?: AbortSignal) {
@@ -394,6 +401,8 @@ function loadImage(url: string, signal?: AbortSignal): Promise<HTMLImageElement>
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.decoding = "async";
+    // cloud media (guest drops) must not taint the canvas
+    if (/^https?:/.test(url) && !url.startsWith(window.location.origin)) img.crossOrigin = "anonymous";
     const onAbort = () => {
       img.src = "";
       reject(new DOMException("Export cancelled", "AbortError"));
@@ -1114,10 +1123,270 @@ export function drawClipLayer(
   ctx.restore();
 }
 
+// ───────── v1.0 fast export: WebCodecs (H.264 + Opus → MP4), faster than real time ─────────
+const AVC_CODECS = ["avc1.640028", "avc1.4d0028", "avc1.42e028", "avc1.640033", "avc1.42e033"];
+
+/** Can this browser + project take the WebCodecs path? (photo stories; video clips stay on MediaRecorder) */
+export function canUseWebCodecs(options: Pick<ExportWebmOptions, "clips" | "audioClips">): boolean {
+  if (typeof window === "undefined" || typeof VideoEncoder === "undefined" || typeof VideoFrame === "undefined") return false;
+  return !options.clips.some((c) => c.kind !== "image");
+}
+
+async function pickAvc(width: number, height: number, bitrate: number, fps: number): Promise<VideoEncoderConfig | null> {
+  for (const codec of AVC_CODECS) {
+    const cfg: VideoEncoderConfig = { codec, width, height, bitrate, framerate: fps, avc: { format: "avc" }, latencyMode: "quality" };
+    try {
+      const r = await VideoEncoder.isConfigSupported(cfg);
+      if (r.supported) return cfg;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
+async function renderBeatOffline(audio: ExportAudioOptions, seconds: number, signal?: AbortSignal): Promise<AudioBuffer> {
+  const rate = 48000;
+  const OAC = window.OfflineAudioContext || (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext;
+  const octx = new OAC(2, Math.max(1, Math.ceil(seconds * rate)), rate);
+  const decode = async (url: string) => {
+    const res = await fetch(url, { signal });
+    if (!res.ok) throw new Error(`Audio fetch failed (${res.status})`);
+    return octx.decodeAudioData(await res.arrayBuffer());
+  };
+  const add = (buf: AudioBuffer, g: number) => {
+    const src = octx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const gain = octx.createGain();
+    gain.gain.value = g;
+    // short fade-out so the ending doesn't click
+    gain.gain.setValueAtTime(g, Math.max(0, seconds - 0.6));
+    gain.gain.linearRampToValueAtTime(0, seconds);
+    src.connect(gain).connect(octx.destination);
+    src.start(0);
+  };
+  add(await decode(audio.previewUrl!), audio.primaryGain ?? (audio.ducking ? 0.55 : 0.85));
+  if (audio.mixUrl) {
+    try {
+      add(await decode(audio.mixUrl), audio.mixGain ?? 0.4);
+    } catch {
+      /* optional */
+    }
+  }
+  return octx.startRendering();
+}
+
+async function encodeOpus(buf: AudioBuffer, muxer: Muxer<ArrayBufferTarget>): Promise<boolean> {
+  if (typeof AudioEncoder === "undefined" || typeof AudioData === "undefined") return false;
+  const cfg: AudioEncoderConfig = { codec: "opus", sampleRate: buf.sampleRate, numberOfChannels: 2, bitrate: 128_000 };
+  if (!(await AudioEncoder.isConfigSupported(cfg)).supported) return false;
+  let failed: Error | null = null;
+  const enc = new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: (e) => (failed = e) });
+  enc.configure(cfg);
+  const block = 4800; // 100 ms
+  const L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L;
+  for (let i = 0; i < buf.length; i += block) {
+    const n = Math.min(block, buf.length - i);
+    const planar = new Float32Array(n * 2);
+    planar.set(L.subarray(i, i + n), 0);
+    planar.set(R.subarray(i, i + n), n);
+    const ad = new AudioData({ format: "f32-planar", sampleRate: buf.sampleRate, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((i / buf.sampleRate) * 1e6), data: planar });
+    enc.encode(ad);
+    ad.close();
+  }
+  await enc.flush();
+  enc.close();
+  if (failed) throw failed;
+  return true;
+}
+
+async function exportWithWebCodecs(options: ExportWebmOptions): Promise<ExportWebmResult> {
+  const t0 = performance.now();
+  const {
+    clips, theme, title, aspect, transition: transitionOverride, textOverlays = [], captionText = "", captionStyle, textStyle,
+    shortEdge = 1080, fps = 30, watermark = false, burnTitle = false, mode = "voyage", invitation, audio, onProgress, signal,
+    grade, defaultAnimation, transitionSpec: projectTxSpec, look, intensity,
+  } = options;
+  if (clips.length === 0) throw new Error("Add at least one clip before exporting video");
+  const gradeCss = grade ? gradeFilter(grade) : look ? lookGradeCss(look, intensity) : gradeFilter(grade);
+  const inviteLines = buildInviteCardLines(invitation, title);
+  const useInviteCards = mode === "invitation" && inviteLines.hasContent;
+  const INTRO_SEC = 2.4, END_SEC = 2.6;
+  const defaultTransition = transitionOverride ?? theme.transition;
+  const totalDurForText = clips.reduce((sum, c) => sum + c.durationSec, 0);
+  const timedOverlays: ExportTextOverlay[] = [
+    ...textOverlays,
+    ...(captionText.trim()
+      ? [{ at: 0.4, end: Math.max(3, totalDurForText), role: "caption" as const, value: captionText.trim(), style: captionStyle ?? "caption-pill", position: "lower-third" as const, animationIn: "fade" as const, animationOut: "fade" as const }]
+      : []),
+  ];
+  let { width, height } = canvasSizeForAspect(aspect, shortEdge);
+  width -= width % 2;
+  height -= height % 2;
+  const layout: TimelineLayout = computeLayout(clips, defaultTransition, projectTxSpec, theme);
+  const intro = useInviteCards ? INTRO_SEC : 0;
+  let totalDuration = layout.total + (useInviteCards ? INTRO_SEC + END_SEC : 0);
+  if (options.maxDurationSec && totalDuration > options.maxDurationSec) totalDuration = options.maxDurationSec;
+  const bitrate = options.videoBitsPerSecond ?? 6_000_000;
+  const vcfg = await pickAvc(width, height, bitrate, fps);
+  if (!vcfg) throw new Error("WebCodecs H.264 not available");
+
+  onProgress?.({ phase: "prepare", ratio: 0, clipIndex: 0, clipCount: clips.length, message: "Preparing fast export…" });
+  const images: (HTMLImageElement | null)[] = [];
+  const skippedVideos: string[] = [];
+  for (const c of clips) {
+    assertNotAborted(signal);
+    try {
+      images.push(await loadImage(c.objectUrl, signal));
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      skippedVideos.push(c.fileName);
+      images.push(null);
+    }
+  }
+
+  // audio first (offline render is much faster than real time)
+  let beat: AudioBuffer | null = null;
+  let audioWarning: string | undefined;
+  if (options.audioClips) {
+    // v3 timeline audio: same scheduling as live playback, rendered offline (starts after the intro card)
+    if (options.audioClips.some((c) => c.url)) {
+      onProgress?.({ phase: "prepare", ratio: 0.02, clipIndex: 0, clipCount: clips.length, message: "Mixing audio…" });
+      const OAC = window.OfflineAudioContext || (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext;
+      const octx = new OAC(2, Math.max(1, Math.ceil(totalDuration * 48000)), 48000);
+      await scheduleAudio(octx, octx.destination, options.audioClips, 0, options.ducks ?? [], options.duckLevel ?? 0.3, intro);
+      beat = await octx.startRendering();
+    }
+  } else if (audio?.previewUrl && audio.mute !== true) {
+    try {
+      onProgress?.({ phase: "prepare", ratio: 0.02, clipIndex: 0, clipCount: clips.length, message: `Mixing beat${audio.beatName ? ` · ${audio.beatName}` : ""}…` });
+      beat = await renderBeatOffline(audio, totalDuration, signal);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      audioWarning = `Beat audio could not be mixed (${err instanceof Error ? err.message : "error"}) — exporting video only`;
+    }
+  } else if (audio?.mute && audio?.previewUrl) audioWarning = "Beat muted for export — video only";
+  const opusOk = beat ? typeof AudioEncoder !== "undefined" && (await AudioEncoder.isConfigSupported({ codec: "opus", sampleRate: 48000, numberOfChannels: 2, bitrate: 128_000 }).then((r) => !!r.supported, () => false)) : false;
+  // a beat we cannot encode → let MediaRecorder keep the music
+  if (beat && !opusOk) throw new Error("WebCodecs Opus not available");
+
+  const target = new ArrayBufferTarget();
+  const muxer = new Muxer({
+    target,
+    video: { codec: "avc", width, height, frameRate: fps },
+    ...(beat ? { audio: { codec: "opus" as const, numberOfChannels: 2, sampleRate: 48000 } } : {}),
+    fastStart: "in-memory",
+    firstTimestampBehavior: "offset",
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Could not get 2D canvas context");
+  const watermarkLogo = watermark ? await getWatermarkLogo() : null;
+
+  let encErr: Error | null = null;
+  const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => (encErr = e) });
+  enc.configure(vcfg);
+
+  const drawAt = (nowSec: number) => {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (useInviteCards && nowSec < intro) {
+      ctx.clearRect(0, 0, width, height);
+      drawInviteCard(ctx, theme, width, height, "intro", invitation, title, textStyle);
+      if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
+      return;
+    }
+    const tl = nowSec - intro;
+    if (useInviteCards && tl >= layout.total) {
+      ctx.clearRect(0, 0, width, height);
+      drawInviteCard(ctx, theme, width, height, "end", invitation, title, textStyle);
+      if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
+      return;
+    }
+    const f = framesAt(layout, clips, Math.min(tl, layout.total - 1e-3));
+    ctx.fillStyle = theme.palette.bg;
+    ctx.fillRect(0, 0, width, height);
+    const drawK = (k: number, local: number, tx: { kind: TransitionKind; p: number } | null) =>
+      drawClipLayer(ctx, { clip: clips[k], image: images[k] ?? null, video: null, local, width, height, theme, gradeCss, anim: clips[k].animation ?? defaultAnimation, tx });
+    if (f.prev) drawK(f.prev.index, f.prev.local, null);
+    drawK(f.index, f.local, f.prev ? { kind: clips[f.prev.index].transitionOut ?? defaultTransition, p: ease(transitionEasingInto(clips, f.index, projectTxSpec) ?? "linear", f.progress) } : null);
+    if (look) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.filter = "none";
+      drawFxOps(ctx, fxOps(look, intensity, tl, width, height), width, height);
+    } else {
+      fillThemeGrade(ctx, theme, width, height, 0.45);
+      fillVignette(ctx, theme, width, height, 0.7);
+    }
+    if (burnTitle && title.trim() && title.trim() !== "Untitled voyage") {
+      const hasTimedTitle = timedOverlays.some((o) => o.role === "title" && nowSec >= o.at && nowSec < o.end && o.value.trim());
+      if (!hasTimedTitle) drawTitle(ctx, title, theme, width, height, "", textStyle);
+    }
+    drawTextOverlays(ctx, timedOverlays, theme, width, height, nowSec, options.beatBpm);
+    if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
+  };
+
+  const frames = Math.max(1, Math.round(totalDuration * fps));
+  const dur = Math.round(1e6 / fps);
+  for (let i = 0; i < frames; i++) {
+    assertNotAborted(signal);
+    if (encErr) throw encErr;
+    drawAt(i / fps);
+    const frame = new VideoFrame(canvas, { timestamp: i * dur, duration: dur });
+    enc.encode(frame, { keyFrame: i % (fps * 2) === 0 });
+    frame.close();
+    if (enc.encodeQueueSize > 6) await new Promise<void>((r) => enc.addEventListener("dequeue", () => r(), { once: true }));
+    if (i % 15 === 0) {
+      const ratio = i / frames;
+      const spent = (performance.now() - t0) / 1000;
+      const eta = ratio > 0.05 ? Math.max(0, Math.round(spent / ratio - spent)) : null;
+      onProgress?.({ phase: "recording", ratio: Math.min(0.97, ratio), clipIndex: Math.min(clips.length - 1, Math.floor(ratio * clips.length)), clipCount: clips.length, message: `Fast export ${Math.round(ratio * 100)}%${eta != null ? ` · ~${eta}s left` : ""}` });
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+  await enc.flush();
+  enc.close();
+  if (encErr) throw encErr;
+  let audioMuxed = false;
+  if (beat) {
+    onProgress?.({ phase: "finalize", ratio: 0.98, clipIndex: clips.length, clipCount: clips.length, message: "Adding the beat…" });
+    audioMuxed = await encodeOpus(beat, muxer);
+  }
+  muxer.finalize();
+  const blob = new Blob([target.buffer], { type: "video/mp4" });
+  if (blob.size < 1024) throw new Error("Fast export produced an empty file");
+  const elapsedMs = Math.round(performance.now() - t0);
+  onProgress?.({ phase: "finalize", ratio: 1, clipIndex: clips.length, clipCount: clips.length, message: `Done in ${(elapsedMs / 1000).toFixed(1)}s · ${audioMuxed ? "video + beat" : "video"} · fast export` });
+  return { blob, mimeType: "video/mp4", extension: "mp4", width, height, durationSec: totalDuration, skippedVideos, audioMuxed, audioWarning, engine: "webcodecs", elapsedMs };
+}
+
 /**
  * Record the slideshow to a video Blob. Runs in near real-time (MediaRecorder).
  */
 export async function exportSlideshowWebm(
+  options: ExportWebmOptions,
+): Promise<ExportWebmResult> {
+  if (options.engine !== "mediarecorder" && canUseWebCodecs(options)) {
+    try {
+      return await exportWithWebCodecs(options);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      if (options.engine === "webcodecs") throw err;
+      console.info("[voyajes] WebCodecs export unavailable, using MediaRecorder:", err instanceof Error ? err.message : err);
+    }
+  }
+  const t0 = performance.now();
+  const r = await exportSlideshowRecorder(options);
+  return { ...r, engine: "mediarecorder", elapsedMs: Math.round(performance.now() - t0) };
+}
+
+/**
+ * MediaRecorder fallback: record the slideshow to a video Blob in near real-time.
+ */
+async function exportSlideshowRecorder(
   options: ExportWebmOptions,
 ): Promise<ExportWebmResult> {
   const {

@@ -4,6 +4,8 @@ import { Logo } from "./Logo";
 import { useAuthSession } from "../hooks/useAuthSession";
 import { usePrefs } from "../hooks/usePrefs";
 import { NotificationBell } from "./NotificationBell";
+import { startInboxPolling } from "../lib/push";
+import { InboxToast } from "./AfterMovie";
 import { InstallPrompt } from "./InstallPrompt";
 
 const links = [
@@ -18,6 +20,9 @@ export function Layout() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [inviteGuest, setInviteGuest] = useState(false);
+
+  // v1.0 in-app notifications (fallback for browsers without Web Push)
+  useEffect(() => startInboxPolling(), []);
 
   // Share.tsx sets body.invite-guest for invitation guest views (no ?host=1)
   useEffect(() => {
@@ -105,6 +110,7 @@ export function Layout() {
         <Outlet />
       </main>
       {!hideChrome && <InstallPrompt />}
+      {hideChrome && <InboxToast />}
     </div>
   );
 }

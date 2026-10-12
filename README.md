@@ -94,6 +94,16 @@ Media still resolves from the host browser’s IndexedDB draft until cloud sync 
 - **Moderation:** guests can report comments, photos and voyages. Hosts can hide content or block a device. The owner admin takedown API sits behind `ADMIN_SECRET`. There are `/terms` and `/privacy` pages with a 24h takedown note.
 - **Custom domain readiness:** see [docs/domain.md](docs/domain.md).
 
+## After-Movie (v1.0)
+
+- **RSVP → after-movie loop:** guest photo drops are cut into a themed after-movie (host's look + music). It's released to guests automatically when the event ends (Worker cron, every 15 min) or when the host taps **Share after-movie now**.
+- **Live party camera** at `/live/:id`. The party-camera QR card (`?drop=1`) opens it. Guests snap with the camera or pick from their roll; no account needed.
+- **TV mode** at `/tv/:id`: a live, animated slideshow with a join QR. New drops jump on screen right away.
+- **Crowd voting:** guests tap 🔥 on the moments they love. Votes pick what makes the cut, and favourites hold longer as hero shots.
+- **Notifications:** Web Push (payload-less VAPID; the service worker asks `/push/notices` what's new), with in-app toasts as the fallback everywhere.
+- **Fast export:** WebCodecs H.264 + Opus → MP4, faster than real time, for photo stories. Falls back to MediaRecorder automatically.
+- `pnpm --filter @voyajes/web test:aftermovie` runs the e2e.
+
 ## Stack
 
 - **Web:** Vite 5, React 18, React Router, TypeScript  

@@ -9,6 +9,8 @@ import { Share, ShareBootstrap } from "./pages/Share";
 import { SignIn } from "./pages/SignIn";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Terms, Privacy } from "./pages/Legal";
+import { LiveCamera } from "./pages/LiveCamera";
+import { TvMode } from "./pages/TvMode";
 import { createRouteKey, FRESH_EVENT } from "./lib/startFresh";
 
 /** Remount Create when Home/Share set a fresh nonce so wipe cannot race old state. */
@@ -35,6 +37,9 @@ function CreateRoute() {
 export default function App() {
   return (
     <Routes>
+      {/* v1.0 full-screen surfaces: party camera (from the QR card) and TV mode */}
+      <Route path="live/:id" element={<LiveCamera />} />
+      <Route path="tv/:id" element={<TvMode />} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="create" element={<CreateRoute />} />

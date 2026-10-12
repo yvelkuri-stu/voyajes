@@ -38,7 +38,7 @@ export function QrCardsPanel({ pack, url }: { pack: PortablePackV1; url: string 
           📱 Phone size · PNG
         </button>
         <button type="button" className="btn btn-ghost vj-small" data-qr-card="table-pdf" disabled={!!busy} onClick={() => void make("table", "pdf")}>
-          📸 Table card (photo drop) · PDF
+          📸 Party camera card · PDF
         </button>
       </div>
       {busy && <p className="muted vj-small-text">Rendering card…</p>}

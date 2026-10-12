@@ -23,6 +23,7 @@ import { EmojiPicker, QuickReactionBar } from "../components/EmojiPicker";
 import { InvitePlayer } from "../components/InvitePlayer";
 import { Logo } from "../components/Logo";
 import { getBeatByRef } from "../data/beats";
+import { AfterMovieSection } from "../components/AfterMovie";
 import { getThemeById } from "../data/themes";
 import { exportFilename, getExportPreset } from "../data/exportPresets";
 import { assetUrl } from "../lib/assetUrl";
@@ -319,6 +320,11 @@ export function Share() {
         try {
           const v = await fetchVoyage(routeId as string);
           if (cancelled) return;
+          // v1.0: the party-camera QR card (?drop=1) opens the live camera for invitations
+          if (v.mode === "invitation" && searchParams.get("drop") === "1" && !hostSecretFor(v.id)) {
+            navigate(`/live/${v.id}`, { replace: true });
+            return;
+          }
           setCloudId(v.id);
           applyHydratedPack(v.pack, shortUrlFor(v.id));
           return;
@@ -1168,6 +1174,7 @@ export function Share() {
         {cloudId && portablePack ? (
           <>
             <AttendingRibbonLive cloudId={cloudId} />
+            <AfterMovieSection cloudId={cloudId} pack={portablePack} />
             <GuestSocial cloudId={cloudId} pack={portablePack} isInvite />
           </>
         ) : (
@@ -1663,6 +1670,7 @@ export function Share() {
             {cloudId && portablePack && !locked && (
               <>
                 <AttendingRibbonLive cloudId={cloudId} />
+                <AfterMovieSection cloudId={cloudId} pack={portablePack} />
                 <GuestSocial cloudId={cloudId} pack={portablePack} isInvite={isInvitation} />
               </>
             )}

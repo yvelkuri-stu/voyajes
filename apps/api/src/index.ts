@@ -1,3 +1,4 @@
+import { notify, releaseDue, vapidPublicKey, okPushEndpoint, eventEndOf, AFTERMOVIE_TITLE } from "./aftermovie";
 import { isCrawler, ogHtml, previewMeta, invitationOf, firstImageUrl, buildIcs, assetLinks, appleAppSiteAssociation, esc } from "./onelink";
 /**
  * Voyajes collaboration API (v0.7) — Cloudflare Worker + D1 + R2.
@@ -23,6 +24,8 @@ export interface Env {
   ANDROID_SHA256?: string;
   APPLE_APP_IDS?: string;
   CONTACT_EMAIL?: string;
+  /** v1.0: VAPID private key (JWK JSON) for Web Push; unset → in-app notifications only */
+  VAPID_PRIVATE_JWK?: string;
 }
 
 export const EMOJIS = ["❤️", "🔥", "😂", "😮", "👏"] as const;
@@ -38,7 +41,7 @@ export const LIMITS = {
   plusOnesMax: 10,
   dropsMaxDefault: 10,
 };
-const RATE = { write: 60, sign: 20, publish: 10, report: 10 }; // per IP per minute
+const RATE = { write: 60, sign: 30, publish: 10, report: 10 }; // per IP per minute
 
 // ───────── media store: R2 when bound, else chunked D1 ─────────
 const CHUNK = 900_000;
@@ -171,6 +174,7 @@ async function rateLimit(env: Env, req: Request, bucket: keyof typeof RATE, devi
 type VoyageRow = {
   id: string; host_hash: string; title: string; mode: string; pack: string; drops_enabled: number; drops_max: number; created_at: number; updated_at: number;
   cover_key?: string | null; preview_key?: string | null; status?: string; removed_reason?: string | null;
+  aftermovie_at?: number | null; aftermovie_key?: string | null;
 };
 async function getVoyage(env: Env, id: string, allowRemoved = false): Promise<VoyageRow> {
   if (!isVoyageId(id)) throw new HttpError(404, "Not found");
@@ -198,7 +202,7 @@ async function requireAdmin(env: Env, req: Request) {
   if (!env.ADMIN_SECRET) throw new HttpError(404, "Not found");
   if (!got || !timingSafeEq(await sha256(got), await sha256(env.ADMIN_SECRET))) throw new HttpError(403, "Admin secret required");
 }
-const TABLES = ["voyages", "media", "drops", "reactions", "comments", "hearts", "rsvps", "updates", "reports", "blocks"];
+const TABLES = ["voyages", "media", "drops", "reactions", "comments", "hearts", "rsvps", "updates", "reports", "blocks", "votes", "notices", "push_subs"];
 async function wipeMedia(env: Env, voyageId: string) {
   const keys = await env.DB.prepare("SELECT key FROM media WHERE voyage_id = ?").bind(voyageId).all<{ key: string }>();
   await store.del(env, keys.results.map((k) => k.key));
@@ -240,7 +244,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   const m = req.method;
   const seg = p.split("/").filter(Boolean);
 
-  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "0.9.0", media: env.MEDIA ? "r2" : "d1" });
+  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "1.0.0", push: !!env.VAPID_PRIVATE_JWK, media: env.MEDIA ? "r2" : "d1" });
 
   // app links (custom-domain + store readiness)
   if (p === "/.well-known/assetlinks.json") return json(assetLinks(env.ANDROID_PACKAGE, env.ANDROID_SHA256), 200, { "Cache-Control": "public, max-age=3600" });
@@ -386,6 +390,23 @@ async function route(req: Request, env: Env): Promise<Response> {
     return json({ ok: true, key: drop.media_key, url: mediaUrl(env, req, drop.media_key) });
   }
 
+  // v1.0 Web Push (payload-less; the service worker asks what's new)
+  if (seg[0] === "push") {
+    if (seg[1] === "key" && m === "GET") {
+      const k = vapidPublicKey(env);
+      return json({ publicKey: k, supported: !!k }, 200, { "Cache-Control": "public, max-age=300" });
+    }
+    if (seg[1] === "notices" && m === "POST") {
+      const b = await body<{ endpoint: string }>(req);
+      if (!okPushEndpoint(b.endpoint)) throw new HttpError(400, "Bad endpoint");
+      const r = await env.DB.prepare(
+        "SELECT n.id, n.voyage_id, n.kind, n.title, n.body, n.created_at FROM notices n JOIN push_subs s ON s.voyage_id = n.voyage_id AND s.endpoint_hash = ? WHERE n.created_at > ? ORDER BY n.created_at DESC LIMIT 5",
+      ).bind(await sha256(b.endpoint), Date.now() - 2 * 86400_000).all<any>();
+      return json({ notices: r.results.map((n) => ({ ...n, url: `${appUrl(env, req)}/v/${n.voyage_id}${n.kind === "aftermovie" ? "?aftermovie=1" : ""}` })) });
+    }
+    throw new HttpError(404, "Not found");
+  }
+
   if (seg[0] !== "voyages") {
     if (env.APP_ORIGIN && (m === "GET" || m === "HEAD")) return proxyApp(env, req, p === "/" ? "/index.html" : url.pathname);
     throw new HttpError(404, "Not found");
@@ -416,6 +437,7 @@ async function route(req: Request, env: Env): Promise<Response> {
       {
         id: v.id, title: v.title, mode: v.mode, pack: JSON.parse(v.pack), dropsEnabled: !!v.drops_enabled, updatedAt: v.updated_at,
         coverUrl: v.cover_key ? mediaUrl(env, req, v.cover_key) : null, previewUrl: v.preview_key ? mediaUrl(env, req, v.preview_key) : null,
+        aftermovieAt: v.aftermovie_at ?? null,
       },
       200,
       { "Cache-Control": "public, max-age=10" },
@@ -482,7 +504,8 @@ async function route(req: Request, env: Env): Promise<Response> {
     if (!device) throw new HttpError(400, "deviceId required");
     await rateLimit(env, req, "sign", device);
     await assertNotBlocked(env, v, device);
-    const rsvpPhoto = b.purpose === "rsvp" && v.mode === "invitation";
+    // invitations: RSVP selfies and the live party camera are always open (host can block/reject)
+    const rsvpPhoto = (b.purpose === "rsvp" || b.purpose === "live") && v.mode === "invitation";
     if (!v.drops_enabled && !rsvpPhoto) throw new HttpError(403, "The host hasn't opened photo drops");
     if (!okMime(b.mime)) throw new HttpError(415, "Photos and videos only");
     const cap = b.mime.startsWith("video/") ? (env.MEDIA ? LIMITS.dropVideoBytes : 30_000_000) : LIMITS.dropImageBytes;
@@ -573,6 +596,8 @@ async function route(req: Request, env: Env): Promise<Response> {
       rsvpDeadline: deadline,
       rsvpClosed: deadline != null && Date.now() > deadline,
       blocked: !!blocked,
+      aftermovieAt: v.aftermovie_at ?? null,
+      eventEnd: eventEndOf(v.pack),
     });
   }
   if (sub === "reactions" && m === "POST") {
@@ -662,6 +687,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     if (!text) throw new HttpError(400, "Empty update");
     const row = { id: rid(10), body: text, created_at: Date.now() };
     await env.DB.prepare("INSERT INTO updates (id, voyage_id, body, created_at) VALUES (?, ?, ?, ?)").bind(row.id, v.id, row.body, row.created_at).run();
+    await notify(env, v.id, "update", `Update · ${v.title || "Voyajes"}`, text, rid(10));
     return json(row, 201);
   }
   if (sub === "updates" && seg[3] && m === "DELETE") {
@@ -678,6 +704,76 @@ async function route(req: Request, env: Env): Promise<Response> {
     return new Response(ics, {
       headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="${v.id}.ics"`, "Cache-Control": "public, max-age=60" },
     });
+  }
+
+  // ── v1.0 After-Movie ──
+  // live wall: every guest drop (newest first) with crowd votes — feeds the party camera, TV mode and the cut
+  if (sub === "live" && m === "GET") {
+    const device = cleanDevice(url.searchParams.get("deviceId"));
+    const [drops, votes, mine] = await Promise.all([
+      env.DB.prepare("SELECT id, name, mime, media_key, status, created_at FROM drops WHERE voyage_id = ? AND status IN ('pending','accepted','added') ORDER BY created_at DESC LIMIT 300").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT drop_id, COUNT(*) AS n FROM votes WHERE voyage_id = ? GROUP BY drop_id").bind(v.id).all<{ drop_id: string; n: number }>(),
+      device ? env.DB.prepare("SELECT drop_id FROM votes WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).all<{ drop_id: string }>() : Promise.resolve({ results: [] as { drop_id: string }[] }),
+    ]);
+    const vc = Object.fromEntries(votes.results.map((x) => [x.drop_id, x.n]));
+    const my = new Set(mine.results.map((x) => x.drop_id));
+    return json(
+      {
+        title: v.title,
+        drops: drops.results.map((d) => ({ id: d.id, name: d.name, mime: d.mime, url: mediaUrl(env, req, d.media_key), createdAt: d.created_at, votes: vc[d.id] ?? 0, mine: my.has(d.id) })),
+        aftermovieAt: v.aftermovie_at ?? null,
+        aftermovieUrl: v.aftermovie_key ? mediaUrl(env, req, v.aftermovie_key) : null,
+        eventEnd: eventEndOf(v.pack),
+      },
+      200,
+      { "Cache-Control": "no-store" },
+    );
+  }
+  if (sub === "votes" && m === "POST") {
+    const b = await body<{ deviceId: string; dropId: string }>(req);
+    const device = cleanDevice(b.deviceId);
+    if (!device || typeof b.dropId !== "string") throw new HttpError(400, "deviceId + dropId required");
+    await rateLimit(env, req, "write", device);
+    await assertNotBlocked(env, v, device);
+    const d = await env.DB.prepare("SELECT 1 FROM drops WHERE id = ? AND voyage_id = ? AND status IN ('pending','accepted','added')").bind(b.dropId, v.id).first();
+    if (!d) throw new HttpError(404, "Not found");
+    const has = await env.DB.prepare("SELECT 1 FROM votes WHERE voyage_id = ? AND drop_id = ? AND device_id = ?").bind(v.id, b.dropId, device).first();
+    if (has) await env.DB.prepare("DELETE FROM votes WHERE voyage_id = ? AND drop_id = ? AND device_id = ?").bind(v.id, b.dropId, device).run();
+    else await env.DB.prepare("INSERT INTO votes (voyage_id, drop_id, device_id, created_at) VALUES (?, ?, ?, ?)").bind(v.id, b.dropId, device, Date.now()).run();
+    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM votes WHERE voyage_id = ? AND drop_id = ?").bind(v.id, b.dropId).first<{ n: number }>();
+    return json({ voted: !has, votes: n?.n ?? 0 });
+  }
+  // host releases the after-movie now (the cron does it automatically when the event ends)
+  if (sub === "aftermovie" && m === "POST") {
+    await requireHost(env, req, v);
+    const b = await body<{ key?: string | null; renotify?: boolean }>(req).catch(() => ({}) as { key?: string | null; renotify?: boolean });
+    let key = v.aftermovie_key ?? null;
+    if (b.key !== undefined) {
+      if (b.key !== null && !(await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND voyage_id = ? AND role = 'host'").bind(b.key, v.id).first())) throw new HttpError(400, "Unknown media key");
+      key = b.key;
+    }
+    const first = !v.aftermovie_at;
+    const at = v.aftermovie_at ?? Date.now();
+    await env.DB.prepare("UPDATE voyages SET aftermovie_at = ?, aftermovie_key = ?, updated_at = ? WHERE id = ?").bind(at, key, Date.now(), v.id).run();
+    const pushed = first || b.renotify ? await notify(env, v.id, "aftermovie", AFTERMOVIE_TITLE, `${v.title || "The party"} — made from everyone's photos. Tap to watch.`, rid(10)) : 0;
+    return json({ ok: true, aftermovieAt: at, aftermovieUrl: key ? mediaUrl(env, req, key) : null, notified: first || !!b.renotify, pushed });
+  }
+  if (sub === "notices" && m === "GET") {
+    const since = Number(url.searchParams.get("since") ?? 0) || 0;
+    const r = await env.DB.prepare("SELECT id, kind, title, body, created_at FROM notices WHERE voyage_id = ? AND created_at > ? ORDER BY created_at DESC LIMIT 20").bind(v.id, since).all<any>();
+    return json({ notices: r.results }, 200, { "Cache-Control": "no-store" });
+  }
+  if (sub === "push" && (m === "POST" || m === "DELETE")) {
+    const b = await body<{ deviceId?: string; endpoint: string }>(req);
+    if (!okPushEndpoint(b.endpoint)) throw new HttpError(400, "Unsupported push endpoint");
+    await rateLimit(env, req, "write", cleanDevice(b.deviceId));
+    const h = await sha256(b.endpoint);
+    if (m === "DELETE") {
+      await env.DB.prepare("DELETE FROM push_subs WHERE endpoint_hash = ? AND voyage_id = ?").bind(h, v.id).run();
+      return json({ ok: true, subscribed: false });
+    }
+    await env.DB.prepare("INSERT OR REPLACE INTO push_subs (endpoint_hash, voyage_id, endpoint, device_id, created_at) VALUES (?, ?, ?, ?, ?)").bind(h, v.id, b.endpoint, cleanDevice(b.deviceId), Date.now()).run();
+    return json({ ok: true, subscribed: true }, 201);
   }
 
   if (sub === "hearts" && m === "POST") {
@@ -721,6 +817,10 @@ async function route(req: Request, env: Env): Promise<Response> {
 }
 
 export default {
+  /** cron: release after-movies once events end */
+  async scheduled(_c: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
+    ctx.waitUntil(releaseDue(env, () => rid(10)));
+  },
   async fetch(req: Request, env: Env): Promise<Response> {
     const c = cors(req, env);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: c });

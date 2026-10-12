@@ -28,3 +28,8 @@ bucket_name = "voyajes-media"
 
 # SIGNING_KEY (secret): `wrangler secret put SIGNING_KEY` — HMAC key for upload URLs
 # ADMIN_SECRET (secret): bearer token for /admin/* takedowns; scripts/deploy-api.sh generates it into .secrets/admin-secret
+
+# v1.0: release after-movies when events end (free cron trigger)
+[triggers]
+crons = ["*/15 * * * *"]
+# VAPID_PRIVATE_JWK (secret): Web Push signing key; scripts/deploy-api.sh generates it once

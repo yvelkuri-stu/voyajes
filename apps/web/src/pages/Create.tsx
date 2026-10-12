@@ -1,4 +1,5 @@
 import { recorderFormatLabel } from "../lib/exportWebm";
+import { StartFreshSheet } from "../components/StartFresh";
 import { StoryWizard } from "../components/StoryWizard";
 import { analyzeMedia, type MediaFacts } from "../lib/breezeAnalyze";
 import { breezePlan, type BreezeItem } from "@voyajes/core";
@@ -81,6 +82,8 @@ import {
   audioKindFromMime,
   clearAllBlobs,
   clearDraft,
+  draftEpoch,
+  newProjectId,
   clipKindFromMime,
   customIdFromTrackRef,
   defaultDraft,
@@ -131,6 +134,7 @@ import {
 } from "../lib/whatsappShare";
 import {
   consumeStartFresh,
+  startFresh,
   peekStartFresh,
   type FreshMode,
 } from "../lib/startFresh";
@@ -410,6 +414,9 @@ export function Create() {
   /** MediaImporter target when replacing a clip / sound in place */
   const [replaceTarget, setReplaceTarget] = useState<{ type: "clip" | "audio"; id: string } | null>(null);
   const [autoDuck, setAutoDuck] = useState<boolean | undefined>(undefined);
+  const [freshAsk, setFreshAsk] = useState(false);
+  const epochRef = useRef(draftEpoch());
+  const projectIdRef = useRef<string | undefined>(undefined);
   const historyRef = useRef<{
     checkpoint: () => EditorSnapshot | null;
     restore: (s: EditorSnapshot) => void;
@@ -475,99 +482,29 @@ export function Create() {
       const wantFresh = params.get("fresh") === "1" || sessionFresh != null;
       if (wantFresh) {
         freshHandledRef.current = true;
-        persistPausedRef.current = true;
-        await clearAllBlobs();
-        clearDraft();
-        clearLastExport();
-        if (cancelled) {
-          persistPausedRef.current = false;
-          return;
-        }
-        const modeFromSession: FreshMode | null = sessionFresh;
+        const mode: FreshMode =
+          sessionFresh ?? (params.get("mode") === "invitation" || paramTemplate?.mode === "invitation" ? "invitation" : "voyage");
         consumeStartFresh();
-        const mode: ProjectMode =
-          modeFromSession === "invitation" ||
-          params.get("mode") === "invitation" ||
-          paramTemplate?.mode === "invitation"
-            ? "invitation"
-            : modeFromSession === "voyage"
-              ? "voyage"
-              : params.get("mode") === "invitation"
-                ? "invitation"
-                : "voyage";
-        const tid = paramTheme.id;
-        const d = defaultDraft(tid);
-        const freshTitle = mode === "invitation" ? "You're invited!" : d.title;
-        setProjectMode(mode);
-        setTitle(freshTitle);
-        setAspect(d.aspect);
-        setThemeId(tid);
-        setTemplateId(undefined);
-        setTransitionOverride(null);
-        setGrade(undefined);
-        setDefaultAnimation(undefined);
-        setProjectTxSpec(undefined);
-        setAudioTrackRef(d.audioTrackRef);
-        setBeatSync(d.beatSync);
-        setDucking(d.ducking);
-        setTextStyle(d.textStyle);
-        setTextTransition(d.textTransition);
-        setCaptionStyle(d.captionStyle);
-        setCaptionText("");
-        setWatermark(false);
-        setDurationTargetSec(undefined);
-        setExportDestination("custom");
-        setShareId(undefined);
-        setSharePassword(false);
-        setHostName("");
-        setGuestName("");
-        setEventName("");
-        setEventType("");
-        setEventWhen("");
-        setEventWhere("");
-        setTextOverlays([]);
-        setCustomSounds([]);
-        setCustomSoundUrls({});
-        setAudioMixMode("replace");
-        setClips([]);
-        setActiveIndex(0);
-        setElapsed(0);
-        setSchemaOk(true);
-        setStatus("Started fresh");
-        {
-          const next = new URLSearchParams(params);
-          next.delete("fresh");
-          if (mode === "invitation") next.set("mode", "invitation");
-          else next.delete("mode");
-          next.delete("template");
-          setSearchParams(next, { replace: true });
-        }
-        // Flush React state, then persist empty default once before resuming autosave.
-        await new Promise<void>((r) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => r())),
-        );
-        if (cancelled) {
-          persistPausedRef.current = false;
-          return;
-        }
-        saveDraft({
-          ...d,
-          mode,
-          title: freshTitle,
-          themeId: tid,
-        });
-        persistPausedRef.current = false;
-        setHydrated(true);
-        return;
+        await startFresh(mode, { remount: false });
+        epochRef.current = draftEpoch();
+        if (cancelled) return;
+        const next = new URLSearchParams(params);
+        next.delete("fresh");
+        next.delete("template");
+        if (mode === "invitation") next.set("mode", "invitation");
+        else next.delete("mode");
+        setSearchParams(next, { replace: true });
       }
-
+      const fresh = wantFresh;
       const draft = loadDraft();
       const base = draft ?? defaultDraft(paramTheme.id);
+      if (!base.projectId) base.projectId = newProjectId();
+      projectIdRef.current = base.projectId;
       if (!draft && params.get("theme")) {
         base.themeId = paramTheme.id;
         base.themeVersion = paramTheme.version;
       }
-      if (params.get("template") && paramTemplate) {
+      if (!fresh && params.get("template") && paramTemplate) {
         base.themeId = paramTemplate.themeId;
         base.themeVersion = getThemeById(paramTemplate.themeId)?.version ?? "1.0.0";
         base.templateId = paramTemplate.id;
@@ -636,7 +573,7 @@ export function Create() {
       setAutoDuck(base.autoDuck);
       if (base.transitionOverride) {
         setTransitionOverride(base.transitionOverride);
-      } else if (paramTemplate) {
+      } else if (paramTemplate && !fresh) {
         setTransitionOverride(paramTemplate.transition);
       }
       const live: LiveClip[] = [];
@@ -675,6 +612,7 @@ export function Create() {
   useEffect(() => {
     if (!hydrated || persistPausedRef.current) return;
     const draft: DraftState = {
+      projectId: projectIdRef.current,
       title,
       mode: projectMode,
       aspect,
@@ -714,7 +652,7 @@ export function Create() {
       clips: clips.map(toClipMeta),
       updatedAt: new Date().toISOString(),
     };
-    saveDraft(draft);
+    saveDraft(draft, epochRef.current);
     setSchemaOk(validatePersistedProject().ok);
   }, [
     hydrated,
@@ -864,7 +802,7 @@ export function Create() {
           const bpm = getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm;
           durationSec = snapDurationToBeat(durationSec, bpm, beatSync);
         }
-        await putBlob(id, file);
+        await putBlob(id, file, epochRef.current);
         const objectUrl = trackUrl(URL.createObjectURL(file));
         added.push({
           id,
@@ -1054,7 +992,7 @@ export function Create() {
           continue;
         }
         const id = newSoundId();
-        await putBlob(soundBlobKey(id), file);
+        await putBlob(soundBlobKey(id), file, epochRef.current);
         const objectUrl = trackUrl(URL.createObjectURL(file));
         const sound: CustomSound = {
           id,
@@ -1285,7 +1223,7 @@ export function Create() {
           if (!res.ok) throw new Error(String(res.status));
           const blob = await res.blob();
           const id = newClipId();
-          await putBlob(id, blob);
+          await putBlob(id, blob, epochRef.current);
           built.push({
             id,
             kind: "image",
@@ -1362,7 +1300,7 @@ export function Create() {
       if (kind === "video") {
         sourceSec = await readVideoDuration(new File([blob], name, { type: mime }));
       }
-      await putBlob(clipId, blob);
+      await putBlob(clipId, blob, epochRef.current);
       const objectUrl = trackUrl(URL.createObjectURL(blob));
       setClips((prev) =>
         prev.map((c) =>
@@ -1437,23 +1375,8 @@ export function Create() {
   );
 
   const startFromScratch = useCallback(() => {
-    const snap = historyRef.current?.checkpoint() ?? null;
-    setPlaying(false);
-    setClips([]);
-    setTextOverlays([]);
-    setAudioClips([]);
-    setTemplateId(undefined);
-    setGrade(undefined);
-    setProjectTxSpec(undefined);
-    setDefaultAnimation(undefined);
-    setTransitionOverride(null);
-    setSelection(null);
-    setKeepBar(null);
-    setActiveIndex(0);
-    setElapsed(0);
-    setAppliedChip({ label: "Blank project", snap });
     setMiniSheet(null);
-    setStatus("Blank project · add photos, video and sound");
+    setFreshAsk(true);
   }, []);
 
   // ───────── Breeze auto-compose (v0.6) ─────────
@@ -1768,75 +1691,12 @@ export function Create() {
     });
   };
 
-  const resetProject = async (opts?: {
-    mode?: ProjectMode;
-    statusMsg?: string;
-    /** Theme to keep after wipe (defaults to current themeId). */
-    keepThemeId?: string;
-  }) => {
+  const resetProject = async (opts?: { mode?: ProjectMode; statusMsg?: string; keepThemeId?: string }) => {
     persistPausedRef.current = true;
     setPlaying(false);
     clearAdvanceTimer();
-    for (const url of [...objectUrlsRef.current]) {
-      URL.revokeObjectURL(url);
-    }
-    objectUrlsRef.current.clear();
-    await clearAllBlobs();
-    clearDraft();
-    clearLastExport();
-    const mode = opts?.mode ?? projectMode;
-    const tid = opts?.keepThemeId ?? themeId;
-    const d = defaultDraft(tid);
-    const freshTitle = mode === "invitation" ? "You're invited!" : d.title;
-    setProjectMode(mode);
-    setTitle(freshTitle);
-    setAspect(d.aspect);
-    setThemeId(tid);
-    setTemplateId(undefined);
-    setTransitionOverride(null);
-        setGrade(undefined);
-        setDefaultAnimation(undefined);
-        setProjectTxSpec(undefined);
-    setAudioTrackRef(d.audioTrackRef);
-    setBeatSync(d.beatSync);
-    setDucking(d.ducking);
-    setTextStyle(d.textStyle);
-    setTextTransition(d.textTransition);
-    setCaptionStyle(d.captionStyle);
-    setCaptionText("");
-    setWatermark(false);
-    setDurationTargetSec(undefined);
-    setExportDestination("custom");
-    setShareId(undefined);
-    setSharePassword(false);
-    setHostName("");
-    setGuestName("");
-    setEventName("");
-    setEventType("");
-    setEventWhen("");
-    setEventWhere("");
-    setTextOverlays([]);
-    setEditingOverlayId(null);
-    setCustomSounds([]);
-    setCustomSoundUrls({});
-    setAudioMixMode("replace");
-    setGapMenuIndex(null);
     stopPreview();
-    setClips([]);
-    setActiveIndex(0);
-    setElapsed(0);
-    setSchemaOk(true);
-    setStatus(opts?.statusMsg ?? "Draft cleared");
-    await new Promise<void>((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => r())),
-    );
-    saveDraft({
-      ...d,
-      mode,
-      title: freshTitle,
-      themeId: tid,
-    });
-    persistPausedRef.current = false;
+    await startFresh(opts?.mode ?? projectMode);
   };
 
   // ?fresh=1 or session flag while Create is already mounted (same-route CTA)
@@ -1853,33 +1713,16 @@ export function Create() {
       freshHandledRef.current = false;
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const mode: ProjectMode =
-        sessionFresh === "invitation" || params.get("mode") === "invitation"
-          ? "invitation"
-          : sessionFresh === "voyage"
-            ? "voyage"
-            : params.get("mode") === "invitation"
-              ? "invitation"
-              : "voyage";
-      consumeStartFresh();
-      await resetProject({
-        mode,
-        statusMsg: "Started fresh",
-        keepThemeId: paramTheme.id,
-      });
-      if (cancelled) return;
-      const next = new URLSearchParams(params);
-      next.delete("fresh");
-      if (mode === "invitation") next.set("mode", "invitation");
-      else next.delete("mode");
-      next.delete("template");
-      setSearchParams(next, { replace: true });
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const mode: ProjectMode =
+      sessionFresh ?? (params.get("mode") === "invitation" ? "invitation" : "voyage");
+    consumeStartFresh();
+    const next = new URLSearchParams(params);
+    next.delete("fresh");
+    next.delete("template");
+    if (mode === "invitation") next.set("mode", "invitation");
+    else next.delete("mode");
+    setSearchParams(next, { replace: true });
+    void resetProject({ mode });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.get("fresh"), hydrated, params.get("mode")]);
 
@@ -2693,7 +2536,7 @@ export function Create() {
   const copyBlob = useCallback(async (fromId: string, toId: string) => {
     try {
       const blob = await getBlob(fromId);
-      if (blob) await putBlob(toId, blob);
+      if (blob) await putBlob(toId, blob, epochRef.current);
     } catch {
       /* media stays in memory for this session */
     }
@@ -3044,8 +2887,27 @@ export function Create() {
               <button type="button" role="menuitem" onClick={() => setPro(!pro)}>
                 {pro ? "Hide Pro controls" : "Show Pro controls"}
               </button>
+              <button
+                type="button"
+                role="menuitem"
+                data-start-fresh
+                onClick={(e) => {
+                  (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+                  setFreshAsk(true);
+                }}
+              >
+                🧹 Start fresh
+              </button>
             </div>
           </details>
+          <StartFreshSheet
+            open={freshAsk}
+            onCancel={() => setFreshAsk(false)}
+            onConfirm={() => {
+              setFreshAsk(false);
+              void resetProject({ mode: projectMode });
+            }}
+          />
         </div>
       </div>
 
@@ -4287,16 +4149,11 @@ export function Create() {
               type="button"
               className="btn btn-primary"
               style={{ padding: "8px 16px", fontSize: "0.85rem" }}
-              onClick={() =>
-                void resetProject({
-                  mode: projectMode,
-                  statusMsg: "Started fresh",
-                })
-              }
+              onClick={() => setFreshAsk(true)}
             >
               Start fresh
             </button>
-            <button type="button" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => void resetProject()}>
+            <button type="button" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => setFreshAsk(true)}>
               Clear draft
             </button>
           </div>

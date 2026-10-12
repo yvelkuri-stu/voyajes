@@ -1,4 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { FreshUndoToast } from "./components/StartFresh";
 import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Create } from "./pages/Create";
@@ -6,7 +8,7 @@ import { Themes } from "./pages/Themes";
 import { Share, ShareBootstrap } from "./pages/Share";
 import { SignIn } from "./pages/SignIn";
 import { AuthCallback } from "./pages/AuthCallback";
-import { createRouteKey } from "./lib/startFresh";
+import { createRouteKey, FRESH_EVENT } from "./lib/startFresh";
 
 /** Remount Create when Home/Share set a fresh nonce so wipe cannot race old state. */
 function CreateRoute() {
@@ -14,8 +16,19 @@ function CreateRoute() {
   // Re-read on every navigation (search/key change) so a new freshNonce remounts Create.
   void location.search;
   void location.key;
+  const [, bump] = useState(0);
+  useEffect(() => {
+    const on = () => bump((n) => n + 1);
+    window.addEventListener(FRESH_EVENT, on);
+    return () => window.removeEventListener(FRESH_EVENT, on);
+  }, []);
   const key = createRouteKey();
-  return <Create key={key} />;
+  return (
+    <>
+      <Create key={key} />
+      <FreshUndoToast />
+    </>
+  );
 }
 
 export default function App() {

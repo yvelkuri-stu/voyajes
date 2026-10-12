@@ -4606,3 +4606,19 @@ html, body { overscroll-behavior-x: none; overflow-x: clip; }
 .vj-ans-yes { background: rgba(61,220,151,0.25); } .vj-ans-no { background: rgba(255,80,80,0.2); }
 .vj-guest-photo { width: 36px; height: 36px; object-fit: cover; border-radius: 8px; vertical-align: middle; margin-left: 6px; }
 .vj-del { border: 0; background: none; color: inherit; opacity: 0.6; cursor: pointer; min-width: 32px; min-height: 32px; }
+
+/* v0.8 Start fresh */
+.vj-fresh-scrim { position: fixed; inset: 0; z-index: 120; background: rgba(6, 4, 14, 0.7); backdrop-filter: blur(6px); display: grid; align-items: end; justify-items: center; padding: 12px; }
+@media (min-width: 640px) { .vj-fresh-scrim { align-items: center; } }
+.vj-fresh-sheet { width: min(420px, 100%); background: var(--bg-surface, #15121f); border: 1px solid var(--border-subtle, #333); border-radius: 20px; padding: 22px 20px 18px; text-align: center; box-sizing: border-box; animation: vj-sheet-up 220ms ease-out; }
+.vj-fresh-sheet h2 { margin: 6px 0 8px; font-size: 1.15rem; }
+.vj-fresh-sheet p { margin: 0 0 16px; font-size: 0.9rem; }
+.vj-fresh-icon { font-size: 2rem; }
+.vj-fresh-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.vj-fresh-actions .btn { min-height: 44px; flex: 1 1 140px; }
+@keyframes vj-sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.vj-fresh-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 130; display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 16px; border-radius: 999px; background: #1d1830; color: #fff; box-shadow: 0 8px 30px rgba(0,0,0,0.45); overflow: hidden; max-width: calc(100vw - 24px); box-sizing: border-box; font-size: 0.9rem; }
+.vj-fresh-toast button { min-height: 36px; padding: 4px 14px; border-radius: 999px; border: 0; background: var(--grad-brand, #E84AFF); color: #fff; font-weight: 800; cursor: pointer; }
+.vj-fresh-toast-bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: rgba(255,255,255,0.5); transform-origin: left; animation: vj-toast-drain linear forwards; }
+@keyframes vj-toast-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.home-fresh { background: none; border: 0; color: var(--text-muted, #aaa); text-decoration: underline; cursor: pointer; min-height: 40px; font-size: 0.85rem; }

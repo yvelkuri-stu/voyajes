@@ -1,13 +1,21 @@
-import { Link } from "react-router-dom";
-import { useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { StartFreshSheet } from "../components/StartFresh";
 import { brand } from "@voyajes/core";
 import { loadDraft } from "../lib/draftStore";
-import { markStartFresh } from "../lib/startFresh";
+import { startFresh, type FreshMode } from "../lib/startFresh";
 import { getTemplates } from "../data/templates";
 import { sampleCoverUrl } from "../data/samples";
 
 /** v0.6 Focus: three actions, nothing else competing. */
 export function Home() {
+  const navigate = useNavigate();
+  const [ask, setAsk] = useState(false);
+  const go = (mode: FreshMode, to: string) => async (e?: { preventDefault: () => void }) => {
+    e?.preventDefault();
+    await startFresh(mode, { remount: false });
+    navigate(to);
+  };
   const draft = useMemo(() => {
     try {
       const d = loadDraft();
@@ -45,14 +53,14 @@ export function Home() {
             to="/create?fresh=1&onboard=1"
             className="btn btn-primary home-cta"
             data-home-story
-            onClick={() => markStartFresh("voyage")}
+            onClick={go("voyage", "/create?onboard=1")}
           >
             ✨ Make a story
           </Link>
           <Link
             to="/create?mode=invitation&fresh=1"
             className="btn btn-ghost home-cta-2"
-            onClick={() => markStartFresh("invitation")}
+            onClick={go("invitation", "/create?mode=invitation")}
           >
             💌 Make an invitation
           </Link>
@@ -62,7 +70,20 @@ export function Home() {
             </Link>
           )}
         </div>
+        {draft && (
+          <button type="button" className="home-fresh" data-home-fresh onClick={() => setAsk(true)}>
+            🧹 Start fresh
+          </button>
+        )}
       </section>
+      <StartFreshSheet
+        open={ask}
+        onCancel={() => setAsk(false)}
+        onConfirm={() => {
+          setAsk(false);
+          void go("voyage", "/create")();
+        }}
+      />
     </div>
   );
 }

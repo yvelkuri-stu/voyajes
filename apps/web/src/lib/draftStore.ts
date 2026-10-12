@@ -86,6 +86,8 @@ export type DraftCustomSound = CustomSound & {
 };
 
 export type DraftState = {
+  /** v0.8: fresh per "start fresh" — never reused across projects */
+  projectId?: string;
   title: string;
   /** voyage (story) vs invitation (guest playback share) */
   mode: ProjectMode;
@@ -169,8 +171,13 @@ const DESTINATIONS: ExportDestination[] = [
 
 const TRANSITIONS: TransitionKind[] = TransitionKindSchema.options as TransitionKind[];
 
+export function newProjectId(): string {
+  return `p_${newClipId().replace(/-/g, "").slice(0, 16)}`;
+}
+
 export function defaultDraft(themeId = "theme.ocean-pop"): DraftState {
   return {
+    projectId: newProjectId(),
     title: "Untitled voyage",
     mode: "voyage",
     aspect: "9:16",
@@ -389,6 +396,7 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
       : undefined,
     autoDuck: typeof parsed.autoDuck === "boolean" ? parsed.autoDuck : undefined,
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
+    projectId: typeof parsed.projectId === "string" ? parsed.projectId : undefined,
   };
 }
 
@@ -402,7 +410,8 @@ export function loadDraft(): DraftState | null {
   }
 }
 
-export function saveDraft(draft: DraftState): void {
+export function saveDraft(draft: DraftState, epoch?: number): void {
+  if (epoch !== undefined && epoch !== writeEpoch) return;
   const next = { ...draft, updatedAt: new Date().toISOString() };
   localStorage.setItem(LS_DRAFT, JSON.stringify(next));
   localStorage.setItem(LS_PROJECT, JSON.stringify(toVoyajesProject(next), null, 2));
@@ -559,7 +568,41 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-export async function putBlob(id: string, blob: Blob): Promise<void> {
+/**
+ * v0.8 write epoch: "start fresh" bumps it so a stale editor instance (or an
+ * import still finishing in the background) can never write into the new
+ * project. Writers capture the epoch when they start and pass it along.
+ */
+let writeEpoch = 0;
+export function draftEpoch(): number {
+  return writeEpoch;
+}
+export function bumpDraftEpoch(): number {
+  return ++writeEpoch;
+}
+
+export async function getAllBlobs(): Promise<[string, Blob][]> {
+  const db = await openDb();
+  const out = await new Promise<[string, Blob][]>((resolve, reject) => {
+    const res: [string, Blob][] = [];
+    const tx = db.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).openCursor();
+    req.onsuccess = () => {
+      const c = req.result;
+      if (c) {
+        res.push([String(c.key), c.value as Blob]);
+        c.continue();
+      }
+    };
+    tx.oncomplete = () => resolve(res);
+    tx.onerror = () => reject(tx.error ?? new Error("getAllBlobs failed"));
+  });
+  db.close();
+  return out;
+}
+
+export async function putBlob(id: string, blob: Blob, epoch?: number): Promise<void> {
+  if (epoch !== undefined && epoch !== writeEpoch) return;
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(DB_STORE, "readwrite");

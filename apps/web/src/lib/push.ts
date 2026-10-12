@@ -1,3 +1,4 @@
+import { isNative, nativePushToken } from "./native";
 /**
  * v1.0 notifications: Web Push where the browser supports it, in-app updates everywhere.
  * Followed voyages are polled while the app is open, so nobody misses the after-movie.
@@ -36,6 +37,13 @@ const urlB64 = (s: string) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(
 /** Ask once, from a tap. Returns how the guest will hear back. */
 export async function notifyMe(id: string, title: string): Promise<"push" | "in-app"> {
   follow(id, title);
+  if (isNative()) {
+    // Store apps: ask for native notification permission and register with FCM/APNs once configured.
+    // Delivery from the API to native tokens is not wired yet (needs Firebase) — the in-app inbox covers it.
+    const tok = await nativePushToken();
+    if (tok) localStorage.setItem("voyajes.nativePushToken", tok);
+    return "in-app";
+  }
   if (!pushSupported() || !apiEnabled()) return "in-app";
   try {
     const key = await fetchPushKey();

@@ -1,3 +1,4 @@
+import { publicBase } from "./publicUrl";
 /**
  * Voyajes auth shell — OAuth redirect start + mock session.
  * Real token exchange needs a backend (client secrets must never ship in Vite).
@@ -44,8 +45,7 @@ function env(name: string): string | undefined {
 
 /** App origin + Vite base path, no trailing slash on origin path except base */
 export function appOriginPath(): string {
-  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "";
-  return `${window.location.origin}${base}`;
+  return publicBase();
 }
 
 export function defaultRedirectUri(): string {

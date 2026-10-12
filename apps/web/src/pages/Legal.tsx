@@ -11,7 +11,7 @@ export function Terms() {
   return (
     <article className="vj-legal" data-legal="terms">
       <h1>Terms of use</h1>
-      <p className="muted">Last updated: October 2026</p>
+      <p className="muted">Last updated: 12 October 2026</p>
       <h2>The short version</h2>
       <ul>
         <li>Voyajes is free. Your exports never carry a forced watermark.</li>
@@ -45,7 +45,7 @@ export function Privacy() {
   return (
     <article className="vj-legal" data-legal="privacy">
       <h1>Privacy</h1>
-      <p className="muted">Last updated: October 2026</p>
+      <p className="muted">Last updated: 12 October 2026</p>
       <ul>
         <li>
           <strong>No account needed.</strong> Editing happens on your device; drafts stay in your browser.
@@ -60,6 +60,18 @@ export function Privacy() {
         </li>
         <li>
           <strong>Abuse prevention.</strong> We keep short-lived rate-limit counters keyed by IP address and device id.
+        </li>
+        <li>
+          <strong>Photo location &amp; analysis.</strong> Story Brain reads each photo's location, time and look (for smart crops and best
+          shots) on your device only. If you turn on the route-map intro and publish, approximate locations (rounded to about 1 km) travel
+          with the story so guests see the map; otherwise no location leaves your device.
+        </li>
+        <li>
+          <strong>Notifications.</strong> If you tap "notify me", we store your browser's push address for that voyage so we can tell you when
+          the after-movie or a time capsule is ready. Unsubscribe by turning notifications off for Voyajes.
+        </li>
+        <li>
+          <strong>Camera.</strong> The party camera only uses the camera while it is open, and only uploads the photos you take and send.
         </li>
         <li>
           <strong>Link previews.</strong> Apps like WhatsApp fetch the title, details and cover image of a short link to show a preview.

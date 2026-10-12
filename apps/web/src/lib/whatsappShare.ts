@@ -1,3 +1,4 @@
+import { publicBase } from "./publicUrl";
 /**
  * WhatsApp-oriented share helpers for invitations / voyages.
  * Prefer Web Share with a video file (Android WhatsApp); else download + wa.me text.
@@ -7,8 +8,7 @@ export function appHomeUrl(): string {
   if (typeof window === "undefined") {
     return "https://yvelkuri-stu.github.io/voyajes/";
   }
-  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  return `${window.location.origin}${base}/`;
+  return `${publicBase()}/`;
 }
 
 export function buildWhatsAppInviteText(opts: {

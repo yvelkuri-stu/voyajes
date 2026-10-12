@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.voyajes.twa",
+      "sha256_cert_fingerprints": ["C8:07:61:E0:D7:05:0C:A5:0A:27:97:13:6F:B0:16:B0:A0:82:EB:15:13:6D:9D:CE:E7:23:BD:7C:EE:82:D3:7C"]
+    }
+  }
+]

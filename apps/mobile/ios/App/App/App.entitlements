@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Push: Xcode → Signing & Capabilities → + Push Notifications sets this; "production" for App Store builds -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Universal links: the Worker serves apple-app-site-association from APPLE_APP_IDS. Custom domain: add applinks:<domain> -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:voyajes-api.yeshu501.workers.dev</string>
+	</array>
+</dict>
+</plist>

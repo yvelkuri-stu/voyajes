@@ -1,3 +1,4 @@
+import { isNative, nativePhoto } from "../lib/native";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { dropFile, fetchVoyage, isCloudId, type CloudVoyage } from "../lib/api";
@@ -135,9 +136,24 @@ export function LiveCamera() {
           }}
         />
       </div>
-      <button type="button" className="am-roll-btn" onClick={() => fileRef.current?.click()}>
+      <button
+        type="button"
+        className="am-roll-btn"
+        onClick={async () => {
+          // native store apps: system photo picker; web: file input
+          if (isNative()) {
+            const f = await nativePhoto("photos");
+            if (f) void send(f);
+            return;
+          }
+          fileRef.current?.click();
+        }}
+      >
         or pick from your camera roll
       </button>
+      <p className="am-terms" data-terms-note>
+        Photos go to the host's party wall. By posting you agree to the <Link to="/terms">Terms</Link>.
+      </p>
 
       {wall && (
         <section className="am-cam-wall" aria-label="Vote the cut">

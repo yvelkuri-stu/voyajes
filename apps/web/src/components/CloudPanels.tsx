@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   REACTION_EMOJIS,
   comment as postComment,
@@ -309,6 +309,9 @@ export function GuestSocial({ cloudId, pack, isInvite }: { cloudId: string; pack
             Post
           </button>
         </form>
+        <p className="muted vj-small-text vj-terms-note" data-terms-note>
+          By posting you agree to the <Link to="/terms">Terms</Link> — be kind; hosts can hide posts and anyone can report ⚑.
+        </p>
         <ul className="vj-comment-list">
           {s.comments.map((c) => (
             <li key={c.id}>

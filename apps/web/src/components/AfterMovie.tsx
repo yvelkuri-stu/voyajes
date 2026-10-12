@@ -1,3 +1,4 @@
+import { publicBase } from "../lib/publicUrl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { InvitePlayer } from "./InvitePlayer";
@@ -8,7 +9,7 @@ import { INBOX_EVENT, isFollowing, notifyMe, pushSupported } from "../lib/push";
 import { qrMatrix } from "../lib/cards";
 import "../styles/aftermovie.css";
 
-export const appPath = (p: string) => `${window.location.origin}${(import.meta.env.BASE_URL || "/").replace(/\/$/, "")}${p}`;
+export const appPath = (p: string) => `${publicBase()}${p}`;
 
 /** Poll the live wall (drops + votes + after-movie state). */
 export function useLiveWall(cloudId: string, ms = 8000) {

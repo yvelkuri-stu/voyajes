@@ -1,3 +1,4 @@
+import { publicBase } from "./publicUrl";
 /**
  * Voyajes collaboration API client (v0.7). Everything here is optional:
  * without VITE_API_BASE (or when the API is unreachable) the app stays
@@ -130,8 +131,7 @@ export async function publishPack(
 
 /** App URL for a cloud voyage (what the SPA routes). */
 export function appUrlFor(id: string): string {
-  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  return `${window.location.origin}${base}/v/${id}`;
+  return `${publicBase()}/v/${id}`;
 }
 /**
  * v0.9 share link: served by the Worker so WhatsApp/iMessage/Slack crawlers get a

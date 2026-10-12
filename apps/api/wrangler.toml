@@ -4,7 +4,7 @@ compatibility_date = "2025-01-01"
 workers_dev = true
 
 [vars]
-ALLOWED_ORIGINS = "https://yvelkuri-stu.github.io,http://localhost:5173,http://localhost:4310,http://127.0.0.1:4310"
+ALLOWED_ORIGINS = "https://yvelkuri-stu.github.io,https://localhost,capacitor://localhost,http://localhost:5173,http://localhost:4310,http://127.0.0.1:4310"
 # PUBLIC_BASE is the worker's own origin (used to build media + upload URLs); set at deploy
 PUBLIC_BASE = ""
 # Humans opening /v/<id> on this worker are sent to the app here (crawlers get OG meta instead)
@@ -12,8 +12,8 @@ APP_URL = "https://yvelkuri-stu.github.io/voyajes"
 # Root-domain mode (docs/domain.md): proxy every non-API GET to the static app origin
 APP_ORIGIN = ""
 # App links (.well-known) — fill in once store builds exist
-ANDROID_PACKAGE = ""
-ANDROID_SHA256 = ""
+ANDROID_PACKAGE = "app.voyajes"
+ANDROID_SHA256 = "C8:07:61:E0:D7:05:0C:A5:0A:27:97:13:6F:B0:16:B0:A0:82:EB:15:13:6D:9D:CE:E7:23:BD:7C:EE:82:D3:7C"  # upload key; ADD Play App Signing SHA-256 (comma-separated) after first Play upload
 APPLE_APP_IDS = ""
 
 [[d1_databases]]

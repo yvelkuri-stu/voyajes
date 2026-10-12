@@ -35,6 +35,19 @@ export default defineConfig({
         scope: "./",
         lang: "en",
         categories: ["photo", "video", "lifestyle"],
+        id: "./",
+        dir: "ltr",
+        shortcuts: [
+          { name: "Make a story", short_name: "Story", url: "./create?fresh=1", icons: [{ src: "pwa-192x192.png", sizes: "192x192" }] },
+          { name: "Make an invitation", short_name: "Invite", url: "./create?mode=invitation&fresh=1", icons: [{ src: "pwa-192x192.png", sizes: "192x192" }] },
+          { name: "Year in Voyages", short_name: "My year", url: "./year", icons: [{ src: "pwa-192x192.png", sizes: "192x192" }] },
+        ],
+        screenshots: [
+          { src: "store-shots/phone-editor.jpg", sizes: "1080x1920", type: "image/jpeg", form_factor: "narrow", label: "Pick a vibe, drop photos, one tap makes the story" },
+          { src: "store-shots/phone-route.jpg", sizes: "1080x1920", type: "image/jpeg", form_factor: "narrow", label: "Route-map intro from your photos" },
+          { src: "store-shots/phone-player.jpg", sizes: "1080x1920", type: "image/jpeg", form_factor: "narrow", label: "Share a link that plays full-screen" },
+          { src: "store-shots/wide-editor.jpg", sizes: "1920x1080", type: "image/jpeg", form_factor: "wide", label: "The editor on desktop" },
+        ],
         icons: [
           {
             src: "pwa-192x192.png",

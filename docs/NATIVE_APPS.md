@@ -1,3 +1,6 @@
+> **Update (Oct 2026, v1.1):** the user chose to ship store apps now as a **Capacitor** wrap (`apps/mobile`), plus a TWA (`apps/twa`)
+> and Microsoft MSIX (`apps/msix`). See `docs/store/LAUNCH.md`. The Flutter notes below are kept as the long-term option.
+
 # Native apps for Voyajes — realistic paths
 
 Voyajes is already a **responsive installable PWA** on GitHub Pages (`/voyajes/`). That covers “add to home screen,” offline shell caching, and a standalone display mode in Chromium and (with a Share → Add to Home Screen tip) on iOS Safari.

@@ -303,6 +303,11 @@ function stripShareForPack(record: ShareRecord): ShareRecord {
   for (const c of share.playback?.clips ?? []) {
     if (!c.brain) continue;
     const { hash: _h, ...b } = c.brain;
+    if (!share.playback?.storyBrain?.routeIntro) {
+      // no route map in this story → no location leaves the device at all
+      delete b.lat;
+      delete b.lon;
+    }
     if (b.lat != null) b.lat = Math.round(b.lat * 100) / 100;
     if (b.lon != null) b.lon = Math.round(b.lon * 100) / 100;
     c.brain = b;

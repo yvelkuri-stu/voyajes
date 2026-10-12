@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Voyajes</string>
+    <string name="title_activity_main">Voyajes</string>
+    <string name="package_name">app.voyajes</string>
+    <string name="custom_url_scheme">app.voyajes</string>
+</resources>

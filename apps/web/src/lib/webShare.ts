@@ -1,3 +1,4 @@
+import { nativeShareFile, nativeShareLink } from "./native";
 // v0.9 one-tap sharing helpers (Web Share API with graceful fallbacks).
 
 export const STATUS_MAX_SEC = 30;
@@ -18,6 +19,8 @@ export function capClips<T extends { durationSec: number }>(clips: T[], capSec: 
 
 /** Share a file to the OS sheet (WhatsApp Status, Instagram…) or download it. */
 export async function shareOrDownload(blob: Blob, name: string, title: string): Promise<"shared" | "downloaded" | "cancelled"> {
+  const nat = await nativeShareFile(blob, name, title);
+  if (nat) return nat;
   const file = new File([blob], name, { type: blob.type });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.share && nav.canShare?.({ files: [file] })) {
@@ -40,6 +43,8 @@ export async function shareOrDownload(blob: Blob, name: string, title: string): 
 
 /** Share a link to the OS sheet, falling back to WhatsApp. */
 export async function shareLink(o: { title: string; text: string; url: string }): Promise<"shared" | "whatsapp" | "cancelled"> {
+  const nat = await nativeShareLink(o);
+  if (nat) return nat;
   if (navigator.share) {
     try {
       await navigator.share(o);

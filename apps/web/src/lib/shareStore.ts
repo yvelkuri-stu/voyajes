@@ -1,3 +1,4 @@
+import { publicBase } from "./publicUrl";
 import { brand } from "@voyajes/core";
 import type { Aspect, InvitationMeta, ProjectMode, TextStyle, TextTransition, TransitionKind } from "@voyajes/core";
 import { asEventDetails, type DraftClipMeta, type DraftState, type DraftTextOverlay } from "./draftStore";
@@ -95,8 +96,7 @@ export function publicShareUrl(id: string): string {
   // Prefer the live origin + Vite base so GitHub Pages (/voyajes/) works;
   // fall back to the marketing host for SSR / non-browser contexts.
   if (typeof window !== "undefined") {
-    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-    return `${window.location.origin}${base}/v/${id}`;
+    return `${publicBase()}/v/${id}`;
   }
   return `https://${brand.shareHost}/v/${id}`;
 }

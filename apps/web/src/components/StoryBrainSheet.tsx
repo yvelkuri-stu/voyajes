@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { LANGS, PHRASES, getLang, setLang, t, type Lang } from "../lib/i18n";
 import { buildRoute, pickBest, planFromPrompt, type ClipBrain, type StoryPlan } from "../lib/storyBrain";
 import type { StoryBrainSettings } from "../lib/draftStore";
@@ -50,7 +51,8 @@ export function StoryBrainSheet({
     onPlan(plan);
     setDone(`✨ ${plan.title} · ${plan.pace} · ${plan.keep ? `best ${plan.keep}` : `${clips.length} shots`}${plan.routeIntro ? " · route map" : ""}`);
   };
-  return (
+  // portal: the editor root is its own stacking context, so render above the top nav
+  return createPortal(
     <div className="sb-backdrop" role="dialog" aria-label={t("brain", lang)} onClick={onClose}>
       <div className="sb-sheet" onClick={(e) => e.stopPropagation()} data-story-brain>
         <header className="sb-head">
@@ -92,7 +94,7 @@ export function StoryBrainSheet({
         <section className="sb-card">
           <h3>🏆 {t("best", lang)}</h3>
           <p className="muted vj-small-text" data-brain-stats>
-            {analysed}/{clips.length} analysed · 🎯 smart crop on {focused} · {clips.length - best.kept.length} near-duplicates
+            {analysed}/{clips.length} analysed · 🎯 smart crop on {focused} · {clips.length - best.kept.length} near-duplicate{clips.length - best.kept.length === 1 ? "" : "s"}
           </p>
           <div className="sb-best">
             {best.kept.slice(0, 12).map((c, i) => (
@@ -138,6 +140,7 @@ export function StoryBrainSheet({
           )}
         </section>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

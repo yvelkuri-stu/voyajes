@@ -19,7 +19,8 @@ export function RouteIntro({ route, getTime, accent, className = "", loop = fals
       const ctx = c.getContext("2d")!;
       ctx.clearRect(0, 0, w, h);
       let t = getTime ? getTime() : (performance.now() - t0) / 1000;
-      if (loop) t = t % (ROUTE_SEC + 0.8);
+      // previews loop: replay the draw, then hold the finished map (never blank)
+      if (loop) t = Math.min(t % (ROUTE_SEC + 1.5), ROUTE_SEC - 0.85);
       if (t >= 0 && t < ROUTE_SEC) drawRouteMap(ctx, w, h, route, t, accent);
       c.dataset.t = t.toFixed(2);
       raf = requestAnimationFrame(tick);

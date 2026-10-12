@@ -8,6 +8,7 @@ import { Themes } from "./pages/Themes";
 import { Share, ShareBootstrap } from "./pages/Share";
 import { SignIn } from "./pages/SignIn";
 import { AuthCallback } from "./pages/AuthCallback";
+import { Terms, Privacy } from "./pages/Legal";
 import { createRouteKey, FRESH_EVENT } from "./lib/startFresh";
 
 /** Remount Create when Home/Share set a fresh nonce so wipe cannot race old state. */
@@ -42,6 +43,8 @@ export default function App() {
         <Route path="v/:id" element={<Share />} />
         <Route path="signin" element={<SignIn />} />
         <Route path="auth/callback" element={<AuthCallback />} />
+        <Route path="terms" element={<Terms />} />
+        <Route path="privacy" element={<Privacy />} />
       </Route>
     </Routes>
   );

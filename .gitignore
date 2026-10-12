@@ -8,3 +8,5 @@ dist
 .env.local
 .voyajes-cache
 *.tsbuildinfo
+.secrets/
+.wrangler.deploy.toml

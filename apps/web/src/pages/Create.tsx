@@ -1,3 +1,8 @@
+import { shareOrDownload, capClips, STATUS_MAX_SEC, STATUS_MAX_BYTES } from "../lib/webShare";
+import { EventDetailsFields } from "../components/EventDetailsFields";
+import type { EventDetails } from "../lib/draftStore";
+import { KineticText } from "../components/KineticText";
+import { isKinetic } from "@voyajes/core";
 import { recorderFormatLabel } from "../lib/exportWebm";
 import { StartFreshSheet } from "../components/StartFresh";
 import { ThemeFxLayer } from "../components/ThemeFxLayer";
@@ -376,6 +381,7 @@ export function Create() {
   const [eventType, setEventType] = useState("");
   const [eventWhen, setEventWhen] = useState("");
   const [eventWhere, setEventWhere] = useState("");
+  const [eventDetails, setEventDetails] = useState<EventDetails>({});
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"file" | "metronome" | null>(
     null,
@@ -577,6 +583,7 @@ export function Create() {
       setEventType(base.eventType ?? "");
       setEventWhen(base.eventWhen ?? "");
       setEventWhere(base.eventWhere ?? "");
+      setEventDetails(base.eventDetails ?? {});
       setTextOverlays(base.textOverlays ?? []);
       setCustomSounds(base.customSounds ?? []);
       setAudioMixMode(base.audioMixMode ?? "replace");
@@ -667,6 +674,7 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
+      eventDetails,
       clips: clips.map(toClipMeta),
       updatedAt: new Date().toISOString(),
     };
@@ -709,6 +717,7 @@ export function Create() {
     eventType,
     eventWhen,
     eventWhere,
+    eventDetails,
     clips,
   ]);
 
@@ -1481,7 +1490,7 @@ export function Create() {
         if (plan.subtitle) texts.push(mk("subtitle", plan.subtitle, 0.6, Math.min(3.2, total), "lower-third", "slide-up"));
         for (const cap of plan.captions) {
           const at = starts[cap.clipIndex] ?? 0;
-          texts.push(mk("caption", cap.text, at + 0.2, Math.min(total, at + 1.8), "bottom", "slide-up"));
+          texts.push(mk("caption", cap.text, at + 0.2, Math.min(total, at + 1.8), "bottom", lk.text.captionAnim ?? "slide-up"));
         }
         for (const c of lookCards(lk, "", total)) {
           if (c.id === "theme-title") continue;
@@ -1768,8 +1777,12 @@ export function Create() {
     exportAbortRef.current?.abort();
   };
 
-  const exportVideo = async () => {
+  /** v0.9 WhatsApp Status preset: 9:16, ≤30s, ~3.5 Mbps (≤16 MB), MP4 where the browser can. */
+  const exportVideo = async (preset?: "status") => {
     if (clips.length === 0 || exporting) return;
+    const statusMode = preset === "status";
+    const cap = STATUS_MAX_SEC - (projectMode === "invitation" ? 5 : 0);
+    const outClips = statusMode ? capClips(clips, cap) : clips;
     stopPreview();
     setPlaying(false);
     clearAdvanceTimer();
@@ -1821,7 +1834,7 @@ export function Create() {
         };
       }
       const result = await exportSlideshowWebm({
-        clips: clips.map((c) => ({
+        clips: outClips.map((c) => ({
           id: c.id,
           kind: c.kind,
           objectUrl: c.objectUrl,
@@ -1839,19 +1852,21 @@ export function Create() {
         grade,
         look,
         intensity: themeIntensity,
+        beatBpm: selectedBeat.bpm,
         transitionSpec: projectTxSpec,
         audioClips: resolvedAudio,
         ducks,
         duckLevel: 0.3,
         theme,
         title,
-        aspect,
+        aspect: statusMode ? "9:16" : aspect,
         transition: globalTransition,
-        textOverlays,
+        textOverlays: statusMode ? textOverlays.filter((o) => o.at < cap).map((o) => ({ ...o, end: Math.min(o.end, cap) })) : textOverlays,
         captionText,
         captionStyle,
         textStyle,
-        shortEdge: preset.shortEdge,
+        shortEdge: statusMode ? 720 : preset.shortEdge,
+        ...(statusMode ? { videoBitsPerSecond: 3_500_000, maxDurationSec: STATUS_MAX_SEC } : {}),
         watermark,
         burnTitle: false,
         mode: projectMode,
@@ -1873,8 +1888,17 @@ export function Create() {
         },
         signal: ac.signal,
       });
-      const name = exportFilename(title, preset, result.extension);
-      downloadBlob(result.blob, name);
+      const name = statusMode
+        ? `${(title.trim() || "voyajes").replace(/[^\w-]+/g, "-").slice(0, 40)}-status.${result.extension}`
+        : exportFilename(title, preset, result.extension);
+      if (statusMode) {
+        const how = await shareOrDownload(result.blob, name, title.trim() || "My Voyajes story");
+        setStatus(
+          `${how === "shared" ? "Shared" : "Saved"} Status video · ${(result.blob.size / 1e6).toFixed(1)} MB · ${Math.round(result.durationSec)}s${
+            result.blob.size > STATUS_MAX_BYTES ? " — over 16 MB, WhatsApp may trim it" : ""
+          }${how === "downloaded" ? " · open WhatsApp → Status → pick it from your gallery" : ""}`,
+        );
+      } else downloadBlob(result.blob, name);
       setLastExport({
         blob: result.blob,
         filename: name,
@@ -1893,9 +1917,10 @@ export function Create() {
         : result.audioWarning
           ? ` · ${result.audioWarning}`
           : "";
-      setStatus(
-        `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB)${skipNote}${audioNote}`,
-      );
+      if (!statusMode)
+        setStatus(
+          `Downloaded ${name} (${Math.round(result.blob.size / 1024)} KB)${skipNote}${audioNote}`,
+        );
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setStatus("Export cancelled");
@@ -2054,6 +2079,7 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
+      eventDetails,
       clips: clips.map(toClipMeta),
       textOverlays,
       customSounds,
@@ -2111,6 +2137,7 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
+      eventDetails,
       clips: clips.map(toClipMeta),
       textOverlays,
       customSounds,
@@ -2167,6 +2194,7 @@ export function Create() {
       eventType,
       eventWhen,
       eventWhere,
+      eventDetails,
       clips: clips.map(toClipMeta),
       textOverlays,
       customSounds,
@@ -3312,9 +3340,22 @@ export function Create() {
           >
             {exporting ? `Saving ${Math.round((exportProgress?.ratio ?? 0) * 100)}%` : `⇩ Save video · ${recorderFormatLabel()} · ${aspect}`}
           </button>
+          <button
+            type="button"
+            className="btn btn-ghost vj-status-btn"
+            data-status-export
+            disabled={clips.length === 0 || exporting}
+            onClick={() => void exportVideo("status")}
+            title="9:16 · up to 30s · under 16 MB · opens the share sheet"
+          >
+            🟢 Share to WhatsApp Status <span className="muted">9:16 · ≤30s · ≤16 MB</span>
+          </button>
           <button type="button" className="btn btn-ghost" disabled={clips.length === 0 || exporting} onClick={() => void exportGif()}>
             GIF (lighter, for chats)
           </button>
+          <p className="vj-free-promise" data-no-watermark-save>
+            🆓 Free · <strong>no watermark</strong> · full quality — it's your video.
+          </p>
           <details className="vj-save-more">
             <summary className="muted">More formats &amp; options</summary>
           <p className="muted" style={{ fontSize: "0.85rem", marginTop: 6 }}>
@@ -3398,18 +3439,21 @@ export function Create() {
                   setWatermark(e.target.checked);
                   setStatus(
                     e.target.checked
-                      ? "Watermark on · Voyajes logo on export"
-                      : "Watermark off",
+                      ? "Logo mark on · small Voyajes logo on export"
+                      : "No watermark · your video, clean",
                   );
                 }}
               />
               <span>
-                Watermark
+                Add our little logo (optional)
                 <span className="muted" style={{ display: "block", fontSize: "0.75rem" }}>
-                  Places the Voyajes logo softly in the corner
+                  Off by default — only if you want to give Voyajes a shout-out
                 </span>
               </span>
             </label>
+            <p className="vj-free-promise" data-no-watermark>
+              🆓 <strong>Free, no watermark. Ever.</strong> Your video is yours — full quality, no logo, no sign-up.
+            </p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
             <button
@@ -3724,6 +3768,8 @@ export function Create() {
                   >
                     {o.value}
                   </AnimatedLayer>
+                ) : isKinetic(o.animationIn) ? (
+                  <KineticText text={o.value} kind={o.animationIn} bpm={selectedBeat.bpm} durationSec={Math.max(0.01, o.end - o.at)} />
                 ) : (
                   o.value
                 )}
@@ -4437,6 +4483,7 @@ export function Create() {
                     aria-label="Event where"
                   />
                 </label>
+                <EventDetailsFields value={eventDetails} onChange={setEventDetails} />
               </div>
             </div>
           )}

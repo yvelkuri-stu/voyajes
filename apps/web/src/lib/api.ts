@@ -128,12 +128,22 @@ export async function publishPack(
   return { id: created.id, secret: created.hostSecret, shortUrl: shortUrlFor(created.id) };
 }
 
-export function shortUrlFor(id: string): string {
+/** App URL for a cloud voyage (what the SPA routes). */
+export function appUrlFor(id: string): string {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   return `${window.location.origin}${base}/v/${id}`;
 }
+/**
+ * v0.9 share link: served by the Worker so WhatsApp/iMessage/Slack crawlers get a
+ * rich OG preview; people are redirected straight into the app.
+ * VITE_SHARE_BASE overrides (e.g. a custom root domain — docs/domain.md).
+ */
+export const SHARE_BASE = ((import.meta.env.VITE_SHARE_BASE as string | undefined) || API_BASE || "").replace(/\/$/, "");
+export function shortUrlFor(id: string): string {
+  return SHARE_BASE ? `${SHARE_BASE}/v/${id}` : appUrlFor(id);
+}
 
-export type CloudVoyage = { id: string; title: string; mode: string; pack: PortablePackV1; dropsEnabled: boolean };
+export type CloudVoyage = { id: string; title: string; mode: string; pack: PortablePackV1; dropsEnabled: boolean; coverUrl?: string | null };
 export const fetchVoyage = (id: string) => req<CloudVoyage>(`/voyages/${id}`, { timeoutMs: 10000 });
 
 export type Social = {
@@ -143,15 +153,23 @@ export type Social = {
   myHearts: number[];
   attending: string[];
   rsvpCounts: Record<string, number>;
-  myRsvp: { name: string; answer: string; note?: string } | null;
+  myRsvp: { name: string; answer: string; note?: string; plusOnes?: number } | null;
   dropsEnabled: boolean;
+  updates?: { id: string; body: string; created_at: number }[];
+  guestCount?: number;
+  rsvpDeadline?: number | null;
+  rsvpClosed?: boolean;
+  blocked?: boolean;
 };
 export const fetchSocial = (id: string) => req<Social>(`/voyages/${id}/social?deviceId=${deviceId()}`);
 export const react = (id: string, emoji: string) => req(`/voyages/${id}/reactions`, { method: "POST", json: { emoji, deviceId: deviceId() } });
 export const comment = (id: string, name: string, body: string) =>
   req<Social["comments"][number]>(`/voyages/${id}/comments`, { method: "POST", json: { deviceId: deviceId(), name, body } });
 export const heart = (id: string, clip: number) => req<{ hearted: boolean }>(`/voyages/${id}/hearts`, { method: "POST", json: { deviceId: deviceId(), clip } });
-export const rsvp = (id: string, body: { name: string; answer: "yes" | "no" | "maybe"; note?: string; mediaKey?: string }) =>
+export type ReportReason = "spam" | "nudity" | "harassment" | "violence" | "hate" | "other";
+export const report = (id: string, body: { targetType: "voyage" | "comment" | "drop" | "clip"; targetId?: string; reason: ReportReason; note?: string }) =>
+  req<{ ok: boolean; id: string }>(`/voyages/${id}/report`, { method: "POST", json: { ...body, deviceId: deviceId() } });
+export const rsvp = (id: string, body: { name: string; answer: "yes" | "no" | "maybe"; note?: string; mediaKey?: string; plusOnes?: number }) =>
   req(`/voyages/${id}/rsvp`, { method: "POST", json: { ...body, deviceId: deviceId() } });
 
 /** Guest photo drop: ask for a signed slot, then PUT the file to it. */
@@ -171,11 +189,16 @@ export type HostView = {
   id: string;
   dropsEnabled: boolean;
   dropsMax: number;
-  drops: { id: string; name: string | null; mime: string; size: number; status: string; url: string; created_at: number }[];
-  rsvps: { name: string; answer: string; note: string | null; url?: string; updated_at: number }[];
-  comments: { id: string; name: string | null; body: string; created_at: number }[];
+  drops: { id: string; device_id?: string; name: string | null; mime: string; size: number; status: string; url: string; created_at: number }[];
+  rsvps: { device_id?: string; name: string; answer: string; note: string | null; plus_ones?: number; url?: string; updated_at: number }[];
+  comments: { id: string; device_id?: string; name: string | null; body: string; hidden?: boolean; created_at: number }[];
   reactions: Record<string, number>;
   hearts: Record<string, number>;
+  reports?: { id: string; target_type: string; target_id: string; reason: string; note: string | null; created_at: number }[];
+  blocked?: string[];
+  updates?: { id: string; body: string; created_at: number }[];
+  guestCount?: number;
+  coverUrl?: string | null;
 };
 const sec = (id: string) => {
   const s = hostSecretFor(id);
@@ -188,3 +211,22 @@ export const setDropStatus = (id: string, dropId: string, status: "accepted" | "
   req(`/voyages/${id}/drops/${dropId}`, { method: "POST", secret: sec(id), json: { status } });
 export const deleteComment = (id: string, cid: string) => req(`/voyages/${id}/comments/${cid}`, { method: "DELETE", secret: sec(id) });
 export const updatePack = (id: string, pack: PortablePackV1) => req(`/voyages/${id}/pack`, { method: "PUT", secret: sec(id), json: { pack } });
+
+// v0.9 moderation + updates + previews (host)
+export const hideComment = (id: string, cid: string, hidden: boolean) => req(`/voyages/${id}/comments/${cid}`, { method: "POST", secret: sec(id), json: { hidden } });
+export const blockDevice = (id: string, device: string, on = true) => req(`/voyages/${id}/blocks`, { method: on ? "POST" : "DELETE", secret: sec(id), json: { deviceId: device } });
+export const resolveReport = (id: string, rid: string, status: "actioned" | "dismissed") => req(`/voyages/${id}/reports/${rid}`, { method: "POST", secret: sec(id), json: { status } });
+export const postUpdate = (id: string, body: string) => req<{ id: string; body: string; created_at: number }>(`/voyages/${id}/updates`, { method: "POST", secret: sec(id), json: { body } });
+export const deleteUpdate = (id: string, uid: string) => req(`/voyages/${id}/updates/${uid}`, { method: "DELETE", secret: sec(id) });
+/** Upload a host asset (cover JPG / status preview MP4) and attach it to the voyage. */
+export async function attachPreview(id: string, blob: Blob, field: "coverKey" | "previewKey"): Promise<string> {
+  const up = await req<{ key: string; url: string }>(`/voyages/${id}/media`, {
+    method: "POST",
+    secret: sec(id),
+    headers: { "Content-Type": blob.type || (field === "coverKey" ? "image/jpeg" : "video/mp4") },
+    body: blob,
+    timeoutMs: 60000,
+  });
+  await req(`/voyages/${id}`, { method: "PATCH", secret: sec(id), json: { [field]: up.key } });
+  return up.url;
+}

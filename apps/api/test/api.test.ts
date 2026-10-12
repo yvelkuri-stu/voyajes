@@ -4,9 +4,10 @@ import { readFileSync } from "node:fs";
 import { cleanText, isVoyageId } from "../src/index";
 
 let mf: Miniflare;
+let ipOverride = "";
 const ORIGIN = "https://yvelkuri-stu.github.io";
 const call = async (path: string, init: RequestInit & { json?: unknown } = {}) => {
-  const headers: Record<string, string> = { Origin: ORIGIN, ...(init.headers as Record<string, string>) };
+  const headers: Record<string, string> = { Origin: ORIGIN, ...(ipOverride ? { "CF-Connecting-IP": ipOverride } : {}), ...(init.headers as Record<string, string>) };
   let bodyInit = init.body;
   if (init.json !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -28,10 +29,10 @@ beforeAll(async () => {
     compatibilityDate: "2025-01-01",
     d1Databases: ["DB"],
     ...(process.env.MEDIA_MODE === "d1" ? {} : { r2Buckets: ["MEDIA"] }),
-    bindings: { ALLOWED_ORIGINS: ORIGIN, SIGNING_KEY: "test-key" },
+    bindings: { ALLOWED_ORIGINS: ORIGIN, SIGNING_KEY: "test-key", ADMIN_SECRET: "admin-test-secret", APP_URL: "https://app.test/voyajes", ANDROID_PACKAGE: "app.voyajes.twa", ANDROID_SHA256: "AA:BB", APPLE_APP_IDS: "TEAM.app.voyajes" },
   });
   const db = await mf.getD1Database("DB");
-  const sql = ["0001_init.sql", "0002_blob_fallback.sql"].map((f) => readFileSync(`migrations/${f}`, "utf8")).join(";\n").replace(/--.*$/gm, "");
+  const sql = ["0001_init.sql", "0002_blob_fallback.sql", "0003_one_link.sql"].map((f) => readFileSync(`migrations/${f}`, "utf8")).join(";\n").replace(/--.*$/gm, "");
   for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) await db.prepare(stmt).run();
 });
 afterAll(async () => { await mf?.dispose(); });
@@ -142,5 +143,114 @@ describe(`voyage lifecycle (media in ${process.env.MEDIA_MODE === "d1" ? "D1 fal
   it("host delete removes everything", async () => {
     expect((await call(`/voyages/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${secret}` } })).status).toBe(200);
     expect((await call(`/voyages/${id}`)).status).toBe(404);
+  });
+});
+
+describe("v0.9 One Link", () => {
+  const WA = "WhatsApp/2.23.20.0 A";
+  const H = (s: string) => ({ Authorization: `Bearer ${s}` });
+  let id = "", secret = "";
+  beforeAll(() => { ipOverride = "10.9.0.1"; });
+  const invPack = (inv: Record<string, unknown>) => ({
+    v: 1,
+    share: { id: "vj_y", title: "Asha's 30th", mode: "invitation", playback: { clips: [{ id: "c1", kind: "image" }], invitation: inv } },
+    media: {},
+  });
+  it("publishes an invitation with event times, cover and deadline", async () => {
+    const inv = { hostName: "Asha", eventName: "Asha's 30th", eventWhere: "Rooftop, Bandra", eventStart: "2030-03-14T19:30:00+05:30", eventEnd: "2030-03-14T23:30:00+05:30", plusOnesMax: 2, rsvpDeadline: "2030-03-10T23:59:00+05:30" };
+    const r = await call("/voyages", { method: "POST", json: { title: "Asha's 30th", mode: "invitation", pack: invPack(inv) } });
+    id = r.data.id; secret = r.data.hostSecret;
+    const up = await call(`/voyages/${id}/media`, { method: "POST", headers: { ...H(secret), "Content-Type": "image/jpeg" }, body: new Uint8Array([255, 216, 255, 9, 9]) });
+    expect((await call(`/voyages/${id}`, { method: "PATCH", headers: H(secret), json: { coverKey: up.data.key } })).status).toBe(200);
+    expect((await call(`/voyages/${id}`, { method: "PATCH", headers: H(secret), json: { coverKey: "v/other/host/x" } })).status).toBe(400);
+  });
+  it("serves OG meta to WhatsApp and redirects humans to the app", async () => {
+    const bot = await call(`/v/${id}`, { headers: { "User-Agent": WA } });
+    expect(bot.status).toBe(200);
+    expect(bot.headers.get("Content-Type")).toMatch(/text\/html/);
+    expect(bot.data).toContain(`<meta property="og:title" content="Asha&#39;s 30th">`);
+    expect(bot.data).toContain("Asha invites you");
+    expect(bot.data).toContain("Thu, Mar 14 · 7:30 PM");
+    expect(bot.data).toMatch(new RegExp(`og:image" content="http://api.test/v/${id}/og.jpg`));
+    expect(bot.data).toContain('name="twitter:card" content="summary_large_image"');
+    const img = await mf.dispatchFetch(`http://api.test/v/${id}/og.jpg`, { headers: { "User-Agent": WA } });
+    expect(img.headers.get("Content-Type")).toBe("image/jpeg");
+    expect([...new Uint8Array(await img.arrayBuffer())]).toEqual([255, 216, 255, 9, 9]);
+    const human = await mf.dispatchFetch(`http://api.test/v/${id}?r=1`, { headers: { "User-Agent": "Mozilla/5.0 (iPhone) Safari" }, redirect: "manual" });
+    expect(human.status).toBe(302);
+    expect(human.headers.get("Location")).toBe(`https://app.test/voyajes/v/${id}?r=1`);
+  });
+  it("builds a valid .ics", async () => {
+    const r = await call(`/voyages/${id}/event.ics`);
+    expect(r.headers.get("Content-Type")).toMatch(/text\/calendar/);
+    expect(r.data).toContain("BEGIN:VEVENT");
+    expect(r.data).toContain("DTSTART:20300314T140000Z");
+    expect(r.data).toContain("DTEND:20300314T180000Z");
+    expect(r.data).toContain("SUMMARY:Asha's 30th");
+    expect(r.data).toContain("LOCATION:Rooftop\\, Bandra");
+    expect(r.data.split("\r\n").every((l: string) => l.length <= 75)).toBe(true);
+  });
+  it("RSVP +1s are capped by the host and counted; host broadcasts updates", async () => {
+    const r = await call(`/voyages/${id}/rsvp`, { method: "POST", json: { deviceId: "device_plus_1", name: "Ravi", answer: "yes", plusOnes: 5 } });
+    expect(r.data.plusOnes).toBe(2);
+    await call(`/voyages/${id}/rsvp`, { method: "POST", json: { deviceId: "device_plus_2", name: "Mei", answer: "yes" } });
+    const u = await call(`/voyages/${id}/updates`, { method: "POST", headers: H(secret), json: { body: "Parking is in the back lot" } });
+    expect(u.status).toBe(201);
+    expect((await call(`/voyages/${id}/updates`, { method: "POST", json: { body: "spoof" } })).status).toBe(403);
+    const s = await call(`/voyages/${id}/social?deviceId=device_plus_1`);
+    expect(s.data.guestCount).toBe(4);
+    expect(s.data.myRsvp.plusOnes).toBe(2);
+    expect(s.data.updates[0].body).toBe("Parking is in the back lot");
+    expect(s.data.rsvpClosed).toBe(false);
+  });
+  it("closes RSVP after the deadline", async () => {
+    const r = await call("/voyages", { method: "POST", json: { title: "Past", mode: "invitation", pack: invPack({ eventName: "Past", rsvpDeadline: "2020-01-01T00:00:00Z" }) } });
+    const x = await call(`/voyages/${r.data.id}/rsvp`, { method: "POST", json: { deviceId: "device_late_1", name: "Late", answer: "yes" } });
+    expect(x.status).toBe(409);
+    expect((await call(`/voyages/${r.data.id}/social`)).data.rsvpClosed).toBe(true);
+  });
+  it("report → host hides + blocks device; blocked device can't post", async () => {
+    const c = await call(`/voyages/${id}/comments`, { method: "POST", json: { deviceId: "device_troll_1", name: "Troll", body: "buy followers now" } });
+    const rep = await call(`/voyages/${id}/report`, { method: "POST", json: { deviceId: "device_plus_1", targetType: "comment", targetId: c.data.id, reason: "spam" } });
+    expect(rep.status).toBe(201);
+    expect((await call(`/voyages/${id}/report`, { method: "POST", json: { targetType: "comment", targetId: c.data.id, reason: "nope" } })).status).toBe(400);
+    const host = await call(`/voyages/${id}/host`, { headers: H(secret) });
+    expect(host.data.reports[0]).toMatchObject({ target_type: "comment", target_id: c.data.id, reason: "spam" });
+    const troll = host.data.comments.find((x: any) => x.id === c.data.id);
+    expect(troll.device_id).toBe("device_troll_1");
+    expect((await call(`/voyages/${id}/blocks`, { method: "POST", headers: H(secret), json: { deviceId: troll.device_id } })).data.blocked).toBe(true);
+    const s = await call(`/voyages/${id}/social?deviceId=device_troll_1`);
+    expect(s.data.comments.find((x: any) => x.id === c.data.id)).toBeUndefined();
+    expect(s.data.blocked).toBe(true);
+    expect((await call(`/voyages/${id}/comments`, { method: "POST", json: { deviceId: "device_troll_1", body: "again" } })).status).toBe(403);
+    expect((await call(`/voyages/${id}/blocks`, { method: "DELETE", headers: H(secret), json: { deviceId: "device_troll_1" } })).data.blocked).toBe(false);
+  });
+  it("three reporters auto-hide a comment", async () => {
+    const c = await call(`/voyages/${id}/comments`, { method: "POST", json: { deviceId: "device_mean_01", body: "mean thing" } });
+    for (const d of ["device_rep_001", "device_rep_002", "device_rep_003"])
+      await call(`/voyages/${id}/report`, { method: "POST", json: { deviceId: d, targetType: "comment", targetId: c.data.id, reason: "harassment" } });
+    const s = await call(`/voyages/${id}/social`);
+    expect(s.data.comments.find((x: any) => x.id === c.data.id)).toBeUndefined();
+  });
+  it("admin takedown needs the secret and removes the voyage + media", async () => {
+    expect((await call(`/admin/reports`)).status).toBe(403);
+    expect((await call(`/admin/reports`, { headers: H("wrong") })).status).toBe(403);
+    const list = await call(`/admin/reports`, { headers: H("admin-test-secret") });
+    expect(list.data.reports.length).toBeGreaterThan(0);
+    const r = await call("/voyages", { method: "POST", json: { title: "Bad", mode: "voyage", pack: pack("Bad") } });
+    const up = await call(`/voyages/${r.data.id}/media`, { method: "POST", headers: { ...H(r.data.hostSecret), "Content-Type": "image/jpeg" }, body: new Uint8Array([255, 216, 1]) });
+    await call(`/voyages/${r.data.id}/report`, { method: "POST", json: { targetType: "voyage", reason: "nudity" } });
+    const t = await call(`/admin/voyages/${r.data.id}/takedown`, { method: "POST", headers: H("admin-test-secret"), json: { reason: "nudity report" } });
+    expect(t.data.status).toBe("removed");
+    expect((await call(`/voyages/${r.data.id}`)).status).toBe(410);
+    expect((await call(`/v/${r.data.id}`, { headers: { "User-Agent": WA } })).status).toBe(410);
+    expect((await mf.dispatchFetch(up.data.url.replace(/^https?:\/\/[^/]+/, "http://api.test"))).status).toBe(404);
+  });
+  it("serves app-link manifests", async () => {
+    const a = await call("/.well-known/assetlinks.json");
+    expect(a.data[0].target).toMatchObject({ package_name: "app.voyajes.twa", sha256_cert_fingerprints: ["AA:BB"] });
+    const i = await call("/.well-known/apple-app-site-association");
+    expect(i.data.applinks.details[0].appIDs).toEqual(["TEAM.app.voyajes"]);
+    expect((await call("/health")).data.version).toBe("0.9.0");
   });
 });

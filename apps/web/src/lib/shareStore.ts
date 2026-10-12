@@ -1,6 +1,6 @@
 import { brand } from "@voyajes/core";
 import type { Aspect, InvitationMeta, ProjectMode, TextStyle, TextTransition, TransitionKind } from "@voyajes/core";
-import type { DraftClipMeta, DraftState, DraftTextOverlay } from "./draftStore";
+import { asEventDetails, type DraftClipMeta, type DraftState, type DraftTextOverlay } from "./draftStore";
 
 const LS_SHARES = "voyajes.shares.v1";
 const LS_ACTIVE = "voyajes.share.activeId";
@@ -109,6 +109,7 @@ function normalizeInvitation(raw?: InvitationMeta | null): InvitationMeta | unde
   if (typeof raw.eventType === "string" && raw.eventType.trim()) out.eventType = raw.eventType.trim();
   if (typeof raw.eventWhen === "string" && raw.eventWhen.trim()) out.eventWhen = raw.eventWhen.trim();
   if (typeof raw.eventWhere === "string" && raw.eventWhere.trim()) out.eventWhere = raw.eventWhere.trim();
+  Object.assign(out, asEventDetails(raw));
   return Object.keys(out).length ? out : undefined;
 }
 
@@ -195,6 +196,7 @@ export function invitationFromDraft(draft: DraftState): InvitationMeta | undefin
     eventType: draft.eventType,
     eventWhen: draft.eventWhen,
     eventWhere: draft.eventWhere,
+    ...asEventDetails(draft.eventDetails),
   });
 }
 

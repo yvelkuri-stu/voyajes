@@ -1,3 +1,5 @@
+import { KineticText } from "./KineticText";
+import { isKinetic } from "@voyajes/core";
 import { AnimatedLayer } from "./editor/AnimatedLayer";
 import { computeLayout, themeLayer, transitionEasingInto } from "../lib/timelineRender";
 import { clampSpeed, duckWindows, effectiveAudioClips, sourceTimeAt } from "@voyajes/core";
@@ -607,7 +609,11 @@ export function InvitePlayer({
               className={`preview-overlay text-style-${o.style} text-tx-${o.animationIn} overlay-pos-${o.position}`}
               style={{ color: o.color || theme.palette.text }}
             >
-              {o.value}
+              {isKinetic(o.animationIn) ? (
+                <KineticText text={o.value} kind={o.animationIn} bpm={getBeatByRef(playback?.audioTrackRef ?? "")?.bpm} durationSec={Math.max(0.01, o.end - o.at)} />
+              ) : (
+                o.value
+              )}
             </div>
           ))}
           {(playback?.watermark ?? false) && phase === "clips" && (

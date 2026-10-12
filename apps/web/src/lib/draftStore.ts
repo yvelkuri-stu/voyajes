@@ -123,6 +123,8 @@ export type DraftState = {
   eventType?: string;
   eventWhen?: string;
   eventWhere?: string;
+  /** v0.9 machine-readable event details (calendar, maps, RSVP rules) */
+  eventDetails?: EventDetails;
   /** v0.8 theme look intensity 0..1 (undefined = default 0.7) */
   themeIntensity?: number;
   /** v0.8 things the user set explicitly in Pro (kept when the theme changes) */
@@ -160,7 +162,29 @@ const TEXT_TX: TextTransition[] = [
   "scale-bounce",
   "dissolve",
   "flash-in",
+  "word-pop",
+  "karaoke",
+  "word-bounce",
 ];
+
+export type EventDetails = {
+  eventStart?: string;
+  eventEnd?: string;
+  eventAddress?: string;
+  rsvpDeadline?: string;
+  plusOnesMax?: number;
+};
+export function asEventDetails(raw: unknown): EventDetails {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const out: EventDetails = {};
+  const iso = (v: unknown) => (typeof v === "string" && v && !isNaN(+new Date(v)) ? v : undefined);
+  if (iso(r.eventStart)) out.eventStart = r.eventStart as string;
+  if (iso(r.eventEnd)) out.eventEnd = r.eventEnd as string;
+  if (iso(r.rsvpDeadline)) out.rsvpDeadline = r.rsvpDeadline as string;
+  if (typeof r.eventAddress === "string" && r.eventAddress.trim()) out.eventAddress = r.eventAddress.trim().slice(0, 200);
+  if (typeof r.plusOnesMax === "number" && r.plusOnesMax >= 0) out.plusOnesMax = Math.min(10, Math.round(r.plusOnesMax));
+  return out;
+}
 
 const TEXT_POS: TextPosition[] = ["top", "center", "bottom", "lower-third"];
 
@@ -388,6 +412,7 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     eventType: typeof parsed.eventType === "string" ? parsed.eventType : "",
     eventWhen: typeof parsed.eventWhen === "string" ? parsed.eventWhen : "",
     eventWhere: typeof parsed.eventWhere === "string" ? parsed.eventWhere : "",
+    eventDetails: asEventDetails(parsed.eventDetails),
     grade: GradePresetSchema.safeParse(parsed.grade).success ? parsed.grade : undefined,
     themeIntensity: typeof parsed.themeIntensity === "number" ? Math.max(0, Math.min(1, parsed.themeIntensity)) : undefined,
     proLocks: Array.isArray(parsed.proLocks) ? parsed.proLocks.filter((x): x is string => typeof x === "string") : undefined,
@@ -533,6 +558,7 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
               eventType: draft.eventType?.trim() || undefined,
               eventWhen: draft.eventWhen?.trim() || undefined,
               eventWhere: draft.eventWhere?.trim() || undefined,
+              ...asEventDetails(draft.eventDetails),
             },
           }
         : {}),

@@ -17,7 +17,7 @@ import type {
 } from "@voyajes/core";
 import type { ThemeCard } from "../data/themes";
 import { drawFxOps } from "./themeFx";
-import { fxOps, lookGradeCss, type ThemeLook } from "@voyajes/core";
+import { fxOps, lookGradeCss, isKinetic, kineticFrame, wordStep, type ThemeLook } from "@voyajes/core";
 import {
   applyTransformToCanvas,
   ease,
@@ -136,8 +136,14 @@ export type ExportWebmOptions = {
   /** Target short-edge ~1080; long edge follows aspect */
   shortEdge?: number;
   fps?: number;
-  /** Soft Voyajes logo watermark (bottom-right) */
+  /** Soft Voyajes logo watermark (bottom-right) — optional, default off */
   watermark?: boolean;
+  /** Beats per minute for kinetic (beat-synced) captions */
+  beatBpm?: number;
+  /** Hard cap on output length (e.g. WhatsApp Status ≤ 30s) */
+  maxDurationSec?: number;
+  /** MediaRecorder video bitrate (bits/s) — Status preset keeps files ≤ 16 MB */
+  videoBitsPerSecond?: number;
   /**
    * When true, burn project title on every frame (legacy).
    * Default false — only timed overlays + optional invitation cards.
@@ -582,6 +588,7 @@ function drawStyledText(
     position?: TextPosition;
     role?: "title" | "subtitle" | "caption";
     alpha?: number;
+    kinetic?: { kind: TextTransition; t: number; step: number };
   },
 ) {
   const pad = Math.round(w * 0.06);
@@ -624,6 +631,11 @@ function drawStyledText(
     ctx.fill();
     ctx.fillStyle = opts.color || theme.palette.text;
   }
+  if (opts.kinetic && isKinetic(opts.kinetic.kind)) {
+    drawKineticWords(ctx, text.slice(0, 64), x, y, maxW, size, opts.position === "center", opts.color || theme.palette.text, theme.palette.accent, opts.kinetic, opts.style === "kinetic-outline");
+    ctx.restore();
+    return;
+  }
   if (opts.style === "kinetic-outline") {
     ctx.strokeStyle = opts.color || theme.palette.text;
     ctx.lineWidth = Math.max(2, size * 0.06);
@@ -632,6 +644,62 @@ function drawStyledText(
   }
   ctx.fillText(text.slice(0, 64), x, y, maxW);
   ctx.restore();
+}
+
+/** v0.9 kinetic captions: per-word pop / bounce / karaoke / typewriter on the beat. */
+function drawKineticWords(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxW: number,
+  size: number,
+  centered: boolean,
+  color: string,
+  accent: string,
+  k: { kind: TextTransition; t: number; step: number },
+  outline: boolean,
+) {
+  const words = kineticFrame(text, k.kind, k.t, k.step);
+  const space = ctx.measureText(" ").width;
+  const widths = words.map((w) => ctx.measureText(w.word).width);
+  const total = widths.reduce((a, b) => a + b, 0) + space * Math.max(0, words.length - 1);
+  const fit = total > maxW ? maxW / total : 1;
+  ctx.textAlign = "left";
+  let cx = centered ? x - (total * fit) / 2 : x;
+  const baseAlpha = ctx.globalAlpha;
+  words.forEach((w, i) => {
+    const ww = widths[i] * fit;
+    if (w.opacity > 0.001) {
+      ctx.save();
+      ctx.translate(cx + ww / 2, y + w.dy * size);
+      ctx.scale(w.scale * fit, w.scale * fit);
+      const shown = w.word.slice(0, w.chars);
+      const lx = -widths[i] / 2;
+      ctx.globalAlpha = baseAlpha * w.opacity * (k.kind === "karaoke" ? 0.55 : 1);
+      ctx.fillStyle = color;
+      if (outline) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, size * 0.06);
+        ctx.strokeText(shown, lx, 0);
+      } else ctx.fillText(shown, lx, 0);
+      if (w.highlight > 0) {
+        ctx.globalAlpha = baseAlpha * w.opacity;
+        ctx.fillStyle = k.kind === "karaoke" ? accent || color : accent || color;
+        ctx.beginPath();
+        const frac = k.kind === "karaoke" ? w.highlight : 1;
+        ctx.rect(lx, -size * 2, widths[i] * frac, size * 4);
+        ctx.clip();
+        if (k.kind === "karaoke") ctx.fillText(shown, lx, 0);
+        else {
+          ctx.globalAlpha = baseAlpha * w.opacity * w.highlight * 0.6;
+          ctx.fillText(shown, lx, 0);
+        }
+      }
+      ctx.restore();
+    }
+    cx += ww + space * fit;
+  });
 }
 
 function drawTitle(
@@ -729,6 +797,7 @@ function drawTextOverlays(
   w: number,
   h: number,
   timeSec: number,
+  bpm?: number,
 ) {
   for (const o of overlays) {
     if (!o.value?.trim()) continue;
@@ -744,7 +813,10 @@ function drawTextOverlays(
       color: o.color,
       position: o.position ?? (o.role === "title" ? "bottom" : "center"),
       role: o.role,
-      alpha: alpha * ctx.globalAlpha,
+      alpha: (isKinetic(o.animationIn) ? Math.min(1, (dur - localT) / 0.3) : alpha) * ctx.globalAlpha,
+      ...(isKinetic(o.animationIn)
+        ? { kinetic: { kind: o.animationIn!, t: localT, step: wordStep(bpm, o.value.trim().split(/\s+/).length, dur) } }
+        : {}),
     });
     ctx.restore();
   }
@@ -1205,7 +1277,7 @@ export async function exportSlideshowWebm(
           ])
         : canvasStream;
     const opts: MediaRecorderOptions = {
-      videoBitsPerSecond: 6_000_000,
+      videoBitsPerSecond: options.videoBitsPerSecond ?? 6_000_000,
     };
     if (mimeType) opts.mimeType = mimeType;
     if (useAudio) opts.audioBitsPerSecond = 128_000;
@@ -1439,7 +1511,7 @@ export async function exportSlideshowWebm(
       );
       if (!hasTimedTitle) drawTitle(ctx, title, theme, width, height, "", textStyle);
     }
-    drawTextOverlays(ctx, timedOverlays, theme, width, height, nowSec);
+    drawTextOverlays(ctx, timedOverlays, theme, width, height, nowSec, options.beatBpm);
     if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
 
     const nowElapsed = introOffset + tl;

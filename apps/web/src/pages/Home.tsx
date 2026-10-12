@@ -1,3 +1,4 @@
+import { CONTACT } from "../lib/legal";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { StartFreshSheet } from "../components/StartFresh";
@@ -70,12 +71,18 @@ export function Home() {
             </Link>
           )}
         </div>
+        <p className="vj-free-promise home-promise" data-free-promise>
+          🆓 Free · <strong>no watermark, ever</strong> · no sign-up to share
+        </p>
         {draft && (
           <button type="button" className="home-fresh" data-home-fresh onClick={() => setAsk(true)}>
             🧹 Start fresh
           </button>
         )}
       </section>
+      <p className="muted home-legal" style={{ textAlign: "center", fontSize: ".75rem", margin: "18px 0" }}>
+        <Link to="/terms" data-home-terms>Terms</Link> · <Link to="/privacy">Privacy</Link> · <a href={CONTACT.href}>Contact</a>
+      </p>
       <StartFreshSheet
         open={ask}
         onCancel={() => setAsk(false)}

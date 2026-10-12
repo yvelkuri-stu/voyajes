@@ -59,7 +59,7 @@ export interface ThemeLook {
   motions: ClipAnimation[];
   /** beats per shot (before the pace of the story length) */
   beatsPerShot: number;
-  text: { style: TextStyleKind; color: string; anim: TextTransitionKind; captionStyle: TextStyleKind };
+  text: { style: TextStyleKind; color: string; anim: TextTransitionKind; captionStyle: TextStyleKind; /** v0.9 beat-synced caption motion for Breeze captions */ captionAnim?: TextTransitionKind };
   intro: string;
   outro: string;
   /** guest page / stage background */
@@ -84,7 +84,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "ease-out",
     motions: [kb("ken-burns", { in: "zoom-out", inSec: 0.35 }), kb("pulse"), kb("ken-burns-out", { in: "slide-left", inSec: 0.3 })],
     beatsPerShot: 4,
-    text: { style: "kinetic-outline", color: "#FF6BF0", anim: "flash-in", captionStyle: "mono-tech" },
+    text: { style: "kinetic-outline", color: "#FF6BF0", anim: "flash-in", captionStyle: "mono-tech", captionAnim: "karaoke" },
     intro: "AFTER DARK ✦",
     outro: "see you at night ✦",
     bg: ["#0A0614", "#2a0b45", "#E84AFF"],
@@ -124,7 +124,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "back-out",
     motions: [kb("ken-burns", { in: "slide-up", inSec: 0.4 }), kb("sway"), kb("ken-burns-out")],
     beatsPerShot: 4,
-    text: { style: "bold-impact", color: "#E8FFF6", anim: "pop", captionStyle: "caption-pill" },
+    text: { style: "bold-impact", color: "#E8FFF6", anim: "pop", captionStyle: "caption-pill", captionAnim: "word-pop" },
     intro: "salt & sun",
     outro: "until the next wave 🌊",
     bg: ["#06141C", "#0b3a4a", "#3DDC97"],
@@ -164,7 +164,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "linear",
     motions: [kb("shake", { in: "pop", inSec: 0.2 }), kb("ken-burns"), kb("pulse")],
     beatsPerShot: 2,
-    text: { style: "mono-tech", color: "#7DFFE0", anim: "typewriter", captionStyle: "mono-tech" },
+    text: { style: "mono-tech", color: "#7DFFE0", anim: "typewriter", captionStyle: "mono-tech", captionAnim: "typewriter" },
     intro: "▶ PLAY  SP 0:00:00",
     outro: "■ STOP · be kind, rewind",
     bg: ["#12081A", "#2b0e3a", "#FF2D95"],
@@ -184,7 +184,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "back-out",
     motions: [kb("pulse", { in: "pop", inSec: 0.3 }), kb("ken-burns", { in: "spin", inSec: 0.4 }), kb("float")],
     beatsPerShot: 2,
-    text: { style: "kinetic-outline", color: "#DDF6FF", anim: "scale-bounce", captionStyle: "caption-pill" },
+    text: { style: "kinetic-outline", color: "#DDF6FF", anim: "scale-bounce", captionStyle: "caption-pill", captionAnim: "word-bounce" },
     intro: "✧ 2000 & forever ✧",
     outro: "✧ stay shiny ✧",
     bg: ["#0b0b22", "#3b3f7a", "#9BE7FF"],
@@ -244,7 +244,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "ease-out",
     motions: [kb("pulse", { in: "pop", inSec: 0.2 }), kb("shake"), kb("ken-burns", { in: "zoom-out", inSec: 0.25 })],
     beatsPerShot: 2,
-    text: { style: "bold-impact", color: "#FFE14D", anim: "scale-bounce", captionStyle: "bold-impact" },
+    text: { style: "bold-impact", color: "#FFE14D", anim: "scale-bounce", captionStyle: "bold-impact", captionAnim: "word-pop" },
     intro: "LET'S GO 🎉",
     outro: "best night ever 🪩",
     bg: ["#0C0418", "#3a0c48", "#FF3D81"],
@@ -264,7 +264,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "ease-out",
     motions: [kb("ken-burns-out", { in: "zoom-in", inSec: 0.25 }), kb("shake"), kb("pulse")],
     beatsPerShot: 2,
-    text: { style: "mono-tech", color: "#B8FF3D", anim: "flash-in", captionStyle: "mono-tech" },
+    text: { style: "mono-tech", color: "#B8FF3D", anim: "flash-in", captionStyle: "mono-tech", captionAnim: "karaoke" },
     intro: "// SYSTEM ONLINE",
     outro: "// END OF LINE",
     bg: ["#050A04", "#14300c", "#B8FF3D"],
@@ -284,7 +284,7 @@ export const THEME_LOOKS: ThemeLook[] = [
     easing: "ease-in-out",
     motions: [kb("float"), kb("ken-burns"), kb("sway")],
     beatsPerShot: 3,
-    text: { style: "script-soft", color: "#FFE0EC", anim: "slide-up", captionStyle: "soft-serif" },
+    text: { style: "script-soft", color: "#FFE0EC", anim: "slide-up", captionStyle: "soft-serif", captionAnim: "word-pop" },
     intro: "forever & always",
     outro: "♡",
     bg: ["#1A1014", "#4a2030", "#F2A7C3"],

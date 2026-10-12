@@ -4,3 +4,5 @@ export * from "./tokens.js";
 export * from "./timeline.js";
 export * from "./breeze.js";
 export * from "./looks.js";
+export * from "./kinetic.js";
+export * from "./event.js";

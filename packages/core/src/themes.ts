@@ -83,7 +83,10 @@ export type TextTransitionKind =
   | "whip-in"
   | "scale-bounce"
   | "dissolve"
-  | "flash-in";
+  | "flash-in"
+  | "word-pop"
+  | "karaoke"
+  | "word-bounce";
 
 export const TEXT_TRANSITION_KINDS: TextTransitionKind[] = [
   "fade",
@@ -94,6 +97,9 @@ export const TEXT_TRANSITION_KINDS: TextTransitionKind[] = [
   "scale-bounce",
   "dissolve",
   "flash-in",
+  "word-pop",
+  "karaoke",
+  "word-bounce",
 ];
 
 export type DurationTargetSec = 15 | 30 | 60;
@@ -260,6 +266,12 @@ export function textTransitionLabel(kind: TextTransitionKind): string {
       return "Dissolve";
     case "flash-in":
       return "Flash in";
+    case "word-pop":
+      return "Word pop ♪";
+    case "karaoke":
+      return "Karaoke ♪";
+    case "word-bounce":
+      return "Bounce ♪";
     default:
       return kind;
   }

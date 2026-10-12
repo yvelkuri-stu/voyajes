@@ -1,3 +1,4 @@
+import { isCrawler, ogHtml, previewMeta, invitationOf, firstImageUrl, buildIcs, assetLinks, appleAppSiteAssociation, esc } from "./onelink";
 /**
  * Voyajes collaboration API (v0.7) — Cloudflare Worker + D1 + R2.
  * Short links for published voyages, guest photo drops (signed upload URLs),
@@ -11,6 +12,17 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   PUBLIC_BASE?: string;
   SIGNING_KEY?: string;
+  /** v0.9: secret for /admin/* takedown endpoints (unset → admin API disabled) */
+  ADMIN_SECRET?: string;
+  /** v0.9: where humans are sent for /v/:id (the SPA), e.g. https://yvelkuri-stu.github.io/voyajes */
+  APP_URL?: string;
+  /** v0.9 root-domain mode: proxy non-API GETs to this static origin (see docs/domain.md) */
+  APP_ORIGIN?: string;
+  /** v0.9 app links */
+  ANDROID_PACKAGE?: string;
+  ANDROID_SHA256?: string;
+  APPLE_APP_IDS?: string;
+  CONTACT_EMAIL?: string;
 }
 
 export const EMOJIS = ["❤️", "🔥", "😂", "😮", "👏"] as const;
@@ -22,9 +34,11 @@ export const LIMITS = {
   commentChars: 280,
   nameChars: 40,
   noteChars: 280,
+  updateChars: 500,
+  plusOnesMax: 10,
   dropsMaxDefault: 10,
 };
-const RATE = { write: 60, sign: 20, publish: 10 }; // per IP per minute
+const RATE = { write: 60, sign: 20, publish: 10, report: 10 }; // per IP per minute
 
 // ───────── media store: R2 when bound, else chunked D1 ─────────
 const CHUNK = 900_000;
@@ -154,12 +168,51 @@ async function rateLimit(env: Env, req: Request, bucket: keyof typeof RATE, devi
   }
 }
 
-type VoyageRow = { id: string; host_hash: string; title: string; mode: string; pack: string; drops_enabled: number; drops_max: number; created_at: number; updated_at: number };
-async function getVoyage(env: Env, id: string): Promise<VoyageRow> {
+type VoyageRow = {
+  id: string; host_hash: string; title: string; mode: string; pack: string; drops_enabled: number; drops_max: number; created_at: number; updated_at: number;
+  cover_key?: string | null; preview_key?: string | null; status?: string; removed_reason?: string | null;
+};
+async function getVoyage(env: Env, id: string, allowRemoved = false): Promise<VoyageRow> {
   if (!isVoyageId(id)) throw new HttpError(404, "Not found");
   const v = await env.DB.prepare("SELECT * FROM voyages WHERE id = ?").bind(id).first<VoyageRow>();
   if (!v) throw new HttpError(404, "Not found");
+  if (v.status === "removed" && !allowRemoved) throw new HttpError(410, "This voyage was removed for violating the Voyajes terms");
   return v;
+}
+async function assertNotBlocked(env: Env, v: VoyageRow, device: string | null) {
+  if (!device) return;
+  const b = await env.DB.prepare("SELECT 1 FROM blocks WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).first();
+  if (b) throw new HttpError(403, "The host has turned off posting from this device");
+}
+function rsvpClosed(v: VoyageRow): number | null {
+  try {
+    const d = invitationOf(JSON.parse(v.pack))?.rsvpDeadline;
+    const t = d ? +new Date(d) : NaN;
+    return isNaN(t) ? null : t;
+  } catch { return null; }
+}
+const appUrl = (env: Env, req: Request) => (env.APP_URL || env.PUBLIC_BASE || new URL(req.url).origin).replace(/\/$/, "");
+async function requireAdmin(env: Env, req: Request) {
+  const auth = req.headers.get("Authorization") ?? "";
+  const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!env.ADMIN_SECRET) throw new HttpError(404, "Not found");
+  if (!got || !timingSafeEq(await sha256(got), await sha256(env.ADMIN_SECRET))) throw new HttpError(403, "Admin secret required");
+}
+const TABLES = ["voyages", "media", "drops", "reactions", "comments", "hearts", "rsvps", "updates", "reports", "blocks"];
+async function wipeMedia(env: Env, voyageId: string) {
+  const keys = await env.DB.prepare("SELECT key FROM media WHERE voyage_id = ?").bind(voyageId).all<{ key: string }>();
+  await store.del(env, keys.results.map((k) => k.key));
+  await env.DB.prepare("DELETE FROM media WHERE voyage_id = ?").bind(voyageId).run();
+}
+const html = (body: string, status = 200, extra: Record<string, string> = {}) =>
+  new Response(body, { status, headers: { "Content-Type": "text/html; charset=utf-8", ...extra } });
+
+/** Root-domain mode: everything that isn't API is the static app (see docs/domain.md). */
+async function proxyApp(env: Env, req: Request, path: string): Promise<Response> {
+  const origin = env.APP_ORIGIN!.replace(/\/$/, "");
+  const r = await fetch(origin + path + new URL(req.url).search, { headers: { Accept: req.headers.get("Accept") ?? "*/*" } });
+  if (r.status === 404 && !/\.[a-z0-9]+$/i.test(path)) return fetch(origin + "/index.html"); // SPA fallback
+  return r;
 }
 async function requireHost(env: Env, req: Request, v: VoyageRow) {
   const auth = req.headers.get("Authorization") ?? "";
@@ -187,7 +240,108 @@ async function route(req: Request, env: Env): Promise<Response> {
   const m = req.method;
   const seg = p.split("/").filter(Boolean);
 
-  if (p === "/" || p === "/health") return json({ ok: true, service: "voyajes-api", version: "0.7.0", media: env.MEDIA ? "r2" : "d1" });
+  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "0.9.0", media: env.MEDIA ? "r2" : "d1" });
+
+  // app links (custom-domain + store readiness)
+  if (p === "/.well-known/assetlinks.json") return json(assetLinks(env.ANDROID_PACKAGE, env.ANDROID_SHA256), 200, { "Cache-Control": "public, max-age=3600" });
+  if (p === "/.well-known/apple-app-site-association" || p === "/apple-app-site-association")
+    return json(appleAppSiteAssociation(env.APPLE_APP_IDS), 200, { "Cache-Control": "public, max-age=3600" });
+
+  // share link with previews: crawlers get OG meta, humans go to the app
+  if (seg[0] === "v" && seg[1] && m === "GET") {
+    const v = await getVoyage(env, seg[1], true).catch(() => null);
+    const human = !isCrawler(req.headers.get("User-Agent"));
+    if (seg[2] === "og.jpg") {
+      if (!v || v.status === "removed") return Response.redirect(`${appUrl(env, req)}/og-default.jpg`, 302);
+      let key = v.cover_key ?? null;
+      if (!key) {
+        const u = firstImageUrl(JSON.parse(v.pack));
+        const mm = u && /\/media\/(.+)$/.exec(u);
+        key = mm ? decodeURIComponent(mm[1]) : null;
+      }
+      const obj = key ? await store.get(env, key) : null;
+      if (!obj) return Response.redirect(`${appUrl(env, req)}/og-default.jpg`, 302);
+      return new Response(obj.body, { headers: { "Content-Type": obj.mime, "Cache-Control": "public, max-age=300" } });
+    }
+    if (seg[2]) throw new HttpError(404, "Not found");
+    const target = `${appUrl(env, req)}/v/${encodeURIComponent(seg[1])}${url.search}`;
+    if (human) {
+      if (env.APP_ORIGIN) return proxyApp(env, req, "/index.html");
+      return new Response(null, { status: 302, headers: { Location: target, "Cache-Control": "no-store" } });
+    }
+    if (!v) return html(`<!doctype html><title>Voyajes</title><meta property="og:title" content="Voyajes"><p>Not found</p>`, 404);
+    if (v.status === "removed")
+      return html(`<!doctype html><title>Removed · Voyajes</title><meta property="og:title" content="This voyage was removed"><meta property="og:description" content="It broke the Voyajes terms."><p>Removed</p>`, 410);
+    const pack = JSON.parse(v.pack);
+    const meta = previewMeta({ id: v.id, title: v.title, mode: v.mode, pack });
+    const self = `${base(env, req)}/v/${v.id}`;
+    return html(
+      ogHtml({
+        ...meta,
+        url: self,
+        appUrl: target,
+        image: `${self}/og.jpg?v=${v.updated_at}`,
+        video: v.preview_key ? mediaUrl(env, req, v.preview_key) : null,
+        themeColor: "#0B0D12",
+      }),
+      200,
+      { "Cache-Control": "public, max-age=60" },
+    );
+  }
+
+  // terms/privacy on the API origin redirect to the app's pages
+  if ((p === "/terms" || p === "/privacy") && !env.APP_ORIGIN) return Response.redirect(`${appUrl(env, req)}${p}`, 302);
+
+  // owner admin (takedowns) — Authorization: Bearer $ADMIN_SECRET
+  if (seg[0] === "admin") {
+    await requireAdmin(env, req);
+    if (seg[1] === "reports" && !seg[2] && m === "GET") {
+      const status = url.searchParams.get("status") ?? "open";
+      const r = await env.DB.prepare(
+        "SELECT r.*, v.title AS voyage_title, v.status AS voyage_status FROM reports r LEFT JOIN voyages v ON v.id = r.voyage_id WHERE r.status = ? ORDER BY r.created_at DESC LIMIT 200",
+      ).bind(status).all<any>();
+      return json({ reports: r.results });
+    }
+    if (seg[1] === "reports" && seg[2] && m === "POST") {
+      const b = await body<{ status: string }>(req);
+      if (!["open", "actioned", "dismissed"].includes(b.status)) throw new HttpError(400, "Bad status");
+      await env.DB.prepare("UPDATE reports SET status = ? WHERE id = ?").bind(b.status, seg[2]).run();
+      return json({ ok: true });
+    }
+    if (seg[1] === "voyages" && seg[2] && seg[3] === "takedown" && m === "POST") {
+      const v = await getVoyage(env, seg[2], true);
+      const b = await body<{ reason?: string }>(req).catch(() => ({}) as { reason?: string });
+      await wipeMedia(env, v.id);
+      const now = Date.now();
+      await env.DB.batch([
+        env.DB.prepare("UPDATE voyages SET status = 'removed', removed_reason = ?, removed_at = ?, pack = ?, cover_key = NULL, preview_key = NULL, updated_at = ? WHERE id = ?")
+          .bind(cleanText(b.reason, 200) || "terms", now, JSON.stringify({ v: 1, share: { title: "Removed" }, media: {} }), now, v.id),
+        env.DB.prepare("DELETE FROM comments WHERE voyage_id = ?").bind(v.id),
+        env.DB.prepare("DELETE FROM drops WHERE voyage_id = ?").bind(v.id),
+        env.DB.prepare("UPDATE reports SET status = 'actioned' WHERE voyage_id = ? AND status = 'open'").bind(v.id),
+      ]);
+      return json({ ok: true, id: v.id, status: "removed" });
+    }
+    if (seg[1] === "comments" && seg[2] && seg[3] === "takedown" && m === "POST") {
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM comments WHERE id = ?").bind(seg[2]),
+        env.DB.prepare("UPDATE reports SET status = 'actioned' WHERE target_type = 'comment' AND target_id = ?").bind(seg[2]),
+      ]);
+      return json({ ok: true });
+    }
+    if (seg[1] === "drops" && seg[2] && seg[3] === "takedown" && m === "POST") {
+      const d = await env.DB.prepare("SELECT media_key FROM drops WHERE id = ?").bind(seg[2]).first<{ media_key: string }>();
+      if (!d) throw new HttpError(404, "Not found");
+      await store.del(env, [d.media_key]);
+      await env.DB.batch([
+        env.DB.prepare("UPDATE drops SET status = 'rejected' WHERE id = ?").bind(seg[2]),
+        env.DB.prepare("DELETE FROM media WHERE key = ?").bind(d.media_key),
+        env.DB.prepare("UPDATE reports SET status = 'actioned' WHERE target_type = 'drop' AND target_id = ?").bind(seg[2]),
+      ]);
+      return json({ ok: true });
+    }
+    throw new HttpError(404, "Not found");
+  }
 
   // media (public, immutable)
   if (seg[0] === "media" && m === "GET") {
@@ -232,7 +386,10 @@ async function route(req: Request, env: Env): Promise<Response> {
     return json({ ok: true, key: drop.media_key, url: mediaUrl(env, req, drop.media_key) });
   }
 
-  if (seg[0] !== "voyages") throw new HttpError(404, "Not found");
+  if (seg[0] !== "voyages") {
+    if (env.APP_ORIGIN && (m === "GET" || m === "HEAD")) return proxyApp(env, req, p === "/" ? "/index.html" : url.pathname);
+    throw new HttpError(404, "Not found");
+  }
 
   // publish
   if (seg.length === 1 && m === "POST") {
@@ -256,19 +413,33 @@ async function route(req: Request, env: Env): Promise<Response> {
 
   if (!sub && m === "GET") {
     return json(
-      { id: v.id, title: v.title, mode: v.mode, pack: JSON.parse(v.pack), dropsEnabled: !!v.drops_enabled, updatedAt: v.updated_at },
+      {
+        id: v.id, title: v.title, mode: v.mode, pack: JSON.parse(v.pack), dropsEnabled: !!v.drops_enabled, updatedAt: v.updated_at,
+        coverUrl: v.cover_key ? mediaUrl(env, req, v.cover_key) : null, previewUrl: v.preview_key ? mediaUrl(env, req, v.preview_key) : null,
+      },
       200,
       { "Cache-Control": "public, max-age=10" },
     );
   }
   if (!sub && m === "PATCH") {
     await requireHost(env, req, v);
-    const b = await body<{ dropsEnabled?: boolean; dropsMax?: number; title?: string }>(req);
-    await env.DB.prepare("UPDATE voyages SET drops_enabled = ?, drops_max = ?, title = ?, updated_at = ? WHERE id = ?")
+    const b = await body<{ dropsEnabled?: boolean; dropsMax?: number; title?: string; coverKey?: string | null; previewKey?: string | null }>(req);
+    const ownKey = async (k: string | null | undefined, prev: string | null | undefined) => {
+      if (k === undefined) return prev ?? null;
+      if (k === null) return null;
+      const row = await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND voyage_id = ? AND role = 'host'").bind(k, v.id).first();
+      if (!row) throw new HttpError(400, "Unknown media key");
+      return k;
+    };
+    const coverKey = await ownKey(b.coverKey, v.cover_key);
+    const previewKey = await ownKey(b.previewKey, v.preview_key);
+    await env.DB.prepare("UPDATE voyages SET drops_enabled = ?, drops_max = ?, title = ?, cover_key = ?, preview_key = ?, updated_at = ? WHERE id = ?")
       .bind(
         b.dropsEnabled == null ? v.drops_enabled : b.dropsEnabled ? 1 : 0,
         b.dropsMax == null ? v.drops_max : Math.max(1, Math.min(50, Math.round(b.dropsMax))),
         b.title == null ? v.title : cleanText(b.title, 120),
+        coverKey,
+        previewKey,
         Date.now(),
         v.id,
       )
@@ -277,10 +448,9 @@ async function route(req: Request, env: Env): Promise<Response> {
   }
   if (!sub && m === "DELETE") {
     await requireHost(env, req, v);
-    const keys = await env.DB.prepare("SELECT key FROM media WHERE voyage_id = ?").bind(v.id).all<{ key: string }>();
-    await store.del(env, keys.results.map((k) => k.key));
+    await wipeMedia(env, v.id);
     await env.DB.batch(
-      ["voyages", "media", "drops", "reactions", "comments", "hearts", "rsvps"].map((t) =>
+      TABLES.map((t) =>
         env.DB.prepare(`DELETE FROM ${t} WHERE ${t === "voyages" ? "id" : "voyage_id"} = ?`).bind(v.id),
       ),
     );
@@ -311,6 +481,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     const device = cleanDevice(b.deviceId);
     if (!device) throw new HttpError(400, "deviceId required");
     await rateLimit(env, req, "sign", device);
+    await assertNotBlocked(env, v, device);
     const rsvpPhoto = b.purpose === "rsvp" && v.mode === "invitation";
     if (!v.drops_enabled && !rsvpPhoto) throw new HttpError(403, "The host hasn't opened photo drops");
     if (!okMime(b.mime)) throw new HttpError(415, "Photos and videos only");
@@ -344,37 +515,50 @@ async function route(req: Request, env: Env): Promise<Response> {
   // host dashboard
   if (sub === "host" && m === "GET") {
     await requireHost(env, req, v);
-    const [drops, rsvps, comments, reactions, hearts] = await Promise.all([
-      env.DB.prepare("SELECT id, name, mime, size, status, media_key, created_at FROM drops WHERE voyage_id = ? AND status != 'signed' ORDER BY created_at DESC").bind(v.id).all<any>(),
-      env.DB.prepare("SELECT name, answer, note, media_key, updated_at FROM rsvps WHERE voyage_id = ? ORDER BY updated_at DESC").bind(v.id).all<any>(),
-      env.DB.prepare("SELECT id, name, body, created_at FROM comments WHERE voyage_id = ? ORDER BY created_at DESC LIMIT 200").bind(v.id).all<any>(),
+    const [drops, rsvps, comments, reactions, hearts, reports, blocks, updates] = await Promise.all([
+      env.DB.prepare("SELECT id, device_id, name, mime, size, status, media_key, created_at FROM drops WHERE voyage_id = ? AND status != 'signed' ORDER BY created_at DESC").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT device_id, name, answer, note, plus_ones, media_key, updated_at FROM rsvps WHERE voyage_id = ? ORDER BY updated_at DESC").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT id, device_id, name, body, hidden, created_at FROM comments WHERE voyage_id = ? ORDER BY created_at DESC LIMIT 200").bind(v.id).all<any>(),
       env.DB.prepare("SELECT emoji, count FROM reactions WHERE voyage_id = ?").bind(v.id).all<any>(),
       env.DB.prepare("SELECT clip, COUNT(*) AS n FROM hearts WHERE voyage_id = ? GROUP BY clip ORDER BY n DESC").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT id, target_type, target_id, reason, note, status, created_at FROM reports WHERE voyage_id = ? AND status = 'open' ORDER BY created_at DESC LIMIT 100").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT device_id, created_at FROM blocks WHERE voyage_id = ?").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT id, body, created_at FROM updates WHERE voyage_id = ? ORDER BY created_at DESC LIMIT 50").bind(v.id).all<any>(),
     ]);
+    const yes = rsvps.results.filter((r) => r.answer === "yes");
     return json({
       id: v.id,
       dropsEnabled: !!v.drops_enabled,
       dropsMax: v.drops_max,
       drops: drops.results.map((d) => ({ ...d, url: mediaUrl(env, req, d.media_key) })),
       rsvps: rsvps.results.map((r) => ({ ...r, url: r.media_key ? mediaUrl(env, req, r.media_key) : undefined })),
-      comments: comments.results,
+      comments: comments.results.map((c) => ({ ...c, hidden: !!c.hidden })),
       reactions: Object.fromEntries(reactions.results.map((r) => [r.emoji, r.count])),
       hearts: Object.fromEntries(hearts.results.map((h) => [h.clip, h.n])),
+      reports: reports.results,
+      blocked: blocks.results.map((b) => b.device_id),
+      updates: updates.results,
+      guestCount: yes.reduce((n, r) => n + 1 + (r.plus_ones ?? 0), 0),
+      coverUrl: v.cover_key ? mediaUrl(env, req, v.cover_key) : null,
     });
   }
 
   // guest social
   if (sub === "social" && m === "GET") {
     const device = cleanDevice(url.searchParams.get("deviceId"));
-    const [reactions, comments, hearts, mine, attending, counts, myRsvp] = await Promise.all([
+    const [reactions, comments, hearts, mine, attending, counts, myRsvp, updates, heads, blocked] = await Promise.all([
       env.DB.prepare("SELECT emoji, count FROM reactions WHERE voyage_id = ?").bind(v.id).all<any>(),
-      env.DB.prepare("SELECT id, name, body, created_at FROM comments WHERE voyage_id = ? ORDER BY created_at DESC LIMIT 50").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT id, name, body, created_at FROM comments WHERE voyage_id = ? AND hidden = 0 ORDER BY created_at DESC LIMIT 50").bind(v.id).all<any>(),
       env.DB.prepare("SELECT clip, COUNT(*) AS n FROM hearts WHERE voyage_id = ? GROUP BY clip").bind(v.id).all<any>(),
       device ? env.DB.prepare("SELECT clip FROM hearts WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).all<any>() : Promise.resolve({ results: [] as any[] }),
       env.DB.prepare("SELECT name FROM rsvps WHERE voyage_id = ? AND answer = 'yes' ORDER BY updated_at LIMIT 60").bind(v.id).all<any>(),
       env.DB.prepare("SELECT answer, COUNT(*) AS n FROM rsvps WHERE voyage_id = ? GROUP BY answer").bind(v.id).all<any>(),
-      device ? env.DB.prepare("SELECT name, answer, note FROM rsvps WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).first<any>() : Promise.resolve(null),
+      device ? env.DB.prepare("SELECT name, answer, note, plus_ones AS plusOnes FROM rsvps WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).first<any>() : Promise.resolve(null),
+      env.DB.prepare("SELECT id, body, created_at FROM updates WHERE voyage_id = ? ORDER BY created_at DESC LIMIT 10").bind(v.id).all<any>(),
+      env.DB.prepare("SELECT COALESCE(SUM(1 + plus_ones), 0) AS n FROM rsvps WHERE voyage_id = ? AND answer = 'yes'").bind(v.id).first<{ n: number }>(),
+      device ? env.DB.prepare("SELECT 1 FROM blocks WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).first() : Promise.resolve(null),
     ]);
+    const deadline = rsvpClosed(v);
     return json({
       reactions: Object.fromEntries(reactions.results.map((r) => [r.emoji, r.count])),
       comments: comments.results,
@@ -384,6 +568,11 @@ async function route(req: Request, env: Env): Promise<Response> {
       rsvpCounts: Object.fromEntries(counts.results.map((c) => [c.answer, c.n])),
       myRsvp,
       dropsEnabled: !!v.drops_enabled,
+      updates: updates.results,
+      guestCount: heads?.n ?? 0,
+      rsvpDeadline: deadline,
+      rsvpClosed: deadline != null && Date.now() > deadline,
+      blocked: !!blocked,
     });
   }
   if (sub === "reactions" && m === "POST") {
@@ -398,6 +587,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     const device = cleanDevice(b.deviceId);
     if (!device) throw new HttpError(400, "deviceId required");
     await rateLimit(env, req, "write", device);
+    await assertNotBlocked(env, v, device);
     const text = cleanText(b.body, LIMITS.commentChars);
     if (!text) throw new HttpError(400, "Empty comment");
     const cid = rid(10);
@@ -410,6 +600,86 @@ async function route(req: Request, env: Env): Promise<Response> {
     await env.DB.prepare("DELETE FROM comments WHERE id = ? AND voyage_id = ?").bind(seg[3], v.id).run();
     return json({ ok: true });
   }
+  if (sub === "comments" && seg[3] && m === "POST") {
+    await requireHost(env, req, v);
+    const b = await body<{ hidden: boolean }>(req);
+    await env.DB.prepare("UPDATE comments SET hidden = ? WHERE id = ? AND voyage_id = ?").bind(b.hidden ? 1 : 0, seg[3], v.id).run();
+    if (b.hidden) await env.DB.prepare("UPDATE reports SET status = 'actioned' WHERE voyage_id = ? AND target_type = 'comment' AND target_id = ?").bind(v.id, seg[3]).run();
+    return json({ ok: true });
+  }
+
+  // moderation: guest reports (anyone), host blocks + resolves
+  if (sub === "report" && m === "POST") {
+    const b = await body<{ deviceId?: string; targetType: string; targetId?: string; reason: string; note?: string }>(req);
+    const device = cleanDevice(b.deviceId);
+    await rateLimit(env, req, "report", device);
+    if (!["voyage", "comment", "drop", "clip"].includes(b.targetType)) throw new HttpError(400, "Bad target");
+    if (!["spam", "nudity", "harassment", "violence", "hate", "other"].includes(b.reason)) throw new HttpError(400, "Bad reason");
+    const targetId = b.targetType === "voyage" ? v.id : String(b.targetId ?? "").slice(0, 64);
+    if (!targetId) throw new HttpError(400, "targetId required");
+    const rid2 = rid(12);
+    await env.DB.prepare("INSERT INTO reports (id, voyage_id, target_type, target_id, reason, note, device_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)")
+      .bind(rid2, v.id, b.targetType, targetId, b.reason, cleanText(b.note, 500) || null, device, Date.now())
+      .run();
+    // three distinct reporters auto-hide a comment until the host or admin reviews it
+    if (b.targetType === "comment") {
+      const n = await env.DB.prepare("SELECT COUNT(DISTINCT COALESCE(device_id, id)) AS n FROM reports WHERE voyage_id = ? AND target_type = 'comment' AND target_id = ? AND status = 'open'").bind(v.id, targetId).first<{ n: number }>();
+      if ((n?.n ?? 0) >= 3) await env.DB.prepare("UPDATE comments SET hidden = 1 WHERE id = ? AND voyage_id = ?").bind(targetId, v.id).run();
+    }
+    return json({ ok: true, id: rid2 }, 201);
+  }
+  if (sub === "reports" && seg[3] && m === "POST") {
+    await requireHost(env, req, v);
+    const b = await body<{ status: string }>(req);
+    if (!["actioned", "dismissed"].includes(b.status)) throw new HttpError(400, "Bad status");
+    await env.DB.prepare("UPDATE reports SET status = ? WHERE id = ? AND voyage_id = ?").bind(b.status, seg[3], v.id).run();
+    return json({ ok: true });
+  }
+  if (sub === "blocks" && (m === "POST" || m === "DELETE")) {
+    await requireHost(env, req, v);
+    const b = await body<{ deviceId: string }>(req);
+    const device = cleanDevice(b.deviceId);
+    if (!device) throw new HttpError(400, "deviceId required");
+    if (m === "DELETE") {
+      await env.DB.prepare("DELETE FROM blocks WHERE voyage_id = ? AND device_id = ?").bind(v.id, device).run();
+      return json({ ok: true, blocked: false });
+    }
+    const pending = await env.DB.prepare("SELECT media_key FROM drops WHERE voyage_id = ? AND device_id = ? AND status IN ('pending','signed')").bind(v.id, device).all<{ media_key: string }>();
+    await store.del(env, pending.results.map((d) => d.media_key));
+    await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO blocks (voyage_id, device_id, created_at) VALUES (?, ?, ?)").bind(v.id, device, Date.now()),
+      env.DB.prepare("UPDATE comments SET hidden = 1 WHERE voyage_id = ? AND device_id = ?").bind(v.id, device),
+      env.DB.prepare("UPDATE drops SET status = 'rejected' WHERE voyage_id = ? AND device_id = ? AND status IN ('pending','signed')").bind(v.id, device),
+    ]);
+    return json({ ok: true, blocked: true });
+  }
+
+  // host updates broadcast
+  if (sub === "updates" && !seg[3] && m === "POST") {
+    await requireHost(env, req, v);
+    const b = await body<{ body: string }>(req);
+    const text = cleanText(b.body, LIMITS.updateChars);
+    if (!text) throw new HttpError(400, "Empty update");
+    const row = { id: rid(10), body: text, created_at: Date.now() };
+    await env.DB.prepare("INSERT INTO updates (id, voyage_id, body, created_at) VALUES (?, ?, ?, ?)").bind(row.id, v.id, row.body, row.created_at).run();
+    return json(row, 201);
+  }
+  if (sub === "updates" && seg[3] && m === "DELETE") {
+    await requireHost(env, req, v);
+    await env.DB.prepare("DELETE FROM updates WHERE id = ? AND voyage_id = ?").bind(seg[3], v.id).run();
+    return json({ ok: true });
+  }
+
+  // calendar file
+  if (sub === "event.ics" && m === "GET") {
+    const inv = invitationOf(JSON.parse(v.pack));
+    const ics = inv ? buildIcs({ uid: v.id, title: inv.eventName || v.title || "Event", inv, url: `${base(env, req)}/v/${v.id}` }) : null;
+    if (!ics) throw new HttpError(404, "No event time set");
+    return new Response(ics, {
+      headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="${v.id}.ics"`, "Cache-Control": "public, max-age=60" },
+    });
+  }
+
   if (sub === "hearts" && m === "POST") {
     const b = await body<{ deviceId: string; clip: number }>(req);
     const device = cleanDevice(b.deviceId);
@@ -421,11 +691,17 @@ async function route(req: Request, env: Env): Promise<Response> {
     return json({ hearted: !has });
   }
   if (sub === "rsvp" && m === "POST") {
-    const b = await body<{ deviceId: string; name: string; answer: string; note?: string; mediaKey?: string }>(req);
+    const b = await body<{ deviceId: string; name: string; answer: string; note?: string; mediaKey?: string; plusOnes?: number }>(req);
     const device = cleanDevice(b.deviceId);
     if (!device) throw new HttpError(400, "deviceId required");
     await rateLimit(env, req, "write", device);
     if (v.mode !== "invitation") throw new HttpError(400, "RSVP is for invitations");
+    await assertNotBlocked(env, v, device);
+    const deadline = rsvpClosed(v);
+    if (deadline != null && Date.now() > deadline) throw new HttpError(409, "RSVPs are closed");
+    const invMax = invitationOf(JSON.parse(v.pack))?.plusOnesMax;
+    const maxPlus = typeof invMax === "number" ? Math.max(0, Math.min(LIMITS.plusOnesMax, invMax)) : LIMITS.plusOnesMax;
+    const plusOnes = b.answer === "yes" ? Math.max(0, Math.min(maxPlus, Math.round(Number(b.plusOnes) || 0))) : 0;
     if (!["yes", "no", "maybe"].includes(b.answer)) throw new HttpError(400, "answer must be yes | no | maybe");
     const name = cleanText(b.name, LIMITS.nameChars);
     if (!name) throw new HttpError(400, "Name required");
@@ -435,11 +711,11 @@ async function route(req: Request, env: Env): Promise<Response> {
       if (own) mediaKey = b.mediaKey;
     }
     await env.DB.prepare(
-      "INSERT INTO rsvps (voyage_id, device_id, name, answer, note, media_key, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(voyage_id, device_id) DO UPDATE SET name = excluded.name, answer = excluded.answer, note = excluded.note, media_key = COALESCE(excluded.media_key, rsvps.media_key), updated_at = excluded.updated_at",
+      "INSERT INTO rsvps (voyage_id, device_id, name, answer, note, media_key, plus_ones, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(voyage_id, device_id) DO UPDATE SET name = excluded.name, answer = excluded.answer, note = excluded.note, media_key = COALESCE(excluded.media_key, rsvps.media_key), plus_ones = excluded.plus_ones, updated_at = excluded.updated_at",
     )
-      .bind(v.id, device, name, b.answer, cleanText(b.note, LIMITS.noteChars) || null, mediaKey, Date.now())
+      .bind(v.id, device, name, b.answer, cleanText(b.note, LIMITS.noteChars) || null, mediaKey, plusOnes, Date.now())
       .run();
-    return json({ ok: true });
+    return json({ ok: true, plusOnes });
   }
   throw new HttpError(404, "Not found");
 }

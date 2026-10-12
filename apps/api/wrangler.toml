@@ -7,6 +7,14 @@ workers_dev = true
 ALLOWED_ORIGINS = "https://yvelkuri-stu.github.io,http://localhost:5173,http://localhost:4310,http://127.0.0.1:4310"
 # PUBLIC_BASE is the worker's own origin (used to build media + upload URLs); set at deploy
 PUBLIC_BASE = ""
+# Humans opening /v/<id> on this worker are sent to the app here (crawlers get OG meta instead)
+APP_URL = "https://yvelkuri-stu.github.io/voyajes"
+# Root-domain mode (docs/domain.md): proxy every non-API GET to the static app origin
+APP_ORIGIN = ""
+# App links (.well-known) — fill in once store builds exist
+ANDROID_PACKAGE = ""
+ANDROID_SHA256 = ""
+APPLE_APP_IDS = ""
 
 [[d1_databases]]
 binding = "DB"
@@ -19,3 +27,4 @@ binding = "MEDIA"
 bucket_name = "voyajes-media"
 
 # SIGNING_KEY (secret): `wrangler secret put SIGNING_KEY` — HMAC key for upload URLs
+# ADMIN_SECRET (secret): bearer token for /admin/* takedowns; scripts/deploy-api.sh generates it into .secrets/admin-secret

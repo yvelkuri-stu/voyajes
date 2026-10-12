@@ -1,3 +1,7 @@
+import { EventActions } from "../components/EventActions";
+import { shareLink } from "../lib/webShare";
+import { renderCover, cardInfoFromPack } from "../lib/cards";
+import { attachPreview } from "../lib/api";
 import {
   apiEnabled,
   isCloudId,
@@ -481,6 +485,14 @@ export function Share() {
         existingId: hostCloudId ?? undefined,
         onProgress: (m) => setCloudBusy(m),
       });
+      // v0.9: themed 1200×630 cover → rich WhatsApp/iMessage preview for the short link
+      setCloudBusy("Making the link preview…");
+      try {
+        const cover = await renderCover(cardInfoFromPack(pack, r.shortUrl));
+        await attachPreview(r.id, cover, "coverKey");
+      } catch (e) {
+        console.warn("cover upload failed", e);
+      }
       await navigator.clipboard.writeText(r.shortUrl).catch(() => {});
       setStatus(`Short link copied · ${r.shortUrl}`);
     } catch (err) {
@@ -1159,15 +1171,22 @@ export function Share() {
             <GuestSocial cloudId={cloudId} pack={portablePack} isInvite />
           </>
         ) : (
+          <>
+          <EventActions inv={record.invitation ?? record.playback?.invitation} title={record.invitation?.eventName || record.title} />
           <GuestEngageDrawer
             shareId={record.id}
             shareReactions={shareReactions}
             myReacts={myReacts}
             onReact={onShareReact}
           />
+          </>
         )}
 
         <footer className="invite-discreet-footer">
+          <Link to="/terms" className="invite-footer-link" data-terms-link>Terms</Link>
+          <span className="invite-footer-sep" aria-hidden>·</span>
+          <Link to="/privacy" className="invite-footer-link">Privacy</Link>
+          <span className="invite-footer-sep" aria-hidden>·</span>
           <Logo size={22} />
           <span className="invite-footer-mark">Voyajes</span>
           <span className="invite-footer-sep" aria-hidden>
@@ -1501,6 +1520,22 @@ export function Share() {
                 <span className="muted vj-small-text" data-short-link>
                   {shortUrlFor(hostCloudId)}
                 </span>
+              )}
+              {hostCloudId && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  data-one-tap-share
+                  onClick={() =>
+                    void shareLink({
+                      title: record.title,
+                      text: isInvitation ? `You're invited: ${record.invitation?.eventName || record.title} 💌` : `${record.title} ✨`,
+                      url: shortUrlFor(hostCloudId),
+                    })
+                  }
+                >
+                  📤 Share link
+                </button>
               )}
               {!fromPortableHash && portablePack && (
                 <button

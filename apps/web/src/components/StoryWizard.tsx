@@ -48,6 +48,7 @@ export function StoryWizard({
           <>
             <h2 className="vj-wizard-h">Pick a vibe</h2>
             <p className="muted vj-wizard-sub">Drop 5–10 photos next → a 15–30s cinematic story in under 2 minutes.</p>
+            <p className="vj-free-promise" data-free-promise>🆓 Free · no watermark, ever · your video stays yours</p>
             <div className="vj-wizard-themes">
               {themes.map((t) => (
                 <button

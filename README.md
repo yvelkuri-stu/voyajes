@@ -84,6 +84,16 @@ Host an animated **birthday / event invite** instead of a regular voyage:
 
 Media still resolves from the host browser’s IndexedDB draft until cloud sync ships — share the link from the device that composed the invite for full playback.
 
+## One Link (v0.9)
+
+- **Rich previews:** short links are `https://voyajes-api…workers.dev/v/<id>`. WhatsApp/iMessage/Telegram/Slack/X crawlers get OG + Twitter meta and a themed 1200×630 cover; people are sent straight into the app.
+- **WhatsApp Status preset:** 9:16, ≤30s, ≤16 MB MP4 where supported, plus one-tap Web Share.
+- **QR cards:** themed A6 / 5×7 PDF + PNG, a phone-size PNG and a "drop your photos" table card, all from Manage.
+- **Free, no watermark:** the logo mark is optional and off by default. Kinetic beat-synced captions are included: word-pop, karaoke, bounce and typewriter.
+- **Event basics:** `.ics` and Google Calendar links, Directions, +1s with a guest count, an RSVP deadline, and host updates on the guest page.
+- **Moderation:** guests can report comments, photos and voyages. Hosts can hide content or block a device. The owner admin takedown API sits behind `ADMIN_SECRET`. There are `/terms` and `/privacy` pages with a 24h takedown note.
+- **Custom domain readiness:** see [docs/domain.md](docs/domain.md).
+
 ## Stack
 
 - **Web:** Vite 5, React 18, React Router, TypeScript  

@@ -38,5 +38,13 @@ URL=$(printf '%s' "$OUT" | grep -oE 'https://[a-z0-9.-]+\.workers\.dev' | head -
 if ! $W secret list --config "$CFG" 2>/dev/null | grep -q SIGNING_KEY; then
   openssl rand -base64 48 | tr -d '\n' | $W secret put SIGNING_KEY --config "$CFG" >/dev/null
 fi
+# ADMIN_SECRET guards /admin/* takedowns. Generated once, stored only in a gitignored file on this machine.
+SECRET_FILE="$(cd ../.. && pwd)/.secrets/admin-secret"
+if ! $W secret list --config "$CFG" 2>/dev/null | grep -q ADMIN_SECRET; then
+  mkdir -p "$(dirname "$SECRET_FILE")" && chmod 700 "$(dirname "$SECRET_FILE")"
+  [ -s "$SECRET_FILE" ] || (umask 077; openssl rand -hex 32 | tr -d '\n' > "$SECRET_FILE")
+  $W secret put ADMIN_SECRET --config "$CFG" < "$SECRET_FILE" >/dev/null
+fi
+echo "admin_secret_file=$SECRET_FILE"
 echo "media=$([ "$R2" = 1 ] && echo r2 || echo d1)"
 echo "url=$URL"

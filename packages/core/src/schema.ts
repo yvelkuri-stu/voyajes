@@ -72,6 +72,9 @@ export const TextTransitionSchema = z.enum([
   "scale-bounce",
   "dissolve",
   "flash-in",
+  "word-pop",
+  "karaoke",
+  "word-bounce",
 ]);
 export type TextTransition = z.infer<typeof TextTransitionSchema>;
 
@@ -196,6 +199,15 @@ export const InvitationMetaSchema = z.object({
   eventType: z.string().optional(),
   eventWhen: z.string().optional(),
   eventWhere: z.string().optional(),
+  /** v0.9: machine-readable start/end (ISO 8601 with offset) → .ics + Google Calendar */
+  eventStart: z.string().optional(),
+  eventEnd: z.string().optional(),
+  /** v0.9: venue address / place query for the maps link (falls back to eventWhere) */
+  eventAddress: z.string().optional(),
+  /** v0.9: RSVP closes at this ISO time (enforced by the API) */
+  rsvpDeadline: z.string().optional(),
+  /** v0.9: allow guests to bring +1s (max per RSVP) */
+  plusOnesMax: z.number().int().min(0).max(10).optional(),
 });
 export type InvitationMeta = z.infer<typeof InvitationMetaSchema>;
 

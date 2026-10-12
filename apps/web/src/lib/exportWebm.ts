@@ -16,6 +16,8 @@ import type {
   TransitionKind,
 } from "@voyajes/core";
 import type { ThemeCard } from "../data/themes";
+import { drawFxOps } from "./themeFx";
+import { fxOps, lookGradeCss, type ThemeLook } from "@voyajes/core";
 import {
   applyTransformToCanvas,
   ease,
@@ -81,6 +83,9 @@ export type ExportTimelineOptions = {
   grade?: GradePreset;
   defaultAnimation?: ClipAnimation;
   transitionSpec?: TransitionSpec;
+  /** v0.8 theme look (grade when no explicit grade + film fx + particles) */
+  look?: ThemeLook;
+  intensity?: number;
 };
 
 export type ExportProgress = {
@@ -1065,8 +1070,10 @@ export async function exportSlideshowWebm(
     grade,
     defaultAnimation,
     transitionSpec: projectTxSpec,
+    look,
+    intensity,
   } = options;
-  const gradeCss = gradeFilter(grade);
+  const gradeCss = grade ? gradeFilter(grade) : look ? lookGradeCss(look, intensity) : gradeFilter(grade);
   const inviteLines = buildInviteCardLines(invitation, title);
   const useInviteCards = mode === "invitation" && inviteLines.hasContent;
   const INTRO_SEC = 2.4;
@@ -1417,8 +1424,14 @@ export async function exportSlideshowWebm(
         : null,
     );
 
-    fillThemeGrade(ctx, theme, width, height, 0.45);
-    fillVignette(ctx, theme, width, height, 0.7);
+    if (look) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.filter = "none";
+      drawFxOps(ctx, fxOps(look, intensity, tl, width, height), width, height);
+    } else {
+      fillThemeGrade(ctx, theme, width, height, 0.45);
+      fillVignette(ctx, theme, width, height, 0.7);
+    }
     const nowSec = introOffset + tl;
     if (burnTitle && title.trim() && title.trim() !== "Untitled voyage") {
       const hasTimedTitle = timedOverlays.some(

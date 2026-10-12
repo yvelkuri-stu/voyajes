@@ -1,6 +1,6 @@
 {
   "name": "@voyajes/web",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test:mobile": "node scripts/check-mobile-overflow.mjs",
-    "test:share": "node scripts/e2e-share-live.mjs"
+    "test:share": "node scripts/e2e-share-live.mjs",
+    "test:fresh": "node scripts/e2e-fresh.mjs",
+    "test:themes": "node scripts/e2e-themes.mjs",
+    "test:cloud": "node scripts/e2e-cloud.mjs"
   },
   "dependencies": {
     "@voyajes/core": "workspace:*",

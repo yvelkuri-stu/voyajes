@@ -4,7 +4,8 @@ import { clampSpeed, duckWindows, effectiveAudioClips, sourceTimeAt } from "@voy
 import { TimelineAudioPlayer } from "../lib/timelineAudio";
 import { resolveAudioRef } from "../lib/audioRefs";
 import { getLibraryItem, libraryAssetUrl } from "../data/library";
-import { easingCss, gradeFilter, type ClipAnimation } from "@voyajes/core";
+import { DEFAULT_INTENSITY, easingCss, getLook, gradeFilter, lookBackground, lookGradeCss, type ClipAnimation } from "@voyajes/core";
+import { ThemeFxLayer } from "./ThemeFxLayer";
 import {
   useCallback,
   useEffect,
@@ -153,7 +154,9 @@ export function InvitePlayer({
   const transitionClass = `tx-${activeTransition}`;
   const layer = themeLayer(theme);
   const effAnim = playback?.defaultAnimation ?? layer.animation;
-  const shareGrade = gradeFilter(playback?.grade ?? layer.grade);
+  const look = useMemo(() => getLook(playback?.themeId ?? record.themeId), [playback?.themeId, record.themeId]);
+  const lookK = playback?.themeIntensity ?? DEFAULT_INTENSITY;
+  const shareGrade = playback?.grade ? gradeFilter(playback.grade) : lookGradeCss(look, lookK);
   const animFor = (c: { kind: "image" | "video"; animation?: ClipAnimation }) =>
     c.animation ?? (c.kind === "image" ? effAnim : { ...effAnim, emphasis: undefined });
   const tlLayout = useMemo(
@@ -487,7 +490,11 @@ export function InvitePlayer({
   );
 
   return (
-    <div className={`invite-player-root${immersive ? " is-immersive" : ""}`}>
+    <div
+      className={`invite-player-root${immersive ? " is-immersive" : ""}`}
+      data-look={look.id}
+      style={{ "--guest-bg": lookBackground(look), "--guest-accent": look.accent } as CSSProperties}
+    >
       <div
         ref={wrapRef}
         className={`invite-player-wrap${fullscreen ? " is-fullscreen" : ""}${
@@ -589,21 +596,7 @@ export function InvitePlayer({
 
           {phase === "clips" && (
             <>
-              <div
-                className="grade"
-                style={{
-                  background: theme.gradient || record.themeGradient,
-                  mixBlendMode: "soft-light",
-                  opacity: active ? 0.45 : 0.55,
-                }}
-              />
-              <div
-                className="grade grade-vignette"
-                style={{
-                  background: `radial-gradient(ellipse at center, transparent 40%, ${theme.palette.bg}cc 100%)`,
-                  opacity: active ? 0.7 : 0.4,
-                }}
-              />
+              <ThemeFxLayer look={look} intensity={lookK} getTime={() => Math.max(0, clipTimeRef.current)} playing={playing} />
             </>
           )}
 

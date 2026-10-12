@@ -23,6 +23,7 @@ export type SharePlaybackSnapshot = {
   invitation?: InvitationMeta;
   /** v2 timeline theme layer */
   grade?: DraftState["grade"];
+  themeIntensity?: number;
   defaultAnimation?: DraftState["defaultAnimation"];
   transitionSpec?: DraftState["transitionSpec"];
   audioClips?: DraftState["audioClips"];
@@ -215,6 +216,7 @@ export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
     clips: draft.clips.map((c) => ({ ...c })),
     ...(invitation ? { invitation } : {}),
     ...(draft.grade ? { grade: draft.grade } : {}),
+    ...(draft.themeIntensity != null ? { themeIntensity: draft.themeIntensity } : {}),
     ...(draft.defaultAnimation ? { defaultAnimation: draft.defaultAnimation } : {}),
     ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
     ...(Array.isArray(draft.audioClips) ? { audioClips: draft.audioClips } : {}),

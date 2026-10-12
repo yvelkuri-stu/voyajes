@@ -9,6 +9,9 @@ import {
   mkdtempSync,
   rmSync,
   writeFileSync,
+  openSync,
+  writeSync,
+  closeSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import {
@@ -44,6 +47,11 @@ import {
   sampleLayer,
   themeLayerFor,
   TRANSITION_KINDS,
+  fxOps,
+  getLook,
+  lookGradeFfmpeg,
+  rasterizeFx,
+  type ThemeLook,
   type ClipAnimation,
   type Keyframe,
   type TimelineLayout,
@@ -503,12 +511,17 @@ function buildVideoFilters(
   }>,
   projectGrade?: import("@voyajes/core").GradePreset,
   layout: TimelineLayout = layoutTimeline(clips, () => txSec),
+  fx?: { look: ThemeLook; intensity?: number; input?: number; fw: number; fh: number; grain: number },
 ): { filterComplex: string; outputLabel: string; totalDuration: number } {
-  const grade =
-    gradeFilter(theme.palette.grade) +
-    (gradeFfmpeg(projectGrade ?? themeLayerFor(theme).grade)
-      ? `,${gradeFfmpeg(projectGrade ?? themeLayerFor(theme).grade)}`
-      : "");
+  const lookGrade = !projectGrade && fx ? lookGradeFfmpeg(fx.look, fx.intensity) : null;
+  const grade = lookGrade
+    ? `${lookGrade}`
+    : !projectGrade && fx
+      ? "null"
+      : gradeFilter(theme.palette.grade) +
+        (gradeFfmpeg(projectGrade ?? themeLayerFor(theme).grade)
+          ? `,${gradeFfmpeg(projectGrade ?? themeLayerFor(theme).grade)}`
+          : "");
   const parts: string[] = [];
   const bg = (theme.palette.bg || "#0b0d12").replace("#", "0x");
 
@@ -550,6 +563,24 @@ function buildVideoFilters(
   }
   void txSec;
   void useXfade;
+
+  // v0.8 theme film look: same ops as the web canvas, rasterised by core
+  if (fx && fx.input != null) {
+    const { fw, fh } = fx;
+    parts.push(`[${fx.input}:v]split=3[fxa][fxb][fxc]`);
+    parts.push(`[fxa]crop=${fw}:${fh}:0:0,scale=${width}:${height},format=gbrp[fxs]`);
+    parts.push(`[fxb]crop=${fw}:${fh}:0:${fh},scale=${width}:${height},format=gbrp[fxm]`);
+    parts.push(`[fxc]crop=${fw}:${fh}:0:${fh * 2},scale=${width}:${height},format=rgba[fxn]`);
+    parts.push(`[${composed}]format=gbrp[fxbase]`);
+    parts.push(`[fxbase][fxs]blend=all_mode=screen:shortest=1[fx1]`);
+    parts.push(`[fx1][fxm]blend=all_mode=multiply:shortest=1[fx2]`);
+    parts.push(`[fx2][fxn]overlay=format=auto:shortest=1,format=yuv420p[fx3]`);
+    composed = "fx3";
+  }
+  if (fx && fx.grain > 0) {
+    parts.push(`[${composed}]noise=alls=${Math.max(1, Math.round(fx.grain * 22))}:allf=t[fxg]`);
+    composed = "fxg";
+  }
 
   let label = composed;
   let layer = 0;
@@ -834,6 +865,29 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
       }
     }
 
+    // v0.8 theme look overlay frames (screen | multiply | normal bands)
+    const look = getLook(theme.id);
+    const intensity = (opts.project as { themeIntensity?: number }).themeIntensity;
+    const fxFps = Math.min(12, fps);
+    const fw = Math.max(90, Math.round(width / 6)), fh = Math.max(160, Math.round(height / 6));
+    let fxInput: number | undefined;
+    if (!process.env.VOYAJES_NO_FX) {
+      const fxPath = join(work, "fx.rgba");
+      const fd = openSync(fxPath, "w");
+      const n = Math.ceil(layout.total * fxFps) + 2;
+      const sx = width / fw;
+      for (let f = 0; f < n; f++) {
+        // ops in output pixels, scaled down to the overlay raster
+        const ops = fxOps(look, intensity, f / fxFps, width, height).map((op) => scaleOp(op, 1 / sx));
+        writeSync(fd, rasterizeFx(ops, fw, fh));
+      }
+      closeSync(fd);
+      fxInput = inputArgs.filter((a) => a === "-i").length;
+      inputArgs.push("-f", "rawvideo", "-pix_fmt", "rgba", "-s", `${fw}x${fh * 3}`, "-r", String(fxFps), "-i", fxPath);
+    }
+    const grainOp = fxOps(look, intensity, 0, width, height).find((o) => o.t === "grain");
+    const fxCfg = { look, intensity, input: fxInput, fw, fh, grain: grainOp && grainOp.t === "grain" ? grainOp.amount : 0 };
+
     const attempt = (withTitle: boolean): { status: number; stderr: string; totalDuration: number; outputLabel: string } => {
       const overlays = (opts.project.text ?? [])
         .filter((t) => t.role !== "title" || t.at > 0 || t.end != null)
@@ -858,6 +912,7 @@ export function renderWithFfmpeg(opts: RenderOptions): RenderResult {
         overlays,
         opts.project.grade,
         layout,
+        fxCfg,
       );
       writeFileSync(join(work, withTitle ? "filter.txt" : "filter-notitle.txt"), built.filterComplex + "\n");
 
@@ -943,4 +998,20 @@ export function generateSampleImages(
     if (r.status === 0 && existsSync(out)) paths.push(out);
   }
   return paths;
+}
+
+/** scale an fx op's geometry (output px → raster px) */
+function scaleOp(op: import("@voyajes/core").FxOp, k: number): import("@voyajes/core").FxOp {
+  switch (op.t) {
+    case "rect":
+      return { ...op, x: op.x * k, y: op.y * k, w: op.w * k, h: op.h * k };
+    case "radial":
+      return { ...op, cx: op.cx * k, cy: op.cy * k, r: op.r * k };
+    case "lines":
+      return { ...op, spacing: Math.max(2, Math.round(op.spacing * k)), thick: Math.max(1, Math.round(op.thick * k)) };
+    case "shape":
+      return { ...op, cx: op.cx * k, cy: op.cy * k, r: Math.max(0.8, op.r * k) };
+    default:
+      return op;
+  }
 }

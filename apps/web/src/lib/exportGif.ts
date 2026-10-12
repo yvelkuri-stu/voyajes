@@ -4,6 +4,8 @@
  * pipeline ideas as exportWebm (cover fit, Ken Burns, theme grade, text, invite cards).
  */
 
+import { drawFxOps } from "./themeFx";
+import { fxOps, lookGradeCss } from "@voyajes/core";
 import { GIFEncoder, quantize, applyPalette } from "gifenc";
 import type {
   Aspect,
@@ -648,8 +650,10 @@ export async function exportSlideshowGif(
     grade,
     defaultAnimation,
     transitionSpec: projectTxSpec,
+    look,
+    intensity,
   } = options;
-  const gradeCss = gradeFilter(grade);
+  const gradeCss = grade ? gradeFilter(grade) : look ? lookGradeCss(look, intensity) : gradeFilter(grade);
 
   if (clips.length === 0) {
     throw new Error("Add at least one clip before exporting a GIF");
@@ -842,8 +846,14 @@ export async function exportSlideshowGif(
         : null,
     );
 
-    fillThemeGrade(ctx, theme, width, height, 0.45);
-    fillVignette(ctx, theme, width, height, 0.7);
+    if (look) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.filter = "none";
+      drawFxOps(ctx, fxOps(look, intensity, timeSec, width, height), width, height);
+    } else {
+      fillThemeGrade(ctx, theme, width, height, 0.45);
+      fillVignette(ctx, theme, width, height, 0.7);
+    }
 
     if (burnTitle && title.trim() && title.trim() !== "Untitled voyage") {
       const hasTimedTitle = timedOverlays.some(

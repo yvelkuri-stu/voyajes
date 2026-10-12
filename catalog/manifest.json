@@ -324,6 +324,96 @@
       "hash": "sha256:party-strobe-v1"
     },
     {
+      "id": "theme.y2k-chrome",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Y2K Chrome",
+      "description": "Liquid chrome, star sparkles, hyperpop.",
+      "tier": "free",
+      "tags": [
+        "y2k",
+        "chrome",
+        "hyperpop",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#0b0b22",
+        "surface": "#1b1c44",
+        "accent": "#9BE7FF",
+        "text": "#F0FBFF",
+        "grade": "chrome"
+      },
+      "motion": "snappy",
+      "transition": "zoom-through",
+      "transitionDurationMs": 350,
+      "photoMotion": "bold",
+      "suggestedBeatIds": [
+        "audio.hyperfun-128"
+      ],
+      "sizeBytes": 128000,
+      "hash": "sha256:neon-night-v2"
+    },
+    {
+      "id": "theme.dreamy-pastel",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Dreamy Pastel",
+      "description": "Cotton-candy haze, floating hearts, soft blooms.",
+      "tier": "free",
+      "tags": [
+        "pastel",
+        "dreamy",
+        "soft",
+        "9:16"
+      ],
+      "palette": {
+        "bg": "#2a1830",
+        "surface": "#3a2444",
+        "accent": "#FFB3DE",
+        "text": "#FFF0FA",
+        "grade": "pastel"
+      },
+      "motion": "float",
+      "transition": "soft-bloom",
+      "transitionDurationMs": 800,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.lobby-time-096"
+      ],
+      "sizeBytes": 128000,
+      "hash": "sha256:neon-night-v2"
+    },
+    {
+      "id": "theme.mono-cinema",
+      "kind": "theme",
+      "version": "1.0.0",
+      "name": "Monochrome Cinema",
+      "description": "Black & white, letterbox, slow noir.",
+      "tier": "free",
+      "tags": [
+        "mono",
+        "cinema",
+        "noir",
+        "16:9"
+      ],
+      "palette": {
+        "bg": "#050505",
+        "surface": "#161616",
+        "accent": "#E8E8E8",
+        "text": "#F2F2F2",
+        "grade": "mono"
+      },
+      "motion": "cinematic",
+      "transition": "fade-black",
+      "transitionDurationMs": 1000,
+      "photoMotion": "gentle",
+      "suggestedBeatIds": [
+        "audio.spy-glass-100"
+      ],
+      "sizeBytes": 128000,
+      "hash": "sha256:neon-night-v2"
+    },
+    {
       "id": "template.midnight-metro",
       "kind": "template",
       "version": "1.0.0",

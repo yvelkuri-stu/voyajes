@@ -4622,3 +4622,34 @@ html, body { overscroll-behavior-x: none; overflow-x: clip; }
 .vj-fresh-toast-bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: rgba(255,255,255,0.5); transform-origin: left; animation: vj-toast-drain linear forwards; }
 @keyframes vj-toast-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 .home-fresh { background: none; border: 0; color: var(--text-muted, #aaa); text-decoration: underline; cursor: pointer; min-height: 40px; font-size: 0.85rem; }
+
+/* v0.8 theme looks */
+.vj-fx-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.vj-fx-layer canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.vj-theme-picker { border-radius: 18px; padding: 14px 12px 12px; margin-bottom: 14px; color: #fff; box-sizing: border-box; max-width: 100%; overflow: hidden; transition: background 400ms ease; }
+.vj-theme-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.vj-theme-picker-head > div { min-width: 0; }
+.vj-theme-picker-title { font-weight: 900; font-size: 1.05rem; }
+.vj-theme-picker-vibe { font-size: 0.78rem; opacity: 0.85; }
+.vj-surprise { min-height: 40px; white-space: nowrap; flex: none; }
+.vj-theme-strip { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 30% 8px; overscroll-behavior-x: contain; scrollbar-width: none; }
+.vj-theme-strip::-webkit-scrollbar { display: none; }
+.vj-look-card { flex: 0 0 auto; width: 104px; scroll-snap-align: center; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 0 0 6px; border-radius: 14px; border: 2px solid transparent; background: rgba(0,0,0,0.28); color: #fff; cursor: pointer; transition: transform 180ms ease, border-color 180ms ease; text-align: center; }
+.vj-look-card.is-active { border-color: var(--look-accent); transform: scale(1.06); box-shadow: 0 0 22px color-mix(in srgb, var(--look-accent) 55%, transparent); }
+.vj-look-thumb { width: 100%; aspect-ratio: 150 / 240; border-radius: 12px 12px 6px 6px; display: block; }
+.vj-look-name { font-weight: 800; font-size: 0.72rem; line-height: 1.15; padding: 0 4px; }
+.vj-look-music { font-size: 0.64rem; opacity: 0.75; }
+.vj-intensity { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; margin-top: 6px; }
+.vj-intensity input { flex: 1; min-width: 0; accent-color: #fff; min-height: 32px; }
+.vj-theme-wipe { position: absolute; inset: 0; z-index: 6; pointer-events: none; display: grid; place-items: center; background: linear-gradient(110deg, transparent 0%, var(--wipe) 35%, var(--wipe-bg) 60%, transparent 100%); background-size: 300% 100%; animation: vj-wipe 900ms cubic-bezier(.7,0,.3,1) forwards; mix-blend-mode: screen; }
+.vj-theme-wipe-name { font-weight: 900; font-size: 1.4rem; color: #fff; text-align: center; text-shadow: 0 2px 18px rgba(0,0,0,0.6); animation: vj-wipe-name 900ms ease forwards; padding: 0 12px; }
+.vj-theme-wipe-name small { display: block; font-size: 0.72rem; font-weight: 700; opacity: 0.9; margin-top: 4px; }
+@keyframes vj-wipe { 0% { background-position: 100% 0; opacity: 1; } 70% { opacity: 1; } 100% { background-position: 0% 0; opacity: 0; } }
+@keyframes vj-wipe-name { 0% { transform: scale(0.7); opacity: 0; } 25% { transform: scale(1.05); opacity: 1; } 75% { opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .vj-theme-wipe { animation-duration: 1ms; } .vj-theme-wipe-name { animation-duration: 1200ms; } }
+.invite-player-root { background: var(--guest-bg, transparent); border-radius: 22px; padding: 12px 8px; transition: background 500ms ease; }
+.invite-player-root .preview-stage { box-shadow: 0 0 40px color-mix(in srgb, var(--guest-accent, #000) 35%, transparent); }
+@media (max-width: 719px) {
+  /* theme picker = bottom sheet so the live story stays visible above it */
+  .compose-root.is-minimalist .compose-side-panel.mini-sheet-open.mini-sheet-theme { top: auto; height: min(52vh, 460px); bottom: 8px; }
+}

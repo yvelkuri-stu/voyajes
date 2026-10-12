@@ -233,6 +233,8 @@ export const VoyajesProjectSchema = z.object({
   transitionSpec: TransitionSpecSchema.optional(),
   /** v2: theme layer — color grade + default clip animation */
   grade: GradePresetSchema.optional(),
+  /** v0.8: theme look intensity 0 (subtle) … 1 (bold) */
+  themeIntensity: z.number().min(0).max(1).optional(),
   defaultAnimation: ClipAnimationSchema.optional(),
   audio: AudioTrackSchema.optional(),
   text: z.array(TextCardSchema).optional(),

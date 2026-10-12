@@ -123,6 +123,10 @@ export type DraftState = {
   eventType?: string;
   eventWhen?: string;
   eventWhere?: string;
+  /** v0.8 theme look intensity 0..1 (undefined = default 0.7) */
+  themeIntensity?: number;
+  /** v0.8 things the user set explicitly in Pro (kept when the theme changes) */
+  proLocks?: string[];
   /** v2 theme layer: color grade override (undefined = theme default) */
   grade?: GradePreset;
   /** v2 theme layer: default clip animation */
@@ -385,6 +389,8 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
     eventWhen: typeof parsed.eventWhen === "string" ? parsed.eventWhen : "",
     eventWhere: typeof parsed.eventWhere === "string" ? parsed.eventWhere : "",
     grade: GradePresetSchema.safeParse(parsed.grade).success ? parsed.grade : undefined,
+    themeIntensity: typeof parsed.themeIntensity === "number" ? Math.max(0, Math.min(1, parsed.themeIntensity)) : undefined,
+    proLocks: Array.isArray(parsed.proLocks) ? parsed.proLocks.filter((x): x is string => typeof x === "string") : undefined,
     defaultAnimation: ClipAnimationSchema.safeParse(parsed.defaultAnimation).success
       ? parsed.defaultAnimation
       : undefined,
@@ -492,6 +498,7 @@ export function toVoyajesProject(draft: DraftState): VoyajesProject {
       ...(c.keyframes?.length ? { keyframes: c.keyframes } : {}),
     })),
     ...(draft.grade ? { grade: draft.grade } : {}),
+    ...(draft.themeIntensity != null ? { themeIntensity: draft.themeIntensity } : {}),
     ...(draft.defaultAnimation ? { defaultAnimation: draft.defaultAnimation } : {}),
     ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
     ...(draft.transitionOverride

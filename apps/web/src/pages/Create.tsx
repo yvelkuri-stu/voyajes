@@ -1,5 +1,15 @@
 import { recorderFormatLabel } from "../lib/exportWebm";
 import { StartFreshSheet } from "../components/StartFresh";
+import { ThemeFxLayer } from "../components/ThemeFxLayer";
+import { ThemePicker } from "../components/ThemePicker";
+import {
+  DEFAULT_INTENSITY,
+  getLook,
+  lookCards,
+  lookGradeCss,
+  lookRetime,
+  THEME_LOOKS,
+} from "@voyajes/core";
 import { StoryWizard } from "../components/StoryWizard";
 import { analyzeMedia, type MediaFacts } from "../lib/breezeAnalyze";
 import { breezePlan, type BreezeItem } from "@voyajes/core";
@@ -152,7 +162,7 @@ import { useHistory } from "../hooks/useHistory";
 import { computeLayout, themeLayer, transitionEasingInto, transitionSecInto } from "../lib/timelineRender";
 import { TimelineAudioPlayer, type ResolvedAudioClip } from "../lib/timelineAudio";
 import { audioRefLabel, resolveAudioRef } from "../lib/audioRefs";
-import { fillTokens, getTemplateSample, type TemplateSample } from "../data/samples";
+import { fillTokens, sampleCoverUrl, getTemplateSample, type TemplateSample } from "../data/samples";
 import { SamplePreview } from "../components/SamplePreview";
 import {
   clipStarts,
@@ -415,6 +425,10 @@ export function Create() {
   const [replaceTarget, setReplaceTarget] = useState<{ type: "clip" | "audio"; id: string } | null>(null);
   const [autoDuck, setAutoDuck] = useState<boolean | undefined>(undefined);
   const [freshAsk, setFreshAsk] = useState(false);
+  const [themeIntensity, setThemeIntensity] = useState<number>(DEFAULT_INTENSITY);
+  const [proLocks, setProLocks] = useState<string[]>([]);
+  const [themeWipe, setThemeWipe] = useState<{ id: string; token: number } | null>(null);
+  const storyTimeRef = useRef(0);
   const epochRef = useRef(draftEpoch());
   const projectIdRef = useRef<string | undefined>(undefined);
   const historyRef = useRef<{
@@ -567,6 +581,8 @@ export function Create() {
       setCustomSounds(base.customSounds ?? []);
       setAudioMixMode(base.audioMixMode ?? "replace");
       setGrade(base.grade);
+      setThemeIntensity(base.themeIntensity ?? DEFAULT_INTENSITY);
+      setProLocks(base.proLocks ?? []);
       setDefaultAnimation(base.defaultAnimation);
       setProjectTxSpec(base.transitionSpec);
       setAudioClips(base.audioClips);
@@ -638,6 +654,8 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      themeIntensity,
+      proLocks: proLocks.length ? proLocks : undefined,
       watermark,
       durationTargetSec,
       exportDestination,
@@ -678,6 +696,8 @@ export function Create() {
     projectTxSpec,
     audioClips,
     autoDuck,
+    themeIntensity,
+    proLocks,
     watermark,
     durationTargetSec,
     exportDestination,
@@ -1407,13 +1427,24 @@ export function Create() {
           }
           items.push({ id: c.id, name: c.fileName, kind: c.kind, order: i, sourceSec: c.sourceSec, ...f });
         }
-        const bpm = getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm;
+        const lk = getLook(themeId);
+        const musicLocked = proLocks.includes("music");
+        const bedRef = musicLocked ? audioTrackRef : lk.music.ref;
+        const bpm = musicLocked ? getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm : lk.music.bpm;
         const plan = breezePlan(items, {
           seed,
           bpm,
-          themeTransition: (theme.transition as TransitionKind) ?? "dissolve",
-          themeAnimation: themeLayer(theme).animation,
+          themeTransition: lk.transitions[0],
+          themeAnimation: lk.motions[0],
         });
+        // the theme owns the look: its transitions + motion, cycled (seed shifts the cycle for Remix)
+        const off = Math.abs(seed - 1);
+        plan.clips = plan.clips.map((pc, i) => ({
+          ...pc,
+          transitionOut: pc.transitionOut ? lk.transitions[(i + off) % lk.transitions.length] : pc.transitionOut,
+          transitionSpec: pc.transitionOut ? { ...(pc.transitionSpec ?? {}), durationSec: Math.min(pc.transitionSpec?.durationSec ?? lk.transitionSec, lk.transitionSec), easing: lk.easing } : pc.transitionSpec,
+          animation: { ...lk.motions[(i + off) % lk.motions.length], ...(pc.animation?.in && !lk.motions[(i + off) % lk.motions.length].in ? { in: pc.animation.in, inSec: pc.animation.inSec } : {}) },
+        }));
         const snap = historyRef.current?.checkpoint() ?? null;
         const byId = new Map(list.map((c) => [c.id, c]));
         const next: LiveClip[] = plan.clips.map((pc) => ({
@@ -1440,10 +1471,10 @@ export function Create() {
           value,
           at,
           end,
-          style: textStyle,
-          color: "#ffffff",
+          style: role === "caption" ? lk.text.captionStyle : lk.text.style,
+          color: lk.text.color,
           position,
-          animationIn: anim,
+          animationIn: role === "title" ? lk.text.anim : anim,
           animationOut: "fade",
         });
         const texts: DraftTextOverlay[] = [mk("title", plan.title, 0.2, Math.min(3.2, total), "center", "pop")];
@@ -1452,12 +1483,18 @@ export function Create() {
           const at = starts[cap.clipIndex] ?? 0;
           texts.push(mk("caption", cap.text, at + 0.2, Math.min(total, at + 1.8), "bottom", "slide-up"));
         }
+        for (const c of lookCards(lk, "", total)) {
+          if (c.id === "theme-title") continue;
+          if (c.id === "theme-intro" && plan.subtitle) continue;
+          texts.push({ ...mk(c.role, c.value, c.at, c.end, c.position as TextPosition, lk.text.anim), id: c.id });
+        }
         setPlaying(false);
         setClips(next);
         setTextOverlays(texts);
+        setTextStyle(lk.text.style);
         setTemplateId(undefined);
         setAudioClips([
-          { id: `aud-breeze-${seed}`, ref: audioTrackRef, at: 0, durationSec: total, fadeOutSec: 1.2, label: audioLabelFor(audioTrackRef) },
+          { id: `aud-breeze-${seed}`, ref: bedRef, at: 0, durationSec: total, fadeOutSec: 1.2, label: musicLocked ? audioLabelFor(bedRef) : lk.music.name },
         ]);
         if (plan.place && /^Untitled/.test(title)) setTitle(plan.title);
         setSelection(null);
@@ -1475,7 +1512,8 @@ export function Create() {
         setBreezeBusy(false);
       }
     },
-    [audioTrackRef, selectedBeat.bpm, theme, textStyle, title],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [audioTrackRef, selectedBeat.bpm, theme, themeId, proLocks, textStyle, title],
   );
 
   // Tapping something on the timeline = "Edit" it (basic controls; Pro stays hidden)
@@ -1798,7 +1836,9 @@ export function Create() {
           reverse: c.reverse,
           mute: c.mute,
         })),
-        grade: effectiveGrade,
+        grade,
+        look,
+        intensity: themeIntensity,
         transitionSpec: projectTxSpec,
         audioClips: resolvedAudio,
         ducks,
@@ -1908,7 +1948,9 @@ export function Create() {
           reverse: c.reverse,
           mute: c.mute,
         })),
-        grade: effectiveGrade,
+        grade,
+        look,
+        intensity: themeIntensity,
         transitionSpec: projectTxSpec,
         audioClips: resolvedAudio,
         ducks,
@@ -2022,6 +2064,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      themeIntensity,
       updatedAt: new Date().toISOString(),
     };
     const project = toVoyajesProject(draft);
@@ -2078,6 +2121,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      themeIntensity,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -2133,6 +2177,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      themeIntensity,
       updatedAt: new Date().toISOString(),
     };
     const share = ensureShareFromDraft(draft, {
@@ -2301,9 +2346,10 @@ export function Create() {
 
   // ───────────── v2 timeline editor ─────────────
   const layer = useMemo(() => themeLayer(theme), [theme]);
+  const look = useMemo(() => getLook(themeId), [themeId]);
   const effectiveGrade: GradePreset = grade ?? layer.grade;
-  const effectiveAnim: ClipAnimation = defaultAnimation ?? layer.animation;
-  const gradeCss = gradeFilter(effectiveGrade);
+  const effectiveAnim: ClipAnimation = defaultAnimation ?? (look.motions[0] ? { emphasis: look.motions[0].emphasis } : layer.animation);
+  const gradeCss = grade ? gradeFilter(grade) : lookGradeCss(look, themeIntensity);
   const animFor = useCallback(
     (c: { kind: "image" | "video"; animation?: ClipAnimation }): ClipAnimation | undefined =>
       c.animation ?? (c.kind === "image" ? effectiveAnim : { ...effectiveAnim, emphasis: undefined }),
@@ -2353,7 +2399,11 @@ export function Create() {
     [effAudio, audioLabelFor],
   );
   const patchAudio = useCallback(
-    (id: string, patch: Partial<AudioClip>) => editAudio((l) => l.map((a) => (a.id === id ? { ...a, ...patch } : a))),
+    (id: string, patch: Partial<AudioClip>) => {
+      if ("ref" in patch) lockPro("music");
+      editAudio((l) => l.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [editAudio],
   );
 
@@ -2473,12 +2523,112 @@ export function Create() {
     if (Math.abs(el.currentTime - want) > 0.05) el.currentTime = want;
   }, [elapsed, playing, activeIndex, clips]);
 
+  useEffect(() => {
+    if (pro) setInspectorOpen(true);
+  }, [pro]);
+  useEffect(() => {
+    if (miniSheet !== "theme" || window.innerWidth >= 720) return;
+    document.querySelector(".preview-stage")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [miniSheet]);
+  const proRef = useRef(pro);
+  proRef.current = pro;
+  const lockPro = useCallback((key: string) => {
+    if (!proRef.current) return;
+    setProLocks((p) => (p.includes(key) ? p : [...p, key]));
+  }, []);
   const patchClip = useCallback((id: string, patch: Partial<LiveClip>) => {
+    if ("animation" in patch || "keyframes" in patch || "transitionOut" in patch || "transitionSpec" in patch) lockPro(`clip:${id}`);
     setClips((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  }, []);
+  }, [lockPro]);
   const patchText = useCallback((id: string, patch: Partial<DraftTextOverlay>) => {
+    if ("style" in patch || "color" in patch || "animationIn" in patch) lockPro(`text:${id}`);
     setTextOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
-  }, []);
+  }, [lockPro]);
+
+  // ───────── v0.8 theme looks: one tap re-skins the whole story ─────────
+  const applyLook = useCallback(
+    (id: string, opts: { label?: string; quiet?: boolean } = {}) => {
+      const lk = getLook(id);
+      const snap = historyRef.current?.checkpoint() ?? null;
+      const locks = new Set(proLocks);
+      setThemeId(lk.id);
+      setTransitionOverride(null);
+      if (!locks.has("grade")) setGrade(undefined);
+      if (!locks.has("animation")) setDefaultAnimation(undefined);
+      if (!locks.has("txspec")) setProjectTxSpec(undefined);
+      setTextStyle(lk.text.style);
+      setTextTransition(lk.text.anim);
+      setCaptionStyle(lk.text.captionStyle);
+      if (getBeatByRef(lk.music.ref)) setAudioTrackRef(lk.music.ref);
+      const real = clipsRef.current;
+      const r = lookRetime(
+        real.map((c) => ({ id: c.id, kind: c.kind, durationSec: c.durationSec, sourceSec: c.sourceSec, inSec: c.inSec })),
+        lk,
+      );
+      const byId = new Map(r.clips.map((c) => [c.id, c]));
+      if (real.length) {
+        setClips((prev) =>
+          prev.map((c) => {
+            const rc = byId.get(c.id);
+            if (!rc) return c;
+            if (locks.has(`clip:${c.id}`)) return { ...c, durationSec: rc.durationSec };
+            return { ...c, durationSec: rc.durationSec, transitionOut: rc.transitionOut, transitionSpec: rc.transitionSpec, animation: rc.animation, keyframes: undefined };
+          }),
+        );
+      }
+      const total = r.totalSec;
+      if (!locks.has("music")) {
+        setAudioClips((prev) => {
+          const keep = (prev ?? []).filter((a) => a.ref.startsWith("custom:"));
+          if (keep.length) return keep;
+          return total > 0
+            ? [{ id: `theme-music-${lk.id.slice(6)}`, ref: lk.music.ref, at: 0, durationSec: total, fadeOutSec: 1.2, label: lk.music.name }]
+            : [];
+        });
+      }
+      setTextOverlays((prev) => {
+        const kept = prev
+          .filter((o) => !o.id.startsWith("theme-"))
+          .map((o) =>
+            locks.has(`text:${o.id}`)
+              ? o
+              : {
+                  ...o,
+                  style: o.role === "caption" ? lk.text.captionStyle : lk.text.style,
+                  color: lk.text.color,
+                  animationIn: lk.text.anim,
+                  ...(total > 0 && o.end > total ? { end: total } : {}),
+                },
+          );
+        const hasTitle = kept.some((o) => o.role === "title");
+        const name = title && !/^Untitled/.test(title) && title !== "You're invited!" ? title : "";
+        const cards = lookCards(lk, hasTitle ? "" : name, total).map(
+          (c): DraftTextOverlay => ({
+            id: c.id,
+            role: c.role,
+            value: c.value,
+            at: c.at,
+            end: c.end,
+            position: c.position as TextPosition,
+            style: c.id === "theme-title" ? lk.text.style : lk.text.captionStyle,
+            color: lk.text.color,
+            animationIn: lk.text.anim,
+            animationOut: "fade",
+          }),
+        );
+        return real.length ? [...kept, ...cards] : kept;
+      });
+      setThemeWipe({ id: lk.id, token: Date.now() });
+      if (!opts.quiet) {
+        setAppliedChip({ label: opts.label ?? `${lk.emoji} ${lk.name}`, snap });
+        setStatus(`${lk.name} · ♪ ${lk.music.name}`);
+      }
+      setActiveIndex(0);
+      setElapsed(0);
+      if (real.length) window.setTimeout(() => setPlaying(true), 80);
+    },
+    [proLocks, title],
+  );
 
   const onTrimClip = useCallback(
     (id: string, next: { durationSec: number; inSec?: number }, origin: { durationSec: number; inSec: number }) => {
@@ -2761,6 +2911,7 @@ export function Create() {
   const prevClip = prevIdx >= 0 ? clips[prevIdx] : undefined;
   const activeTxEasing = transitionEasingInto(clips, activeIndex, projectTxSpec);
 
+  storyTimeRef.current = (starts[activeIndex] ?? 0) + elapsed;
   const active = clips[activeIndex];
   const transitionClass =
     playing || elapsed < activeTxSec + 0.05 ? `tx-${activeTransition}` : "";
@@ -2777,9 +2928,8 @@ export function Create() {
         onClose={closeWizard}
         onPickTheme={(t) => {
           setThemeId(t.id);
-          const sb = t.suggestedBeatIds?.[0];
-          const b = sb ? getBeatById(sb) : undefined;
-          if (b) setAudioTrackRef(b.packRef);
+          const lm = getLook(t.id).music.ref;
+          if (getBeatByRef(lm)) setAudioTrackRef(lm);
           setTransitionOverride(null);
           setGrade(undefined);
           setDefaultAnimation(undefined);
@@ -3520,21 +3670,21 @@ export function Create() {
               </div>
             )}
 
-            <div
-              className="grade"
-              style={{
-                background: theme.gradient,
-                mixBlendMode: "soft-light",
-                opacity: active ? 0.45 : projectMode === "invitation" ? 0.35 : 0.55,
-              }}
-            />
-            <div
-              className="grade grade-vignette"
-              style={{
-                background: `radial-gradient(ellipse at center, transparent 40%, ${theme.palette.bg}cc 100%)`,
-                opacity: active ? 0.7 : 0.4,
-              }}
-            />
+            <ThemeFxLayer look={look} intensity={themeIntensity} getTime={() => storyTimeRef.current} playing={playing} />
+            {themeWipe && (
+              <div
+                key={themeWipe.token}
+                className="vj-theme-wipe"
+                style={{ "--wipe": getLook(themeWipe.id).accent, "--wipe-bg": getLook(themeWipe.id).bg[1] } as CSSProperties}
+                aria-hidden
+                onAnimationEnd={() => setThemeWipe(null)}
+              >
+                <div className="vj-theme-wipe-name">
+                  <span>{getLook(themeWipe.id).emoji}</span> {getLook(themeWipe.id).name}
+                  <small>{getLook(themeWipe.id).vibe} · ♪ {getLook(themeWipe.id).music.name}</small>
+                </div>
+              </div>
+            )}
 
             {/* Timed text overlays only — title/meta live in chrome below, not on pixels */}
             {activeOverlays.map((o) => (
@@ -4108,13 +4258,17 @@ export function Create() {
                     <GradePicker
                       value={grade}
                       themeGrade={layer.grade}
-                      onChange={setGrade}
+                      onChange={(g) => {
+                        if (g === undefined) setProLocks((l) => l.filter((k) => k !== "grade"));
+                        else lockPro("grade");
+                        setGrade(g);
+                      }}
                       sampleUrl={clips.find((c) => c.kind === "image")?.objectUrl}
                       compact={minimalist}
                     />
                     {pro && (<>
                     <InspectorSection title="Default clip motion" hint="clips without their own animation" compact={minimalist}>
-                      <AnimationPicker value={effectiveAnim} onChange={setDefaultAnimation} compact={minimalist} />
+                      <AnimationPicker value={effectiveAnim} onChange={(a) => { lockPro("animation"); setDefaultAnimation(a); }} compact={minimalist} />
                     </InspectorSection>
                     <InspectorSection title="All transitions" hint="duration · easing default" compact={minimalist}>
                       <label className="vj-insp-row">
@@ -4124,7 +4278,7 @@ export function Create() {
                           max={2}
                           step={0.1}
                           value={projectTxSpec?.durationSec ?? Math.max(0.2, theme.transitionDurationMs / 1000)}
-                          onChange={(e) => setProjectTxSpec({ ...projectTxSpec, durationSec: Number(e.target.value) })}
+                          onChange={(e) => { lockPro("txspec"); setProjectTxSpec({ ...projectTxSpec, durationSec: Number(e.target.value) }); }}
                         />
                         <span className="vj-insp-val">
                           {(projectTxSpec?.durationSec ?? theme.transitionDurationMs / 1000).toFixed(1)}s
@@ -4190,6 +4344,14 @@ export function Create() {
             </div>
           )}
           <div className="side-section side-section-theme">
+          <ThemePicker
+            themeId={themeId}
+            intensity={themeIntensity}
+            previewSrc={clips.find((c) => c.kind === "image")?.objectUrl ?? sampleCoverUrl(templateId ?? "") ?? undefined}
+            available={themes.map((t) => t.id)}
+            onPick={(id, how) => applyLook(id, { label: how === "surprise" ? `🎲 ${getLook(id).name}` : undefined })}
+            onIntensity={setThemeIntensity}
+          />
           <h3>Theme panel</h3>
           <p className="muted side-blurb" style={{ fontSize: "0.85rem", marginTop: 0 }}>
             Tap a theme or template to apply and close — tweak details anytime.
@@ -4278,52 +4440,6 @@ export function Create() {
               </div>
             </div>
           )}
-          <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6, fontWeight: 700 }}>
-            Themes — tap to apply
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {themes.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  const snapBefore = historyRef.current?.checkpoint() ?? null;
-                  setThemeId(t.id);
-                  {
-                    const sb = t.suggestedBeatIds?.[0];
-                    const b = sb ? getBeatById(sb) : undefined;
-                    if (b) setAudioTrackRef(b.packRef);
-                  }
-                  setAppliedChip({ label: t.name, snap: snapBefore });
-                  setTransitionOverride(null);
-        setGrade(undefined);
-        setDefaultAnimation(undefined);
-        setProjectTxSpec(undefined);
-                  setMiniSheet(null);
-                  setStatus(`Theme · ${t.name}`);
-                }}
-                className="chip"
-                style={{
-                  justifyContent: "flex-start",
-                  width: "100%",
-                  borderColor:
-                    themeId === t.id ? t.palette.accent : "var(--border-subtle)",
-                  background:
-                    themeId === t.id
-                      ? `linear-gradient(90deg, ${t.palette.accent}22, transparent)`
-                      : undefined,
-                }}
-              >
-                <span className="swatch" style={{ background: t.palette.accent }} />
-                {t.name}
-                <span className="muted" style={{ marginLeft: "auto", fontSize: "0.75rem" }}>
-                  {t.motion}
-                </span>
-              </button>
-            ))}
-          </div>
-
-
           <div className="muted" style={{ fontSize: "0.8rem", marginTop: 14, marginBottom: 6, fontWeight: 700 }}>
             {projectMode === "invitation" ? "Invitation templates — tap to apply" : "Voyage templates — tap to apply"}
           </div>

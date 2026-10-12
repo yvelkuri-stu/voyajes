@@ -40,6 +40,9 @@ import { scheduleAudio, type ResolvedAudioClip } from "./timelineAudio";
 import { assetUrl } from "./assetUrl";
 import { buildInviteCardLines } from "./inviteCard";
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import { drawRouteMap } from "./routeMap";
+import type { ClipBrain, Route } from "./storyBrain";
+import { INDIC_FONTS, ensureFontsFor } from "./i18n";
 
 export type ExportClip = {
   id: string;
@@ -55,6 +58,8 @@ export type ExportClip = {
   reverse?: boolean;
   /** false = include this video's own audio (and duck music under it) */
   mute?: boolean;
+  /** v1.1 smart crop focus etc. */
+  brain?: ClipBrain;
   transitionSpec?: TransitionSpec;
   animation?: ClipAnimation;
   keyframes?: Keyframe[];
@@ -160,6 +165,8 @@ export type ExportWebmOptions = {
   signal?: AbortSignal;
   /** v1.0: "auto" uses WebCodecs (faster than real time) when it can, else MediaRecorder */
   engine?: "auto" | "webcodecs" | "mediarecorder";
+  /** v1.1 route-map intro over the opening seconds */
+  route?: Route | null;
 } & ExportTimelineOptions;
 
 export type ExportWebmResult = {
@@ -451,6 +458,7 @@ function drawCover(
   scale = 1,
   offsetX = 0,
   offsetY = 0,
+  focus?: { fx?: number; fy?: number },
 ) {
   const srcRatio = sw / sh;
   const dstRatio = cw / ch;
@@ -463,8 +471,13 @@ function drawCover(
     dw = cw * scale;
     dh = dw / srcRatio;
   }
-  const dx = (cw - dw) / 2 + offsetX * cw;
-  const dy = (ch - dh) / 2 + offsetY * ch;
+  let dx = (cw - dw) / 2 + offsetX * cw;
+  let dy = (ch - dh) / 2 + offsetY * ch;
+  // v1.1 smart crop: keep the subject in frame when the photo overflows the canvas
+  if (focus?.fx != null && focus.fy != null) {
+    dx = Math.min(0, Math.max(cw - dw, cw / 2 - focus.fx * dw)) + offsetX * cw;
+    dy = Math.min(0, Math.max(ch - dh, ch / 2 - focus.fy * dh)) + offsetY * ch;
+  }
   ctx.drawImage(source, dx, dy, dw, dh);
 }
 
@@ -531,21 +544,21 @@ function fillVignette(
 function fontForStyle(style: TextStyle | undefined, size: number): string {
   switch (style) {
     case "bold-impact":
-      return `800 ${size}px Sora, system-ui, sans-serif`;
+      return `800 ${size}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
     case "soft-serif":
-      return `600 ${size}px Georgia, "Times New Roman", serif`;
+      return `600 ${size}px Georgia, "Times New Roman", ${INDIC_FONTS}, serif`;
     case "script-soft":
       return `500 ${size}px "Segoe Script", "Apple Chancery", cursive`;
     case "mono-tech":
       return `700 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     case "vintage-poster":
-      return `800 ${size}px Sora, system-ui, sans-serif`;
+      return `800 ${size}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
     case "kinetic-outline":
-      return `800 ${size}px Sora, system-ui, sans-serif`;
+      return `800 ${size}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
     case "caption-pill":
     case "clean-sans":
     default:
-      return `600 ${size}px Inter, system-ui, sans-serif`;
+      return `600 ${size}px Inter, system-ui, ${INDIC_FONTS}, sans-serif`;
   }
 }
 
@@ -734,7 +747,7 @@ function drawTitle(
     ctx.fillStyle = theme.palette.text;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.font = `400 ${Math.max(14, Math.round(titleSize * 0.45))}px Inter, system-ui, sans-serif`;
+    ctx.font = `400 ${Math.max(14, Math.round(titleSize * 0.45))}px Inter, system-ui, ${INDIC_FONTS}, sans-serif`;
     ctx.shadowColor = "rgba(0,0,0,0.55)";
     ctx.shadowBlur = 8;
     ctx.fillText(subtitle, pad, h - pad, w - pad * 2);
@@ -769,7 +782,7 @@ function drawInviteCard(
   ctx.shadowBlur = 16;
 
   const kicker = kind === "intro" ? "INVITATION" : "SEE YOU THERE";
-  ctx.font = `700 ${Math.max(12, Math.round(w * 0.028))}px Inter, system-ui, sans-serif`;
+  ctx.font = `700 ${Math.max(12, Math.round(w * 0.028))}px Inter, system-ui, ${INDIC_FONTS}, sans-serif`;
   ctx.globalAlpha = 0.75;
   ctx.fillText(kicker, w / 2, h * 0.28);
   ctx.globalAlpha = 1;
@@ -779,21 +792,21 @@ function drawInviteCard(
   if (style === "script-soft") {
     ctx.font = `500 ${titleSize}px "Segoe Script", "Brush Script MT", cursive`;
   } else if (style === "bold-impact") {
-    ctx.font = `800 ${titleSize}px Sora, system-ui, sans-serif`;
+    ctx.font = `800 ${titleSize}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
   } else if (style === "soft-serif") {
-    ctx.font = `600 ${titleSize}px Georgia, "Times New Roman", serif`;
+    ctx.font = `600 ${titleSize}px Georgia, "Times New Roman", ${INDIC_FONTS}, serif`;
   } else {
-    ctx.font = `700 ${titleSize}px Sora, system-ui, sans-serif`;
+    ctx.font = `700 ${titleSize}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
   }
   ctx.fillText(lines.headline.slice(0, 48), w / 2, h * 0.44, w * 0.86);
 
   if (lines.subline) {
-    ctx.font = `500 ${Math.max(18, Math.round(w * 0.045))}px Inter, system-ui, sans-serif`;
+    ctx.font = `500 ${Math.max(18, Math.round(w * 0.045))}px Inter, system-ui, ${INDIC_FONTS}, sans-serif`;
     ctx.fillText(lines.subline.slice(0, 56), w / 2, h * 0.54, w * 0.86);
   }
   if (lines.detail) {
     ctx.globalAlpha = 0.85;
-    ctx.font = `400 ${Math.max(14, Math.round(w * 0.032))}px Inter, system-ui, sans-serif`;
+    ctx.font = `400 ${Math.max(14, Math.round(w * 0.032))}px Inter, system-ui, ${INDIC_FONTS}, sans-serif`;
     ctx.fillText(lines.detail.slice(0, 64), w / 2, h * 0.64, w * 0.86);
   }
   ctx.restore();
@@ -864,7 +877,7 @@ function drawWatermark(
     ctx.drawImage(logo, x, y, markW, markH);
   } else {
     const size = Math.max(12, Math.round(w * 0.028));
-    ctx.font = `600 ${size}px Sora, system-ui, sans-serif`;
+    ctx.font = `600 ${size}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
     ctx.globalAlpha = 0.45;
@@ -1066,7 +1079,7 @@ function drawPlaceholder(
   ctx.fillStyle = theme.palette.text;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `600 ${Math.round(w * 0.045)}px Sora, system-ui, sans-serif`;
+  ctx.font = `600 ${Math.round(w * 0.045)}px Sora, system-ui, ${INDIC_FONTS}, sans-serif`;
   ctx.fillText(label.slice(0, 40), w / 2, h / 2, w * 0.8);
 }
 
@@ -1114,7 +1127,7 @@ export function drawClipLayer(
       ? kenBurnsAt(theme.photoMotion, mt / Math.max(0.01, clip.durationSec))
       : { scale: 1, ox: 0, oy: 0 };
   if (image) {
-    drawCover(ctx, image, image.naturalWidth, image.naturalHeight, width, height, ken.scale, ken.ox, ken.oy);
+    drawCover(ctx, image, image.naturalWidth, image.naturalHeight, width, height, ken.scale, ken.ox, ken.oy, clip.brain);
   } else if (video && video.videoWidth > 0) {
     drawCover(ctx, video, video.videoWidth, video.videoHeight, width, height, 1, 0, 0);
   } else {
@@ -1286,6 +1299,7 @@ async function exportWithWebCodecs(options: ExportWebmOptions): Promise<ExportWe
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) throw new Error("Could not get 2D canvas context");
   const watermarkLogo = watermark ? await getWatermarkLogo() : null;
+  await ensureFontsFor([title, captionText, ...textOverlays.map((o) => o.value)].join(" "));
 
   let encErr: Error | null = null;
   const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => (encErr = e) });
@@ -1326,6 +1340,7 @@ async function exportWithWebCodecs(options: ExportWebmOptions): Promise<ExportWe
       if (!hasTimedTitle) drawTitle(ctx, title, theme, width, height, "", textStyle);
     }
     drawTextOverlays(ctx, timedOverlays, theme, width, height, nowSec, options.beatBpm);
+    if (options.route) drawRouteMap(ctx, width, height, options.route, tl, theme.palette.accent ?? undefined);
     if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
   };
 
@@ -1623,6 +1638,7 @@ async function exportSlideshowRecorder(
   }
 
   const watermarkLogo = watermark ? await getWatermarkLogo() : null;
+  await ensureFontsFor([title, captionText, ...textOverlays.map((o) => o.value)].join(" "));
 
   recorder.start(200);
 
@@ -1781,6 +1797,7 @@ async function exportSlideshowRecorder(
       if (!hasTimedTitle) drawTitle(ctx, title, theme, width, height, "", textStyle);
     }
     drawTextOverlays(ctx, timedOverlays, theme, width, height, nowSec, options.beatBpm);
+    if (options.route) drawRouteMap(ctx, width, height, options.route, tl, theme.palette.accent ?? undefined);
     if (watermark) drawWatermark(ctx, theme, width, height, watermarkLogo);
 
     const nowElapsed = introOffset + tl;

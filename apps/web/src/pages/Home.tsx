@@ -1,3 +1,4 @@
+import "../styles/storybrain.css";
 import { CONTACT } from "../lib/legal";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
@@ -74,6 +75,9 @@ export function Home() {
         <p className="vj-free-promise home-promise" data-free-promise>
           🆓 Free · <strong>no watermark, ever</strong> · no sign-up to share
         </p>
+        <Link to="/year" className="home-year" data-home-year>
+          ✨ Your {new Date().getFullYear()} in Voyages
+        </Link>
         {draft && (
           <button type="button" className="home-fresh" data-home-fresh onClick={() => setAsk(true)}>
             🧹 Start fresh

@@ -8,6 +8,8 @@ import { resolveAudioRef } from "../lib/audioRefs";
 import { getLibraryItem, libraryAssetUrl } from "../data/library";
 import { DEFAULT_INTENSITY, easingCss, getLook, gradeFilter, lookBackground, lookGradeCss, type ClipAnimation } from "@voyajes/core";
 import { ThemeFxLayer } from "./ThemeFxLayer";
+import { RouteIntro } from "./RouteIntro";
+import { buildRoute } from "../lib/storyBrain";
 import {
   useCallback,
   useEffect,
@@ -42,6 +44,9 @@ function formatTime(sec: number): string {
 }
 
 const INTRO_SEC = 2.4;
+/** v1.1 smart crop: keep the subject in frame */
+const focusStyle = (c: { brain?: { fx?: number; fy?: number } }) =>
+  c.brain?.fx != null && c.brain.fy != null ? { objectPosition: `${Math.round(c.brain.fx * 100)}% ${Math.round(c.brain.fy * 100)}%` } : undefined;
 const END_SEC = 2.6;
 
 type Props = {
@@ -363,6 +368,8 @@ export function InvitePlayer({
   const audioSync = useRef<{ startedAt: number; offset: number } | null>(null);
   const clipTime = (tlLayout.starts[activeIndex] ?? 0) + elapsed;
   const clipTimeRef = useRef(0);
+  const getClipTime = useCallback(() => clipTimeRef.current, []);
+  const route = useMemo(() => (playback?.storyBrain?.routeIntro ? buildRoute(playback.clips) : null), [playback]);
   // Intro card is pre-roll: timeline audio is scheduled to land on clip 0
   clipTimeRef.current = phase === "intro" && showInviteCards ? elapsed - INTRO_SEC : clipTime;
   const audioPhase = phase === "clips" || (phase === "intro" && showInviteCards);
@@ -523,7 +530,7 @@ export function InvitePlayer({
                   filter={shareGrade}
                 >
                   {under.kind === "image" ? (
-                    <img src={under.objectUrl} alt="" draggable={false} />
+                    <img src={under.objectUrl} alt="" draggable={false} style={focusStyle(under)} />
                   ) : (
                     <video
                       src={under.objectUrl}
@@ -566,7 +573,7 @@ export function InvitePlayer({
                 filter={shareGrade}
               >
                 {active.kind === "image" ? (
-                  <img src={active.objectUrl} alt="" draggable={false} />
+                  <img src={active.objectUrl} alt="" draggable={false} style={focusStyle(active)} />
                 ) : (
                   <video
                     ref={videoRef}
@@ -599,6 +606,7 @@ export function InvitePlayer({
           {phase === "clips" && (
             <>
               <ThemeFxLayer look={look} intensity={lookK} getTime={() => Math.max(0, clipTimeRef.current)} playing={playing} />
+              {route && <RouteIntro route={route} getTime={getClipTime} accent={theme.palette.accent} />}
             </>
           )}
 

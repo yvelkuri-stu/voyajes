@@ -41,7 +41,7 @@ beforeAll(async () => {
     bindings: { ALLOWED_ORIGINS: ORIGIN, SIGNING_KEY: "test-key", ADMIN_SECRET: "admin-test-secret", APP_URL: "https://app.test/voyajes", ANDROID_PACKAGE: "app.voyajes.twa", ANDROID_SHA256: "AA:BB", APPLE_APP_IDS: "TEAM.app.voyajes", VAPID_PRIVATE_JWK: vapidJwk },
   });
   const db = await mf.getD1Database("DB");
-  const sql = ["0001_init.sql", "0002_blob_fallback.sql", "0003_one_link.sql", "0004_after_movie.sql"].map((f) => readFileSync(`migrations/${f}`, "utf8")).join(";\n").replace(/--.*$/gm, "");
+  const sql = ["0001_init.sql", "0002_blob_fallback.sql", "0003_one_link.sql", "0004_after_movie.sql", "0005_story_brain.sql"].map((f) => readFileSync(`migrations/${f}`, "utf8")).join(";\n").replace(/--.*$/gm, "");
   for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) await db.prepare(stmt).run();
 });
 afterAll(async () => { await mf?.dispose(); });
@@ -260,7 +260,7 @@ describe("v0.9 One Link", () => {
     expect(a.data[0].target).toMatchObject({ package_name: "app.voyajes.twa", sha256_cert_fingerprints: ["AA:BB"] });
     const i = await call("/.well-known/apple-app-site-association");
     expect(i.data.applinks.details[0].appIDs).toEqual(["TEAM.app.voyajes"]);
-    expect((await call("/health")).data.version).toBe("1.0.0");
+    expect((await call("/health")).data.version).toBe("1.1.0");
   });
 });
 
@@ -336,5 +336,40 @@ describe("v1.0 After-Movie", () => {
     expect((await call(`/voyages/${past}/live`)).data.aftermovieAt).toBeGreaterThan(0);
     expect((await call(`/voyages/${empty}/live`)).data.aftermovieAt).toBeNull();
     expect((await call(`/voyages/${id}/live`)).data.aftermovieAt).toBeGreaterThan(0);
+  });
+});
+
+describe("v1.1 time capsules", () => {
+  const H = (s: string) => ({ Authorization: `Bearer ${s}` });
+  let id = "", secret = "";
+  beforeAll(() => { ipOverride = "10.11.0.1"; });
+  it("host seals a voyage until a date; guests only see the countdown", async () => {
+    const r = await call("/voyages", { method: "POST", json: { title: "Class of 2026", mode: "voyage", pack: pack("Class of 2026") } });
+    id = r.data.id; secret = r.data.hostSecret;
+    expect((await call(`/voyages/${id}`, { method: "PATCH", headers: H(secret), json: { unlockAt: Date.now() - 1000 } })).status).toBe(400);
+    expect((await call(`/voyages/${id}`, { method: "PATCH", json: { unlockAt: Date.now() + 86400_000 } })).status).toBe(403);
+    const at = Date.now() + 86400_000;
+    expect((await call(`/voyages/${id}`, { method: "PATCH", headers: H(secret), json: { unlockAt: at } })).status).toBe(200);
+    const g = await call(`/voyages/${id}`);
+    expect(g.data).toMatchObject({ locked: true, pack: null, title: "Class of 2026" });
+    expect(Math.abs(g.data.unlockAt - at)).toBeLessThan(2);
+    const h = await call(`/voyages/${id}`, { headers: H(secret) });
+    expect(h.data.locked).toBe(false);
+    expect(h.data.pack.share.title).toBe("Class of 2026");
+    const og = await mf.dispatchFetch(`http://api.test/v/${id}/og.jpg`, { headers: { "User-Agent": "WhatsApp/2" }, redirect: "manual" });
+    expect(og.status).toBe(302);
+  });
+  it("cron opens due capsules once and notifies followers", async () => {
+    const db = await mf.getD1Database("DB");
+    await db.prepare("UPDATE voyages SET unlock_at = ? WHERE id = ?").bind(Date.now() - 1000, id).run();
+    const w = await mf.getWorker();
+    await (w as any).scheduled({ cron: "*/15 * * * *" });
+    await new Promise((r) => setTimeout(r, 300));
+    expect((await call(`/voyages/${id}`)).data.locked).toBe(false);
+    const n = await call(`/voyages/${id}/notices`);
+    expect(n.data.notices.filter((x: any) => x.kind === "capsule")).toHaveLength(1);
+    await (w as any).scheduled({ cron: "*/15 * * * *" });
+    await new Promise((r) => setTimeout(r, 300));
+    expect((await call(`/voyages/${id}/notices`)).data.notices.filter((x: any) => x.kind === "capsule")).toHaveLength(1);
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@voyajes/web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,8 @@
     "test:themes": "node scripts/e2e-themes.mjs",
     "test:cloud": "node scripts/e2e-cloud.mjs",
     "test:onelink": "node scripts/e2e-onelink.mjs",
-    "test:aftermovie": "node scripts/e2e-aftermovie.mjs"
+    "test:aftermovie": "node scripts/e2e-aftermovie.mjs",
+    "test:storybrain": "node scripts/e2e-storybrain.mjs"
   },
   "dependencies": {
     "@voyajes/core": "workspace:*",

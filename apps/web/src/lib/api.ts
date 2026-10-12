@@ -143,8 +143,10 @@ export function shortUrlFor(id: string): string {
   return SHARE_BASE ? `${SHARE_BASE}/v/${id}` : appUrlFor(id);
 }
 
-export type CloudVoyage = { id: string; title: string; mode: string; pack: PortablePackV1; dropsEnabled: boolean; coverUrl?: string | null };
-export const fetchVoyage = (id: string) => req<CloudVoyage>(`/voyages/${id}`, { timeoutMs: 10000 });
+export type CloudVoyage = { id: string; title: string; mode: string; pack: PortablePackV1; dropsEnabled: boolean; coverUrl?: string | null; locked?: boolean; unlockAt?: number | null };
+/** Hosts send their secret so they can still open a sealed time capsule. */
+export const fetchVoyage = (id: string) => req<CloudVoyage>(`/voyages/${id}`, { timeoutMs: 10000, secret: hostSecretFor(id), cache: "no-cache" });
+export const setCapsule = (id: string, unlockAt: number | null) => req(`/voyages/${id}`, { method: "PATCH", secret: sec(id), json: { unlockAt } });
 
 export type Social = {
   reactions: Record<string, number>;

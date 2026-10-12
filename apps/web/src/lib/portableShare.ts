@@ -299,6 +299,14 @@ async function encodeClipMedia(
 function stripShareForPack(record: ShareRecord): ShareRecord {
   // Deep-ish clone; keep playback recipe; media travels in `media` map
   const share = JSON.parse(JSON.stringify(record)) as ShareRecord;
+  // v1.1 privacy: shared links carry ~1 km GPS (enough for the route map), never the exact spot
+  for (const c of share.playback?.clips ?? []) {
+    if (!c.brain) continue;
+    const { hash: _h, ...b } = c.brain;
+    if (b.lat != null) b.lat = Math.round(b.lat * 100) / 100;
+    if (b.lon != null) b.lon = Math.round(b.lon * 100) / 100;
+    c.brain = b;
+  }
   // Always carry full invitation meta on pack.share (who/what/when/where)
   const inv = record.invitation ?? record.playback?.invitation;
   if (inv) {

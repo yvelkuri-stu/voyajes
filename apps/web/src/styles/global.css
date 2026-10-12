@@ -65,7 +65,7 @@ body,
 }
 
 body {
-  font-family: Inter, system-ui, sans-serif;
+  font-family: Inter, system-ui, "Noto Sans Devanagari", "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Bengali", "Noto Sans Gujarati", "Noto Sans Gurmukhi", sans-serif;
   background: var(--bg-app);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -73,7 +73,7 @@ body {
 }
 
 h1, h2, h3, .display {
-  font-family: Sora, Inter, system-ui, sans-serif;
+  font-family: Sora, Inter, system-ui, "Noto Sans Devanagari", "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Bengali", "Noto Sans Gujarati", "Noto Sans Gurmukhi", sans-serif;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -1563,7 +1563,7 @@ input.share-link-box:focus {
 }
 .text-style-clean-sans .text-style-sample,
 .preview-title.text-style-clean-sans {
-  font-family: Inter, system-ui, sans-serif;
+  font-family: Inter, system-ui, "Noto Sans Devanagari", "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Bengali", "Noto Sans Gujarati", "Noto Sans Gurmukhi", sans-serif;
   font-weight: 600;
 }
 .text-style-script-soft .text-style-sample,
@@ -2078,7 +2078,7 @@ input.share-link-box:focus {
 .auth-alt-title {
   margin: 0 0 6px;
   font-size: 1rem;
-  font-family: Sora, Inter, system-ui, sans-serif;
+  font-family: Sora, Inter, system-ui, "Noto Sans Devanagari", "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Bengali", "Noto Sans Gujarati", "Noto Sans Gurmukhi", sans-serif;
 }
 
 .auth-qr-wrap {
@@ -2372,7 +2372,7 @@ input.share-link-box:focus {
 }
 
 .install-hint-body strong {
-  font-family: Sora, Inter, system-ui, sans-serif;
+  font-family: Sora, Inter, system-ui, "Noto Sans Devanagari", "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Bengali", "Noto Sans Gujarati", "Noto Sans Gurmukhi", sans-serif;
   font-size: 0.95rem;
 }
 

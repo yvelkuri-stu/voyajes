@@ -24,6 +24,8 @@ import { InvitePlayer } from "../components/InvitePlayer";
 import { Logo } from "../components/Logo";
 import { getBeatByRef } from "../data/beats";
 import { AfterMovieSection } from "../components/AfterMovie";
+import { CapsuleLocked, CapsuleHost } from "../components/Capsule";
+import type { CloudVoyage } from "../lib/api";
 import { getThemeById } from "../data/themes";
 import { exportFilename, getExportPreset } from "../data/exportPresets";
 import { assetUrl } from "../lib/assetUrl";
@@ -204,6 +206,8 @@ export function Share() {
   const [fromPortableHash, setFromPortableHash] = useState(false);
   // v0.7 cloud (short links)
   const [cloudId, setCloudId] = useState<string | null>(null);
+  const [capsule, setCapsule] = useState<CloudVoyage | null>(null);
+  const [capsuleAt, setCapsuleAt] = useState<number | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [cloudBusy, setCloudBusy] = useState<string | null>(null);
   const [portableHashError, setPortableHashError] = useState(false);
@@ -325,7 +329,13 @@ export function Share() {
             navigate(`/live/${v.id}`, { replace: true });
             return;
           }
+          if (v.locked) {
+            setCapsule(v);
+            setReady(true);
+            return;
+          }
           setCloudId(v.id);
+          setCapsuleAt(v.unlockAt ?? null);
           applyHydratedPack(v.pack, shortUrlFor(v.id));
           return;
         } catch (err) {
@@ -1018,6 +1028,7 @@ export function Share() {
     setGuestPlaying(true);
   }, [ready, record, unlocked, hostView]);
 
+  if (capsule) return <CapsuleLocked v={capsule} />;
   if (!ready) {
     return (
       <div className="share-page share-loading" aria-busy="true">
@@ -1666,6 +1677,7 @@ export function Share() {
               </div>
             )}
 
+            {hostCloudId && portablePack && <CapsuleHost cloudId={hostCloudId} unlockAt={capsuleAt} onChange={setCapsuleAt} />}
             {hostCloudId && portablePack && <HostManage cloudId={hostCloudId} pack={portablePack} />}
             {cloudId && portablePack && !locked && (
               <>

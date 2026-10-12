@@ -1,3 +1,4 @@
+import { openCapsules } from "./capsule";
 import { notify, releaseDue, vapidPublicKey, okPushEndpoint, eventEndOf, AFTERMOVIE_TITLE } from "./aftermovie";
 import { isCrawler, ogHtml, previewMeta, invitationOf, firstImageUrl, buildIcs, assetLinks, appleAppSiteAssociation, esc } from "./onelink";
 /**
@@ -175,7 +176,14 @@ type VoyageRow = {
   id: string; host_hash: string; title: string; mode: string; pack: string; drops_enabled: number; drops_max: number; created_at: number; updated_at: number;
   cover_key?: string | null; preview_key?: string | null; status?: string; removed_reason?: string | null;
   aftermovie_at?: number | null; aftermovie_key?: string | null;
+  unlock_at?: number | null; unlock_notified?: number | null;
 };
+const sealed = (v: VoyageRow) => v.unlock_at != null && v.unlock_at > Date.now();
+async function isHost(env: Env, req: Request, v: VoyageRow) {
+  const auth = req.headers.get("Authorization") ?? "";
+  const secret = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  return !!secret && timingSafeEq(await sha256(secret), v.host_hash);
+}
 async function getVoyage(env: Env, id: string, allowRemoved = false): Promise<VoyageRow> {
   if (!isVoyageId(id)) throw new HttpError(404, "Not found");
   const v = await env.DB.prepare("SELECT * FROM voyages WHERE id = ?").bind(id).first<VoyageRow>();
@@ -244,7 +252,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   const m = req.method;
   const seg = p.split("/").filter(Boolean);
 
-  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "1.0.0", push: !!env.VAPID_PRIVATE_JWK, media: env.MEDIA ? "r2" : "d1" });
+  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "1.1.0", push: !!env.VAPID_PRIVATE_JWK, media: env.MEDIA ? "r2" : "d1" });
 
   // app links (custom-domain + store readiness)
   if (p === "/.well-known/assetlinks.json") return json(assetLinks(env.ANDROID_PACKAGE, env.ANDROID_SHA256), 200, { "Cache-Control": "public, max-age=3600" });
@@ -256,7 +264,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     const v = await getVoyage(env, seg[1], true).catch(() => null);
     const human = !isCrawler(req.headers.get("User-Agent"));
     if (seg[2] === "og.jpg") {
-      if (!v || v.status === "removed") return Response.redirect(`${appUrl(env, req)}/og-default.jpg`, 302);
+      if (!v || v.status === "removed" || sealed(v)) return Response.redirect(`${appUrl(env, req)}/og-default.jpg`, 302);
       let key = v.cover_key ?? null;
       if (!key) {
         const u = firstImageUrl(JSON.parse(v.pack));
@@ -402,7 +410,7 @@ async function route(req: Request, env: Env): Promise<Response> {
       const r = await env.DB.prepare(
         "SELECT n.id, n.voyage_id, n.kind, n.title, n.body, n.created_at FROM notices n JOIN push_subs s ON s.voyage_id = n.voyage_id AND s.endpoint_hash = ? WHERE n.created_at > ? ORDER BY n.created_at DESC LIMIT 5",
       ).bind(await sha256(b.endpoint), Date.now() - 2 * 86400_000).all<any>();
-      return json({ notices: r.results.map((n) => ({ ...n, url: `${appUrl(env, req)}/v/${n.voyage_id}${n.kind === "aftermovie" ? "?aftermovie=1" : ""}` })) });
+      return json({ notices: r.results.map((n) => ({ ...n, url: `${appUrl(env, req)}/${n.kind === "year" ? "year" : `v/${n.voyage_id}`}${n.kind === "aftermovie" ? "?aftermovie=1" : ""}` })) });
     }
     throw new HttpError(404, "Not found");
   }
@@ -433,19 +441,27 @@ async function route(req: Request, env: Env): Promise<Response> {
   const sub = seg[2];
 
   if (!sub && m === "GET") {
+    if (sealed(v) && !(await isHost(env, req, v)))
+      return json({ id: v.id, title: v.title, mode: v.mode, pack: null, locked: true, unlockAt: v.unlock_at, dropsEnabled: false, updatedAt: v.updated_at }, 200, { "Cache-Control": "no-store" });
     return json(
       {
         id: v.id, title: v.title, mode: v.mode, pack: JSON.parse(v.pack), dropsEnabled: !!v.drops_enabled, updatedAt: v.updated_at,
         coverUrl: v.cover_key ? mediaUrl(env, req, v.cover_key) : null, previewUrl: v.preview_key ? mediaUrl(env, req, v.preview_key) : null,
         aftermovieAt: v.aftermovie_at ?? null,
+        unlockAt: v.unlock_at ?? null,
+        locked: false,
       },
       200,
-      { "Cache-Control": "public, max-age=10" },
+      { "Cache-Control": sealed(v) || v.unlock_at ? "no-store" : "public, max-age=10" },
     );
   }
   if (!sub && m === "PATCH") {
     await requireHost(env, req, v);
-    const b = await body<{ dropsEnabled?: boolean; dropsMax?: number; title?: string; coverKey?: string | null; previewKey?: string | null }>(req);
+    const b = await body<{ dropsEnabled?: boolean; dropsMax?: number; title?: string; coverKey?: string | null; previewKey?: string | null; unlockAt?: number | null }>(req);
+    if (b.unlockAt !== undefined) {
+      if (b.unlockAt !== null && !(Number.isFinite(b.unlockAt) && b.unlockAt > Date.now() && b.unlockAt < Date.now() + 50 * 365 * 86400_000)) throw new HttpError(400, "unlockAt must be a future time");
+      await env.DB.prepare("UPDATE voyages SET unlock_at = ?, unlock_notified = NULL WHERE id = ?").bind(b.unlockAt === null ? null : Math.round(b.unlockAt), v.id).run();
+    }
     const ownKey = async (k: string | null | undefined, prev: string | null | undefined) => {
       if (k === undefined) return prev ?? null;
       if (k === null) return null;
@@ -820,6 +836,7 @@ export default {
   /** cron: release after-movies once events end */
   async scheduled(_c: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
     ctx.waitUntil(releaseDue(env, () => rid(10)));
+    ctx.waitUntil(openCapsules(env, () => rid(10)));
   },
   async fetch(req: Request, env: Env): Promise<Response> {
     const c = cors(req, env);

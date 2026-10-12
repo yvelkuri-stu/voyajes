@@ -1,3 +1,4 @@
+import type { ClipBrain } from "./storyBrain";
 import type {
   Aspect,
   AudioMixMode,
@@ -60,6 +61,8 @@ export type DraftClipMeta = {
   sourceSec?: number;
   /** v2 timeline: trim in-point (video source seconds) */
   inSec?: number;
+  /** v1.1 Story Brain: GPS, capture time, smart-crop focus, quality score, dHash */
+  brain?: ClipBrain;
   /** v2 timeline: transition object in the gap after this clip */
   transitionSpec?: TransitionSpec;
   animation?: ClipAnimation;
@@ -139,6 +142,8 @@ export type DraftState = {
   audioClips?: AudioClip[];
   /** v3: duck music under unmuted video audio (default = ducking) */
   autoDuck?: boolean;
+  /** v1.1 Story Brain project settings */
+  storyBrain?: StoryBrainSettings;
   updatedAt: string;
 };
 
@@ -308,6 +313,29 @@ function pickLayerFields(raw: { animation?: unknown; keyframes?: unknown }) {
   return out;
 }
 
+export type StoryBrainSettings = { routeIntro?: boolean; lang?: string; prompt?: string };
+export function normalizeStoryBrain(s: unknown): StoryBrainSettings | undefined {
+  if (!s || typeof s !== "object") return undefined;
+  const o = s as StoryBrainSettings;
+  const out: StoryBrainSettings = {};
+  if (o.routeIntro === true) out.routeIntro = true;
+  if (typeof o.lang === "string" && /^[a-z]{2}$/.test(o.lang)) out.lang = o.lang;
+  if (typeof o.prompt === "string" && o.prompt.trim()) out.prompt = o.prompt.slice(0, 300);
+  return Object.keys(out).length ? out : undefined;
+}
+export function normalizeBrain(b: unknown): ClipBrain | undefined {
+  if (!b || typeof b !== "object") return undefined;
+  const o = b as ClipBrain;
+  const out: ClipBrain = {};
+  const num = (v: unknown, lo: number, hi: number) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
+  if (num(o.lat, -90, 90) && num(o.lon, -180, 180)) { out.lat = o.lat; out.lon = o.lon; }
+  if (typeof o.takenAt === "string" && /^\d{4}-\d{2}-\d{2}/.test(o.takenAt)) out.takenAt = o.takenAt.slice(0, 25);
+  if (num(o.fx, 0, 1) && num(o.fy, 0, 1)) { out.fx = o.fx; out.fy = o.fy; }
+  if (num(o.score, 0, 1)) out.score = o.score;
+  if (typeof o.hash === "string" && /^[0-9a-f]{16}$/.test(o.hash)) out.hash = o.hash;
+  return Object.keys(out).length ? out : undefined;
+}
+
 function pickTimelineFields(c: Partial<DraftClipMeta>) {
   const out: Pick<DraftClipMeta, "inSec" | "sourceSec" | "speed" | "reverse" | "libraryId" | "placeholder" | "transitionSpec" | "animation" | "keyframes"> =
     pickLayerFields(c);
@@ -315,6 +343,8 @@ function pickTimelineFields(c: Partial<DraftClipMeta>) {
   if (typeof c.speed === "number" && Number.isFinite(c.speed) && c.speed !== 1)
     out.speed = Math.min(4, Math.max(0.25, c.speed));
   if (c.reverse === true) out.reverse = true;
+  const br = normalizeBrain(c.brain);
+  if (br) (out as { brain?: ClipBrain }).brain = br;
   if (typeof c.libraryId === "string" && c.libraryId) out.libraryId = c.libraryId;
   if (c.placeholder === true) out.placeholder = true;
   if (typeof c.sourceSec === "number" && Number.isFinite(c.sourceSec) && c.sourceSec > 0)
@@ -426,6 +456,7 @@ function normalizeDraft(parsed: Partial<DraftState> & { clips?: DraftClipMeta[] 
       ? parsed.audioClips
       : undefined,
     autoDuck: typeof parsed.autoDuck === "boolean" ? parsed.autoDuck : undefined,
+    storyBrain: normalizeStoryBrain(parsed.storyBrain),
     updatedAt: parsed.updatedAt ?? new Date().toISOString(),
     projectId: typeof parsed.projectId === "string" ? parsed.projectId : undefined,
   };

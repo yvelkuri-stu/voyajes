@@ -31,6 +31,8 @@ export type SharePlaybackSnapshot = {
   /** custom:<id> → playable URL (portable embeds / local blobs); runtime only */
   audioUrls?: Record<string, string>;
   customSoundNames?: Record<string, string>;
+  /** v1.1 Story Brain (route-map intro, caption language) */
+  storyBrain?: import("./draftStore").StoryBrainSettings;
 };
 
 export type ShareRecord = {
@@ -223,6 +225,7 @@ export function playbackFromDraft(draft: DraftState): SharePlaybackSnapshot {
     ...(draft.transitionSpec ? { transitionSpec: draft.transitionSpec } : {}),
     ...(Array.isArray(draft.audioClips) ? { audioClips: draft.audioClips } : {}),
     ...(typeof draft.autoDuck === "boolean" ? { autoDuck: draft.autoDuck } : {}),
+    ...(draft.storyBrain ? { storyBrain: draft.storyBrain } : {}),
     ...(draft.customSounds?.length
       ? { customSoundNames: Object.fromEntries(draft.customSounds.map((c) => [c.id, c.name])) }
       : {}),

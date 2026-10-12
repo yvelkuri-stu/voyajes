@@ -1,4 +1,5 @@
 import { shareOrDownload, capClips, STATUS_MAX_SEC, STATUS_MAX_BYTES } from "../lib/webShare";
+import "../styles/storybrain.css";
 import { EventDetailsFields } from "../components/EventDetailsFields";
 import type { EventDetails } from "../lib/draftStore";
 import { KineticText } from "../components/KineticText";
@@ -16,6 +17,9 @@ import {
   THEME_LOOKS,
 } from "@voyajes/core";
 import { StoryWizard } from "../components/StoryWizard";
+import { StoryBrainSheet } from "../components/StoryBrainSheet";
+import { analyzeFile, buildRoute, pickBest } from "../lib/storyBrain";
+import { normalizeBrain, type StoryBrainSettings } from "../lib/draftStore";
 import { analyzeMedia, type MediaFacts } from "../lib/breezeAnalyze";
 import { breezePlan, type BreezeItem } from "@voyajes/core";
 import { loadPrefs } from "../lib/prefsStore";
@@ -430,6 +434,8 @@ export function Create() {
   /** MediaImporter target when replacing a clip / sound in place */
   const [replaceTarget, setReplaceTarget] = useState<{ type: "clip" | "audio"; id: string } | null>(null);
   const [autoDuck, setAutoDuck] = useState<boolean | undefined>(undefined);
+  const [storyBrain, setStoryBrain] = useState<StoryBrainSettings | undefined>(undefined);
+  const [brainOpen, setBrainOpen] = useState(false);
   const [freshAsk, setFreshAsk] = useState(false);
   const [themeIntensity, setThemeIntensity] = useState<number>(DEFAULT_INTENSITY);
   const [proLocks, setProLocks] = useState<string[]>([]);
@@ -594,6 +600,7 @@ export function Create() {
       setProjectTxSpec(base.transitionSpec);
       setAudioClips(base.audioClips);
       setAutoDuck(base.autoDuck);
+      setStoryBrain(base.storyBrain);
       if (base.transitionOverride) {
         setTransitionOverride(base.transitionOverride);
       } else if (paramTemplate && !fresh) {
@@ -661,6 +668,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      storyBrain,
       themeIntensity,
       proLocks: proLocks.length ? proLocks : undefined,
       watermark,
@@ -704,6 +712,7 @@ export function Create() {
     projectTxSpec,
     audioClips,
     autoDuck,
+    storyBrain,
     themeIntensity,
     proLocks,
     watermark,
@@ -833,7 +842,10 @@ export function Create() {
         }
         await putBlob(id, file, epochRef.current);
         const objectUrl = trackUrl(URL.createObjectURL(file));
+        // v1.1 Story Brain: GPS + time + smart-crop focus + quality (on-device)
+        const brain = kind === "image" ? normalizeBrain(await analyzeFile(file).catch(() => ({}))) : undefined;
         added.push({
+          ...(brain ? { brain } : {}),
           id,
           fileName: file.name,
           mimeType: file.type || (kind === "image" ? "image/jpeg" : "video/mp4"),
@@ -1848,7 +1860,9 @@ export function Create() {
           speed: c.speed,
           reverse: c.reverse,
           mute: c.mute,
+          brain: c.brain,
         })),
+        route: storyBrain?.routeIntro ? buildRoute(outClips) : null,
         grade,
         look,
         intensity: themeIntensity,
@@ -1972,6 +1986,7 @@ export function Create() {
           speed: c.speed,
           reverse: c.reverse,
           mute: c.mute,
+          brain: c.brain,
         })),
         grade,
         look,
@@ -2090,6 +2105,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      storyBrain,
       themeIntensity,
       updatedAt: new Date().toISOString(),
     };
@@ -2148,6 +2164,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      storyBrain,
       themeIntensity,
       updatedAt: new Date().toISOString(),
     };
@@ -2205,6 +2222,7 @@ export function Create() {
       transitionSpec: projectTxSpec,
       audioClips,
       autoDuck,
+      storyBrain,
       themeIntensity,
       updatedAt: new Date().toISOString(),
     };
@@ -2496,6 +2514,7 @@ export function Create() {
       aspect,
       audioClips,
       autoDuck,
+      storyBrain,
     }),
     [clips, textOverlays, themeId, templateId, transitionOverride, grade, defaultAnimation, projectTxSpec, textStyle, textTransition, audioTrackRef, beatSync, aspect, audioClips, autoDuck],
   );
@@ -2948,6 +2967,37 @@ export function Create() {
 
   return (
     <>
+    {brainOpen && (
+      <StoryBrainSheet
+        clips={clips}
+        settings={storyBrain}
+        accent={theme.palette.accent}
+        onClose={() => setBrainOpen(false)}
+        onSettings={setStoryBrain}
+        onKeep={(ids) => {
+          const keep = new Set(ids);
+          setClips((prev) => prev.filter((c) => keep.has(c.id)));
+          setActiveIndex(0);
+        }}
+        onPlan={(plan) => {
+          ai.pulse("coach", 1600);
+          setThemeId(plan.themeId);
+          const lm = getLook(plan.themeId).music.ref;
+          if (getBeatByRef(lm)) setAudioTrackRef(lm);
+          setTitle(plan.title);
+          setCaptionText(plan.caption);
+          setStoryBrain((s) => ({ ...s, lang: plan.lang, prompt: undefined, routeIntro: plan.routeIntro || s?.routeIntro }));
+          setClips((prev) => {
+            let next = plan.keep ? pickBest(prev, plan.keep).kept : prev;
+            if (plan.order === "time") next = [...next].sort((a, b) => (a.brain?.takenAt ?? "").localeCompare(b.brain?.takenAt ?? ""));
+            else if (plan.order === "best") next = [...next].sort((a, b) => (b.brain?.score ?? 0) - (a.brain?.score ?? 0));
+            return next.map((c) => (c.kind === "image" ? { ...c, durationSec: plan.secPerPhoto } : c));
+          });
+          setActiveIndex(0);
+          setCoachHint(`Story Brain · “${plan.title}”`);
+        }}
+      />
+    )}
     {wizardOpen && (
       <StoryWizard
         themes={themes}
@@ -3133,6 +3183,10 @@ export function Create() {
           >
             <span aria-hidden>𝐓</span>
             <span className="icon-tool-tip">Text</span>
+          </button>
+          <button type="button" className="icon-tool sb-open" title="Story Brain — describe it, we make it" aria-label="Story Brain" onClick={() => setBrainOpen(true)} data-open-story-brain>
+            <span aria-hidden>🧠</span>
+            <span className="icon-tool-tip">Brain</span>
           </button>
         </div>
       )}
@@ -3625,7 +3679,7 @@ export function Create() {
                   filter={gradeCss}
                 >
                   {prevClip.kind === "image" ? (
-                    <img src={prevClip.objectUrl} alt="" draggable={false} />
+                    <img src={prevClip.objectUrl} alt="" style={prevClip.brain?.fx != null ? { objectPosition: `${Math.round((prevClip.brain.fx ?? 0.5) * 100)}% ${Math.round((prevClip.brain.fy ?? 0.5) * 100)}%` } : undefined} draggable={false} />
                   ) : (
                     <video
                       src={prevClip.objectUrl}
@@ -3672,7 +3726,7 @@ export function Create() {
                   filter={gradeCss}
                 >
                   {active.kind === "image" ? (
-                    <img src={active.objectUrl} alt={active.fileName} draggable={false} />
+                    <img src={active.objectUrl} alt={active.fileName} style={active.brain?.fx != null ? { objectPosition: `${Math.round((active.brain.fx ?? 0.5) * 100)}% ${Math.round((active.brain.fy ?? 0.5) * 100)}%` } : undefined} draggable={false} />
                   ) : (
                     <video
                       ref={videoRef}

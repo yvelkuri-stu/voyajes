@@ -3926,17 +3926,29 @@ export function Create() {
               type="button"
               className="chip"
               onClick={() =>
-                audioPanelRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "nearest",
-                })
+                minimalist
+                  ? setMiniSheet("audio")
+                  : audioPanelRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "nearest",
+                    })
               }
               title="Open audio panel"
+              data-audio-chip
             >
-              Audio · {selectedBeat.name}
-              <span className={`license-badge license-${selectedBeat.license}`}>
-                {licenseLabel(selectedBeat.license)}
-              </span>
+              {(() => {
+                const main = audioClips?.length ? [...audioClips].sort((x, y) => y.durationSec - x.durationSec)[0] : undefined;
+                return main ? (
+                  <>Audio · {main.label ?? audioLabelFor(main.ref)}</>
+                ) : (
+                  <>
+                    Audio · {selectedBeat.name}
+                    <span className={`license-badge license-${selectedBeat.license}`}>
+                      {licenseLabel(selectedBeat.license)}
+                    </span>
+                  </>
+                );
+              })()}
             </button>
             <button
               type="button"

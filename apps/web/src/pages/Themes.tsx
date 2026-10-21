@@ -1,4 +1,6 @@
 import { SamplePreview } from "../components/SamplePreview";
+import { getTemplateSample } from "../data/samples";
+import { audioRefLabel } from "../lib/audioRefs";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -343,7 +345,7 @@ export function Themes() {
                     </div>
                     {isInvitationTemplate(t) && (
                       <div style={{ marginTop: 8, fontSize: "0.72rem", opacity: 0.9, fontWeight: 600 }}>
-                        ♪ {t.beat?.name ?? t.beatId} · {t.aspect ?? "9:16"}
+                        ♪ {(() => { const a0 = getTemplateSample(t.id)?.audio[0]; return a0 ? audioRefLabel(a0.ref) : t.beat?.name ?? t.beatId; })()} · {t.aspect ?? "9:16"}
                       </div>
                     )}
                     <div

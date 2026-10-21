@@ -1694,7 +1694,7 @@ export function Share() {
                 <GuestSocial cloudId={cloudId} pack={portablePack} isInvite={isInvitation} />
               </>
             )}
-            {!cloudId && !locked && <CommentThread shareId={record.id} />}
+            {!cloudId && !hostCloudId && !locked && <CommentThread shareId={record.id} />}
           </div>
         </div>
 

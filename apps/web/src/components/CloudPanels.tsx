@@ -476,7 +476,10 @@ export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: P
             aria-selected={active === t.id}
             className="vj-tab"
             data-manage-tab={t.id}
-            onClick={() => pick(t.id)}
+            onClick={(e) => {
+              pick(t.id);
+              e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+            }}
           >
             <span aria-hidden>{t.icon}</span> {t.label}
             {t.count ? <span className="vj-tab-count">· {t.count}</span> : null}

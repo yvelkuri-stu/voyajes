@@ -285,7 +285,7 @@ export function GuestSocial({ cloudId, pack, isInvite }: { cloudId: string; pack
               });
             }}
           />
-          <button type="button" className="btn btn-primary" disabled={busy === "drop"} onClick={() => fileRef.current?.click()}>
+          <button type="button" className={`btn ${isInvite ? "btn-soft" : "btn-primary"}`} disabled={busy === "drop"} onClick={() => fileRef.current?.click()}>
             {busy === "drop" ? "Uploading…" : "＋ Add photos"}
           </button>
         </div>
@@ -362,11 +362,20 @@ export function GuestSocial({ cloudId, pack, isInvite }: { cloudId: string; pack
 }
 
 /** Host "Manage" panel for a published voyage. */
+type ManageTab = "guests" | "photos" | "share" | "after";
+
 export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: PortablePackV1; onPack?: (p: PortablePackV1) => void }) {
   const [h, setH] = useState<HostView | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cur, setCur] = useState(pack);
   const [upd, setUpd] = useState("");
+  const [tab, setTab] = useState<ManageTab>(() => {
+    try {
+      return (sessionStorage.getItem(`vj-manage-tab:${cloudId}`) as ManageTab | null) ?? "guests";
+    } catch {
+      return "guests";
+    }
+  });
   const load = useCallback(async () => {
     try {
       setH(await fetchHost(cloudId));
@@ -438,162 +447,203 @@ export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: P
       </button>
     ) : null;
   const isInvite = cur.share.mode === "invitation";
+  const tabs: { id: ManageTab; label: string; icon: string; count?: number }[] = [
+    { id: "guests", label: isInvite ? "Guests & RSVP" : "Guests", icon: "👥", count: isInvite ? h.rsvps.filter((r) => r.answer === "yes").length : undefined },
+    { id: "photos", label: "Photos & moderation", icon: "🖼️", count: queue.length + (h.reports?.length ?? 0) || undefined },
+    { id: "share", label: "Share & print", icon: "🔗" },
+    ...(isInvite ? [{ id: "after" as ManageTab, label: "After-movie", icon: "🎬" }] : []),
+  ];
+  const active: ManageTab = tabs.some((t) => t.id === tab) ? tab : "guests";
+  const pick = (id: ManageTab) => {
+    setTab(id);
+    try {
+      sessionStorage.setItem(`vj-manage-tab:${cloudId}`, id);
+    } catch {
+      /* private mode */
+    }
+  };
   return (
     <section className="vj-manage" aria-label="Manage" data-manage>
-      <h3>Manage</h3>
-      {isInvite && <AfterMovieHost cloudId={cloudId} pack={cur} />}
-      <label className="toggle-row">
-        <input type="checkbox" checked={h.dropsEnabled} data-drops-toggle onChange={(e) => void setDrops(cloudId, e.target.checked).then(load)} />
-        <span>Let guests add photos (up to {h.dropsMax} each)</span>
-      </label>
-      {h.dropsEnabled && (
-        <p className="muted vj-small-text">
-          Contribution link: <code>{link}</code>
-        </p>
-      )}
-      <div className="vj-manage-stats">
-        {REACTION_EMOJIS.map((e) => (
-          <span key={e}>
-            {e} {h.reactions[e] ?? 0}
-          </span>
+      <h3 className="vj-sec-h"><span aria-hidden>🛠️</span> Manage</h3>
+      <div className="vj-tabs" role="tablist" aria-label="Manage sections">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`vj-mt-${t.id}`}
+            aria-controls={`vj-mp-${t.id}`}
+            aria-selected={active === t.id}
+            className="vj-tab"
+            data-manage-tab={t.id}
+            onClick={() => pick(t.id)}
+          >
+            <span aria-hidden>{t.icon}</span> {t.label}
+            {t.count ? <span className="vj-tab-count">· {t.count}</span> : null}
+          </button>
         ))}
-        <span>💬 {h.comments.length}</span>
       </div>
-      <div className="vj-manage-actions">
-        <button type="button" className="btn btn-ghost" onClick={() => reorder()}>
-          ⭐ Promote favorites
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={() => reorder(5)}>
-          ✨ Make highlights
-        </button>
-      </div>
-      <h4>Updates for guests</h4>
-      <form
-        className="vj-comment-form"
-        data-host-update-form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!upd.trim()) return;
-          const body = upd;
-          setUpd("");
-          act(postUpdate(cloudId, body), "Posted — guests see it on the invite");
-        }}
-      >
-        <input className="vj-input" placeholder="e.g. Parking is behind the hall 🚗" value={upd} maxLength={500} onChange={(e) => setUpd(e.target.value)} data-host-update-input />
-        <button type="submit" className="btn btn-ghost" disabled={!upd.trim()}>
-          Post
-        </button>
-      </form>
-      {!!h.updates?.length && (
-        <ul className="vj-comment-list">
-          {h.updates.map((u) => (
-            <li key={u.id}>
-              📣 {u.body} <span className="muted vj-small-text">{ago(u.created_at)}</span>{" "}
-              <button type="button" className="vj-del" aria-label="Delete update" onClick={() => act(deleteUpdate(cloudId, u.id))}>
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h4>Share & print</h4>
-      <QrCardsPanel pack={cur} url={link} />
-      <button
-        type="button"
-        className="btn btn-ghost vj-small"
-        data-refresh-cover
-        onClick={() =>
-          act(
-            renderCover(cardInfoFromPack(cur, link)).then((b) => attachPreview(cloudId, b, "coverKey")),
-            "Link preview refreshed — WhatsApp may cache the old one for a while",
-          )
-        }
-      >
-        🖼 Refresh link preview
-      </button>
-
-      {!!h.reports?.length && (
-        <>
-          <h4 data-host-reports>Reports · {h.reports.length}</h4>
-          <ul className="vj-comment-list">
-            {h.reports.map((r) => {
-              const c = r.target_type === "comment" ? h.comments.find((x) => x.id === r.target_id) : undefined;
-              return (
-                <li key={r.id} data-report-item>
-                  <span className={`vj-ans vj-ans-no`}>{r.reason}</span> {r.target_type}
-                  {c ? <> — “{c.body}”</> : null}
-                  {r.note ? <span className="muted"> · {r.note}</span> : null}{" "}
-                  {c && (
-                    <button type="button" className="vj-flag" data-report-hide onClick={() => act(hideComment(cloudId, c.id, true), "Comment hidden")}>
-                      Hide
-                    </button>
-                  )}
-                  {c && <BlockBtn device={c.device_id} />}
-                  <button type="button" className="vj-flag" data-report-dismiss onClick={() => act(resolveReport(cloudId, r.id, "dismissed"))}>
-                    Dismiss
+      <div role="tabpanel" id="vj-mp-guests" aria-labelledby="vj-mt-guests" className="vj-tabpanel" hidden={active !== "guests"} data-manage-panel="guests">
+          <div className="vj-manage-stats">
+            {REACTION_EMOJIS.map((e) => (
+              <span key={e}>
+                {e} {h.reactions[e] ?? 0}
+              </span>
+            ))}
+            <span>💬 {h.comments.length}</span>
+          </div>
+          {h.rsvps.length > 0 && (
+            <>
+              <h4 data-host-headcount>
+                Guest list · {h.rsvps.filter((r) => r.answer === "yes").length} yes · {h.guestCount ?? 0} guests incl. +1s
+              </h4>
+              <ul className="vj-guestlist" data-guestlist>
+                {h.rsvps.map((r, i) => (
+                  <li key={i}>
+                    <span className={`vj-ans vj-ans-${r.answer}`}>{r.answer}</span> <strong>{r.name}</strong>
+                    {r.plus_ones ? <span className="muted"> +{r.plus_ones}</span> : null}
+                    {r.note ? <span className="muted"> — {r.note}</span> : null}
+                    {r.url ? <img src={r.url} alt="" className="vj-guest-photo" /> : null}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        {h.rsvps.length === 0 && <p className="muted vj-small-text">{isInvite ? "No RSVPs yet — share the link and they'll appear here." : "Reactions and guest activity appear here."}</p>}
+          <h4>Updates for guests</h4>
+          <form
+            className="vj-comment-form"
+            data-host-update-form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!upd.trim()) return;
+              const body = upd;
+              setUpd("");
+              act(postUpdate(cloudId, body), "Posted — guests see it on the invite");
+            }}
+          >
+            <input className="vj-input" placeholder="e.g. Parking is behind the hall 🚗" value={upd} maxLength={500} onChange={(e) => setUpd(e.target.value)} data-host-update-input />
+            <button type="submit" className="btn btn-ghost" disabled={!upd.trim()}>
+              Post
+            </button>
+          </form>
+          {!!h.updates?.length && (
+            <ul className="vj-comment-list">
+              {h.updates.map((u) => (
+                <li key={u.id}>
+                  📣 {u.body} <span className="muted vj-small-text">{ago(u.created_at)}</span>{" "}
+                  <button type="button" className="vj-del" aria-label="Delete update" onClick={() => act(deleteUpdate(cloudId, u.id))}>
+                    ✕
                   </button>
                 </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
-      <h4>Photo drops {queue.length ? `· ${queue.length}` : ""}</h4>
-      {queue.length === 0 && <p className="muted vj-small-text">No guest photos yet.</p>}
-      <div className="vj-queue">
-        {queue.map((d) => (
-          <div key={d.id} className="vj-queue-item" data-drop-item>
-            {d.mime.startsWith("video/") ? <video src={d.url} muted playsInline preload="metadata" /> : <img src={d.url} alt="" loading="lazy" />}
-            <span className="vj-queue-who">
-              {d.name || "Guest"} <BlockBtn device={d.device_id} />
-            </span>
-            <div className="vj-queue-btns">
-              <button type="button" className="btn btn-primary vj-small" data-drop-add onClick={() => void addToStory(d)}>
-                Add to story
-              </button>
-              <button type="button" className="btn btn-ghost vj-small" onClick={() => void setDropStatus(cloudId, d.id, "rejected").then(load)}>
-                Reject
-              </button>
-            </div>
-          </div>
-        ))}
+              ))}
+            </ul>
+          )}
       </div>
-      {h.rsvps.length > 0 && (
-        <>
-          <h4 data-host-headcount>
-            Guest list · {h.rsvps.filter((r) => r.answer === "yes").length} yes · {h.guestCount ?? 0} guests incl. +1s
-          </h4>
-          <ul className="vj-guestlist" data-guestlist>
-            {h.rsvps.map((r, i) => (
-              <li key={i}>
-                <span className={`vj-ans vj-ans-${r.answer}`}>{r.answer}</span> <strong>{r.name}</strong>
-                {r.plus_ones ? <span className="muted"> +{r.plus_ones}</span> : null}
-                {r.note ? <span className="muted"> — {r.note}</span> : null}
-                {r.url ? <img src={r.url} alt="" className="vj-guest-photo" /> : null}
-              </li>
+      <div role="tabpanel" id="vj-mp-photos" aria-labelledby="vj-mt-photos" className="vj-tabpanel" hidden={active !== "photos"} data-manage-panel="photos">
+          <label className="toggle-row">
+            <input type="checkbox" checked={h.dropsEnabled} data-drops-toggle onChange={(e) => void setDrops(cloudId, e.target.checked).then(load)} />
+            <span>Let guests add photos (up to {h.dropsMax} each)</span>
+          </label>
+          {h.dropsEnabled && (
+            <p className="muted vj-small-text">
+              Contribution link: <code>{link}</code>
+            </p>
+          )}
+          <h4>Photo drops {queue.length ? `· ${queue.length}` : ""}</h4>
+          {queue.length === 0 && <p className="muted vj-small-text">No guest photos yet.</p>}
+          <div className="vj-queue">
+            {queue.map((d) => (
+              <div key={d.id} className="vj-queue-item" data-drop-item>
+                {d.mime.startsWith("video/") ? <video src={d.url} muted playsInline preload="metadata" /> : <img src={d.url} alt="" loading="lazy" />}
+                <span className="vj-queue-who">
+                  {d.name || "Guest"} <BlockBtn device={d.device_id} />
+                </span>
+                <div className="vj-queue-btns">
+                  <button type="button" className="btn btn-primary vj-small" data-drop-add onClick={() => void addToStory(d)}>
+                    Add to story
+                  </button>
+                  <button type="button" className="btn btn-ghost vj-small" onClick={() => void setDropStatus(cloudId, d.id, "rejected").then(load)}>
+                    Reject
+                  </button>
+                </div>
+              </div>
             ))}
-          </ul>
-        </>
-      )}
-      {h.comments.length > 0 && (
-        <>
-          <h4>Comments</h4>
-          <ul className="vj-comment-list">
-            {h.comments.map((c) => (
-              <li key={c.id} className={c.hidden ? "vj-hidden-row" : undefined}>
-                <strong>{c.name || "Guest"}</strong> {c.body} {c.hidden ? <span className="muted">(hidden)</span> : null}{" "}
-                <button type="button" className="vj-flag" data-hide-comment={c.id} onClick={() => act(hideComment(cloudId, c.id, !c.hidden))}>
-                  {c.hidden ? "Show" : "Hide"}
-                </button>
-                <BlockBtn device={c.device_id} />
-                <button type="button" className="vj-del" aria-label="Delete comment" onClick={() => void deleteComment(cloudId, c.id).then(load)}>
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
+          </div>
+          <div className="vj-manage-actions">
+            <button type="button" className="btn btn-ghost" onClick={() => reorder()}>
+              ⭐ Promote favorites
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => reorder(5)}>
+              ✨ Make highlights
+            </button>
+          </div>
+          {!!h.reports?.length && (
+            <>
+              <h4 data-host-reports>Reports · {h.reports.length}</h4>
+              <ul className="vj-comment-list">
+                {h.reports.map((r) => {
+                  const c = r.target_type === "comment" ? h.comments.find((x) => x.id === r.target_id) : undefined;
+                  return (
+                    <li key={r.id} data-report-item>
+                      <span className={`vj-ans vj-ans-no`}>{r.reason}</span> {r.target_type}
+                      {c ? <> — “{c.body}”</> : null}
+                      {r.note ? <span className="muted"> · {r.note}</span> : null}{" "}
+                      {c && (
+                        <button type="button" className="vj-flag" data-report-hide onClick={() => act(hideComment(cloudId, c.id, true), "Comment hidden")}>
+                          Hide
+                        </button>
+                      )}
+                      {c && <BlockBtn device={c.device_id} />}
+                      <button type="button" className="vj-flag" data-report-dismiss onClick={() => act(resolveReport(cloudId, r.id, "dismissed"))}>
+                        Dismiss
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+          {h.comments.length > 0 && (
+            <>
+              <h4>Comments</h4>
+              <ul className="vj-comment-list">
+                {h.comments.map((c) => (
+                  <li key={c.id} className={c.hidden ? "vj-hidden-row" : undefined}>
+                    <strong>{c.name || "Guest"}</strong> {c.body} {c.hidden ? <span className="muted">(hidden)</span> : null}{" "}
+                    <button type="button" className="vj-flag" data-hide-comment={c.id} onClick={() => act(hideComment(cloudId, c.id, !c.hidden))}>
+                      {c.hidden ? "Show" : "Hide"}
+                    </button>
+                    <BlockBtn device={c.device_id} />
+                    <button type="button" className="vj-del" aria-label="Delete comment" onClick={() => void deleteComment(cloudId, c.id).then(load)}>
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+      </div>
+      <div role="tabpanel" id="vj-mp-share" aria-labelledby="vj-mt-share" className="vj-tabpanel" hidden={active !== "share"} data-manage-panel="share">
+          <QrCardsPanel pack={cur} url={link} />
+          <button
+            type="button"
+            className="btn btn-ghost vj-small"
+            data-refresh-cover
+            onClick={() =>
+              act(
+                renderCover(cardInfoFromPack(cur, link)).then((b) => attachPreview(cloudId, b, "coverKey")),
+                "Link preview refreshed — WhatsApp may cache the old one for a while",
+              )
+            }
+          >
+            🖼 Refresh link preview
+          </button>
+      </div>
+      {isInvite && (
+        <div role="tabpanel" id="vj-mp-after" aria-labelledby="vj-mt-after" className="vj-tabpanel" hidden={active !== "after"} data-manage-panel="after">
+          <AfterMovieHost cloudId={cloudId} pack={cur} />
+        </div>
       )}
       {err && <p className="muted vj-cloud-err">{err}</p>}
     </section>

@@ -9,7 +9,7 @@ import { startFresh, type FreshMode } from "../lib/startFresh";
 import { getTemplates } from "../data/templates";
 import { sampleCoverUrl } from "../data/samples";
 
-/** v0.6 Focus: three actions, nothing else competing. */
+/** v1.2 Focus: 2–3 big intent cards, nothing else competing. */
 export function Home() {
   const navigate = useNavigate();
   const [ask, setAsk] = useState(false);
@@ -50,39 +50,69 @@ export function Home() {
           Drop 5–10 photos → get a 15–30s cinematic story in under 2 minutes. Pick a vibe, we do the edit, you share
           a link.
         </p>
-        <div className="home-actions">
+        <nav className="vj-intents" aria-label="What do you want to make?">
           <Link
             to="/create?fresh=1&onboard=1"
-            className="btn btn-primary home-cta"
+            className="vj-intent is-primary"
             data-home-story
+            data-intent="story"
             onClick={go("voyage", "/create?onboard=1")}
           >
-            ✨ Make a story
+            <span className="vj-intent-ic" aria-hidden>✨</span>
+            <span className="vj-intent-txt">
+              <span className="vj-intent-t">Make a story</span>
+              <span className="vj-intent-s">Photos in → cinematic story out</span>
+            </span>
+            <span className="vj-intent-go" aria-hidden>→</span>
           </Link>
           <Link
             to="/create?mode=invitation&fresh=1"
-            className="btn btn-ghost home-cta-2"
+            className="vj-intent is-invite"
+            data-intent="invitation"
             onClick={go("invitation", "/create?mode=invitation")}
           >
-            💌 Make an invitation
+            <span className="vj-intent-ic" aria-hidden>💌</span>
+            <span className="vj-intent-txt">
+              <span className="vj-intent-t">Make an invitation</span>
+              <span className="vj-intent-s">Birthdays, weddings, ceremonies · RSVP built in</span>
+            </span>
+            <span className="vj-intent-go" aria-hidden>→</span>
           </Link>
-          {draft && (
-            <Link to="/create" className="btn btn-ghost home-cta-2" data-home-continue>
-              ↻ Continue “{draft.title || "Untitled"}” · {draft.clips.length} clip{draft.clips.length === 1 ? "" : "s"}
+          {draft ? (
+            <Link to="/create" className="vj-intent is-drafts" data-home-continue data-intent="continue">
+              <span className="vj-intent-ic" aria-hidden>↻</span>
+              <span className="vj-intent-txt">
+                <span className="vj-intent-t">Continue draft</span>
+                <span className="vj-intent-s">
+                  “{draft.title || "Untitled"}” · {draft.clips.length} clip{draft.clips.length === 1 ? "" : "s"}
+                </span>
+              </span>
+              <span className="vj-intent-go" aria-hidden>→</span>
+            </Link>
+          ) : (
+            <Link to="/themes?tab=templates" className="vj-intent is-drafts" data-intent="templates">
+              <span className="vj-intent-ic" aria-hidden>🪔</span>
+              <span className="vj-intent-txt">
+                <span className="vj-intent-t">Start from a template</span>
+                <span className="vj-intent-s">Ready-made samples · new: Ceremonies</span>
+              </span>
+              <span className="vj-intent-go" aria-hidden>→</span>
             </Link>
           )}
-        </div>
+        </nav>
         <p className="vj-free-promise home-promise" data-free-promise>
           🆓 Free · <strong>no watermark, ever</strong> · no sign-up to share
         </p>
-        <Link to="/year" className="home-year" data-home-year>
-          ✨ Your {new Date().getFullYear()} in Voyages
-        </Link>
-        {draft && (
-          <button type="button" className="home-fresh" data-home-fresh onClick={() => setAsk(true)}>
-            🧹 Start fresh
-          </button>
-        )}
+        <div className="vj-home-extras">
+          <Link to="/year" className="home-year" data-home-year>
+            ✨ Your {new Date().getFullYear()} in Voyages
+          </Link>
+          {draft && (
+            <button type="button" className="home-fresh" data-home-fresh onClick={() => setAsk(true)}>
+              🧹 Start fresh
+            </button>
+          )}
+        </div>
       </section>
       <p className="muted home-legal" style={{ textAlign: "center", fontSize: ".75rem", margin: "18px 0" }}>
         <Link to="/terms" data-home-terms>Terms</Link> · <Link to="/privacy">Privacy</Link> · <a href={CONTACT.href}>Contact</a>

@@ -117,13 +117,13 @@ export function Themes() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 className="display" style={{ margin: "0 0 8px", fontSize: "1.75rem" }}>
-          Themes &amp; Templates
-        </h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Tap a card to apply and open Compose. Side panel keeps details if you want
-          to inspect first — Apply stays at the top.
+      <div className="vj-page-head">
+        <span className="vj-page-eyebrow">🎨 Pick a starting point</span>
+        <h1 className="display vj-page-title">Themes &amp; Templates</h1>
+        <p className="vj-page-sub">
+          {filterCeremony
+            ? "Ceremony invitations — Mundan, Puttu Ventrukalu, Mottai & Kaathu Kuthu, First Haircut. Tap one to play the full sample, then make it yours."
+            : "Tap a card to play its sample in the editor and make it yours."}
           {kidsMode ? " Kids Mode shows a calmer subset." : ""}
         </p>
         <div className="chip-row" style={{ marginTop: 14 }}>

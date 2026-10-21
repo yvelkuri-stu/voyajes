@@ -281,6 +281,7 @@ export function Create() {
   const freshHandledRef = useRef(false);
 
   const paramTemplate = getTemplateById(params.get("template") ?? "");
+  const autoSampleRef = useRef(false);
   const paramTheme =
     getThemeById(params.get("theme") ?? "") ??
     (paramTemplate ? getThemeById(paramTemplate.themeId) : undefined) ??
@@ -616,6 +617,10 @@ export function Create() {
         }
       }
       setClips(live);
+      // v1.2: opening a template from the Templates page with an empty project
+      // plays its full sample straight away (images, music, text, transitions).
+      autoSampleRef.current =
+        !fresh && !!paramTemplate && live.length === 0 && !!getTemplateSample(paramTemplate.id);
       const soundUrls: Record<string, string> = {};
       for (const sound of base.customSounds ?? []) {
         if (sound.source === "file") {
@@ -1681,6 +1686,13 @@ export function Create() {
     },
     [ai, applyBeatSnap, seedTemplateLibraryMedia, showTransitionFlash, syncModeInUrl, title, loadSample],
   );
+
+  useEffect(() => {
+    if (!hydrated || !autoSampleRef.current || !paramTemplate) return;
+    autoSampleRef.current = false;
+    applyTemplate(paramTemplate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const applyExportDestination = useCallback((dest: ExportDestination) => {
     setExportDestination(dest);
@@ -2965,6 +2977,15 @@ export function Create() {
   // Ken Burns now comes from the theme layer animation (AnimatedLayer)
   const kenBurns = "";
 
+  const openDockSheet = (sheet: "theme" | "text") => {
+    if (!minimalist) {
+      const sel = sheet === "theme" ? ".side-section-theme" : ".side-section-text";
+      document.querySelector(sel)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setMiniSheet((s) => (s === sheet || (sheet === "text" && s === "audio") ? null : sheet));
+  };
+
   return (
     <>
     {brainOpen && (
@@ -3097,9 +3118,6 @@ export function Create() {
               Cancel
             </button>
           )}
-          <button type="button" className="btn btn-primary" onClick={openShare}>
-            Share link
-          </button>
           <details className="vj-more">
             <summary className="btn btn-ghost" aria-label="More">⋯</summary>
             <div className="vj-more-menu" role="menu">
@@ -3139,57 +3157,67 @@ export function Create() {
         </div>
       </div>
 
-      {minimalist && (
-        <div className="mini-icon-rail" role="toolbar" aria-label="Compose tools">
+      {/* v1.2 — one bottom tab bar of grouped tools + the single primary action (Share), always in the same place */}
+      <nav className="vj-dock" aria-label="Editor tools" data-editor-dock>
+        <div className="vj-dock-tabs" role="toolbar" aria-label="Compose tools">
           <button
             type="button"
-            className="icon-tool"
+            className="vj-dock-tab"
+            data-dock="media"
             title="Add media — photos, video, Voyajes library"
-            aria-label="Add media"
             onClick={() => {
+              setMiniSheet(null);
               setMediaImporterMode("all");
               setMediaImporterOpen(true);
             }}
           >
-            <span aria-hidden>＋</span>
-            <span className="icon-tool-tip">Media</span>
+            <span className="vj-dock-ic" aria-hidden>＋</span>
+            <span className="vj-dock-lbl">Media</span>
           </button>
           <button
             type="button"
-            className={`icon-tool${miniSheet === "theme" ? " is-on" : ""}`}
+            className={`vj-dock-tab${miniSheet === "theme" ? " is-on" : ""}`}
+            data-dock="style"
             title="Theme, templates, transitions"
             aria-label="Theme & templates"
-            onClick={() => setMiniSheet((s) => (s === "theme" ? null : "theme"))}
+            aria-pressed={miniSheet === "theme"}
+            onClick={() => openDockSheet("theme")}
           >
-            <span aria-hidden>🎨</span>
-            <span className="icon-tool-tip">Theme</span>
+            <span className="vj-dock-ic" aria-hidden>🎨</span>
+            <span className="vj-dock-lbl">Style</span>
           </button>
           <button
             type="button"
-            className={`icon-tool${miniSheet === "audio" ? " is-on" : ""}`}
-            title="Beats & soundtrack"
-            aria-label="Audio"
-            onClick={() => setMiniSheet((s) => (s === "audio" ? null : "audio"))}
+            className={`vj-dock-tab${miniSheet === "text" || miniSheet === "audio" ? " is-on" : ""}`}
+            data-dock="text-audio"
+            title="Text, captions, music & sounds"
+            aria-label="Text & audio"
+            aria-pressed={miniSheet === "text" || miniSheet === "audio"}
+            onClick={() => openDockSheet("text")}
           >
-            <span aria-hidden>♪</span>
-            <span className="icon-tool-tip">Audio</span>
+            <span className="vj-dock-ic" aria-hidden>𝐓♪</span>
+            <span className="vj-dock-lbl">Text &amp; Audio</span>
           </button>
           <button
             type="button"
-            className={`icon-tool${miniSheet === "text" ? " is-on" : ""}`}
-            title="Text & captions"
-            aria-label="Text"
-            onClick={() => setMiniSheet((s) => (s === "text" ? null : "text"))}
+            className="vj-dock-tab sb-open"
+            data-dock="brain"
+            title="Story Brain — describe it, we make it"
+            aria-label="Story Brain"
+            onClick={() => {
+              setMiniSheet(null);
+              setBrainOpen(true);
+            }}
+            data-open-story-brain
           >
-            <span aria-hidden>𝐓</span>
-            <span className="icon-tool-tip">Text</span>
-          </button>
-          <button type="button" className="icon-tool sb-open" title="Story Brain — describe it, we make it" aria-label="Story Brain" onClick={() => setBrainOpen(true)} data-open-story-brain>
-            <span aria-hidden>🧠</span>
-            <span className="icon-tool-tip">Brain</span>
+            <span className="vj-dock-ic" aria-hidden>🧠</span>
+            <span className="vj-dock-lbl">Brain</span>
           </button>
         </div>
-      )}
+        <button type="button" className="btn btn-primary vj-dock-share" data-primary-share onClick={openShare}>
+          <span aria-hidden>↗</span> Share
+        </button>
+      </nav>
 
       <div
         className={`human-help-bar${ai.kind === "coach" || ai.kind === "template" ? " is-ai-assist" : ""}`}
@@ -3289,59 +3317,6 @@ export function Create() {
           </ul>
         </details>
       )}
-
-      <div className="compose-meta-chips">
-        <Link to="/themes" className="chip" title="Browse themes">
-          <span className="swatch" style={{ background: theme.palette.accent }} />
-          Theme {theme.name}
-        </Link>
-        <Link
-          to="/themes?tab=templates"
-          className="chip"
-          title="Browse templates"
-        >
-          {templateId
-            ? `Template · ${getTemplateById(templateId)?.name ?? "pack"}`
-            : "Templates"}
-        </Link>
-        <button
-          type="button"
-          className="chip"
-          onClick={() =>
-            audioPanelRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
-            })
-          }
-          title="Open audio panel"
-        >
-          Audio · {selectedBeat.name}
-          <span className={`license-badge license-${selectedBeat.license}`}>
-            {licenseLabel(selectedBeat.license)}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="chip"
-          onClick={() =>
-            setAspect((a) => {
-              const i = ASPECTS.indexOf(a);
-              return ASPECTS[(i + 1) % ASPECTS.length];
-            })
-          }
-        >
-          {aspect}
-        </button>
-        <span className="chip" title="Draft persistence">
-          Draft {schemaOk ? "✓" : "!"} · {clips.length} clip
-          {clips.length === 1 ? "" : "s"}
-        </span>
-        {status && (
-          <span className="muted" style={{ fontSize: "0.8rem" }}>
-            {status}
-          </span>
-        )}
-      </div>
 
       {exportPanelOpen && (
         <div className="panel export-panel" style={{ marginBottom: 16 }}>
@@ -3591,60 +3566,6 @@ export function Create() {
 
       <div className="compose-layout">
         <div>
-          <div
-            className={`dropzone${dragOver ? " drag-over" : ""}${minimalist ? " dropzone-mini" : ""}${clips.length ? " has-clips" : ""}`}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-            }}
-            onDrop={onDrop}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/mp4,video/webm,video/quicktime,.mov,.m4v"
-              multiple
-              hidden
-              onChange={onFileChange}
-            />
-            <button
-              type="button"
-              className="btn btn-primary"
-              title="Open media picker — device or Voyajes library"
-              aria-label="Add media"
-              onClick={() => {
-                setMediaImporterMode("all");
-                setMediaImporterOpen(true);
-              }}
-            >
-              {minimalist ? "＋ Add media" : "Add media"}
-            </button>
-            {!minimalist && (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                style={{ padding: "8px 14px" }}
-                onClick={() => fileInputRef.current?.click()}
-                title="Quick pick from device"
-              >
-                From device
-              </button>
-            )}
-            <span className="muted" style={{ fontSize: "0.85rem" }}>
-              {minimalist
-                ? "Device · Voyajes library · drop files here"
-                : "Device or Voyajes library · or drag & drop · JPG, PNG, WebP, MP4, WebM"}
-            </span>
-          </div>
-
           <div className="preview-stage-wrap" style={{ marginTop: 16, width: "100%" }}>
           <div
             className="preview-stage"
@@ -3847,7 +3768,7 @@ export function Create() {
             <div className="vj-breeze-bar" aria-label="Breeze auto-compose">
               <button
                 type="button"
-                className="btn btn-primary vj-breeze-main"
+                className="btn btn-soft vj-breeze-main"
                 data-breeze
                 disabled={breezeBusy}
                 onClick={() => void runBreeze(breezeInfo ? breezeInfo.seed + 1 : 1)}
@@ -3903,7 +3824,7 @@ export function Create() {
             </button>
             <button
               type="button"
-              className="btn btn-primary"
+              className={`btn btn-play${playing ? " is-playing" : ""}`}
               style={{ padding: "8px 20px", minWidth: 96 }}
               disabled={clips.length === 0}
               onClick={() => setPlaying((p) => !p)}
@@ -3925,6 +3846,116 @@ export function Create() {
             </span>
           </div>
 
+          <section className="vj-sec" aria-label="Media & project" data-sec="media">
+            <h2 className="vj-sec-h"><span aria-hidden>🖼️</span> Media &amp; project</h2>
+          <div
+            className={`dropzone${dragOver ? " drag-over" : ""}${minimalist ? " dropzone-mini" : ""}${clips.length ? " has-clips" : ""}`}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+            }}
+            onDrop={onDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/mp4,video/webm,video/quicktime,.mov,.m4v"
+              multiple
+              hidden
+              onChange={onFileChange}
+            />
+            <button
+              type="button"
+              className="btn btn-soft"
+              title="Open media picker — device or Voyajes library"
+              aria-label="Add media"
+              onClick={() => {
+                setMediaImporterMode("all");
+                setMediaImporterOpen(true);
+              }}
+            >
+              {minimalist ? "＋ Add media" : "Add media"}
+            </button>
+            {!minimalist && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "8px 14px" }}
+                onClick={() => fileInputRef.current?.click()}
+                title="Quick pick from device"
+              >
+                From device
+              </button>
+            )}
+            <span className="muted" style={{ fontSize: "0.85rem" }}>
+              {minimalist
+                ? "Device · Voyajes library · drop files here"
+                : "Device or Voyajes library · or drag & drop · JPG, PNG, WebP, MP4, WebM"}
+            </span>
+          </div>
+
+          <div className="compose-meta-chips">
+            <Link to="/themes" className="chip" title="Browse themes">
+              <span className="swatch" style={{ background: theme.palette.accent }} />
+              Theme {theme.name}
+            </Link>
+            <Link
+              to="/themes?tab=templates"
+              className="chip"
+              title="Browse templates"
+            >
+              {templateId
+                ? `Template · ${getTemplateById(templateId)?.name ?? "pack"}`
+                : "Templates"}
+            </Link>
+            <button
+              type="button"
+              className="chip"
+              onClick={() =>
+                audioPanelRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "nearest",
+                })
+              }
+              title="Open audio panel"
+            >
+              Audio · {selectedBeat.name}
+              <span className={`license-badge license-${selectedBeat.license}`}>
+                {licenseLabel(selectedBeat.license)}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="chip"
+              onClick={() =>
+                setAspect((a) => {
+                  const i = ASPECTS.indexOf(a);
+                  return ASPECTS[(i + 1) % ASPECTS.length];
+                })
+              }
+            >
+              {aspect}
+            </button>
+            <span className="chip" title="Draft persistence">
+              Draft {schemaOk ? "✓" : "!"} · {clips.length} clip
+              {clips.length === 1 ? "" : "s"}
+            </span>
+            {status && (
+              <span className="muted" style={{ fontSize: "0.8rem" }}>
+                {status}
+              </span>
+            )}
+          </div>
+          </section>
+
           {appliedChip && (
             <div className="vj-applied-chip" role="status">
               <span>Applied: {appliedChip.label}</span>
@@ -3945,6 +3976,7 @@ export function Create() {
             </div>
           )}
 
+          <h2 className="vj-sec-h vj-sec-h-tl"><span aria-hidden>✂️</span> Timeline &amp; fine-tune</h2>
           <Timeline
             clips={clips}
             starts={layout.starts}
@@ -4394,14 +4426,12 @@ export function Create() {
           </section>
 
           <p className="muted" style={{ fontSize: "0.8rem", textAlign: "center" }}>
-            Draft saves to localStorage (+ media in IndexedDB). Export records browser
-            WebM with beat mux when supported. Use Export… for YouTube / TikTok / IG
-            presets. Cloud encode still TODO — Export JSON for the CLI.
+            Your draft saves on this device automatically.
           </p>
           <div style={{ textAlign: "center", marginTop: 8, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-ghost"
               style={{ padding: "8px 16px", fontSize: "0.85rem" }}
               onClick={() => setFreshAsk(true)}
             >
@@ -4425,11 +4455,7 @@ export function Create() {
           {minimalist && miniSheet && (
             <div className="mini-sheet-bar">
               <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 700 }}>
-                {miniSheet === "theme"
-                  ? "Theme & templates"
-                  : miniSheet === "audio"
-                    ? "Audio"
-                    : "Text & captions"}
+                {miniSheet === "theme" ? "Style · theme & templates" : "Text & audio"}
               </span>
               <button
                 type="button"

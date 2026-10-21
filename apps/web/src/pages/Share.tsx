@@ -1424,11 +1424,46 @@ export function Share() {
               )}
             </div>
 
-            <div className="share-actions">
-              {isInvitation && (
+            <section className="vj-sec" aria-label="Send it" data-sec="send">
+              <h2 className="vj-sec-h"><span aria-hidden>🚀</span> Send it</h2>
+              <div className="share-actions">
+              {apiEnabled() && !fromPortableHash && (
+                <button
+                  type="button"
+                  className={hostCloudId ? "btn btn-ghost" : "btn btn-primary"}
+                  data-publish
+                  disabled={!!cloudBusy}
+                  onClick={() => void publishCloud()}
+                  title="Upload to Voyajes cloud: short link, guest photos, reactions, RSVPs"
+                >
+                  {cloudBusy ?? (hostCloudId ? "☁ Update short link" : "☁ Get short link")}
+                </button>
+              )}
+              {hostCloudId && (
+                <span className="muted vj-small-text" data-short-link>
+                  {shortUrlFor(hostCloudId)}
+                </span>
+              )}
+              {hostCloudId && (
                 <button
                   type="button"
                   className="btn btn-primary"
+                  data-one-tap-share
+                  onClick={() =>
+                    void shareLink({
+                      title: record.title,
+                      text: isInvitation ? `You're invited: ${record.invitation?.eventName || record.title} 💌` : `${record.title} ✨`,
+                      url: shortUrlFor(hostCloudId),
+                    })
+                  }
+                >
+                  📤 Share link
+                </button>
+              )}
+              {isInvitation && (
+                <button
+                  type="button"
+                  className={apiEnabled() && !fromPortableHash ? "btn btn-soft" : "btn btn-primary"}
                   disabled={exporting || whatsappBusy || portableBusy}
                   onClick={() => void shareToWhatsApp()}
                   title="Share portable invite link (+ video file when available) to WhatsApp"
@@ -1442,9 +1477,36 @@ export function Share() {
                     : "Share to WhatsApp"}
                 </button>
               )}
+              {!isInvitation && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  disabled={exporting || whatsappBusy || portableBusy}
+                  onClick={() => void shareToWhatsApp()}
+                >
+                  Share to WhatsApp
+                </button>
+              )}
               <button
                 type="button"
-                className={isInvitation ? "btn btn-ghost" : "btn btn-primary"}
+                className="btn btn-ghost"
+                disabled={!fromPortableHash && (portableBusy || !portableUrl)}
+                onClick={() => void copy()}
+              >
+                {copied
+                  ? "Copied!"
+                  : !fromPortableHash && (portableBusy || !portableUrl)
+                    ? "Preparing link…"
+                    : "Copy invite link"}
+              </button>
+              </div>
+            </section>
+            <section className="vj-sec" aria-label="Save a file" data-sec="save">
+              <h2 className="vj-sec-h"><span aria-hidden>💾</span> Save a file</h2>
+              <div className="share-actions">
+              <button
+                type="button"
+                className="btn btn-ghost"
                 disabled={exporting}
                 onClick={() => void exportShareVideo()}
                 title="Encode WebM/MP4 in the browser from clips on this device"
@@ -1510,57 +1572,12 @@ export function Share() {
               >
                 Share GIF
               </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={!fromPortableHash && (portableBusy || !portableUrl)}
-                onClick={() => void copy()}
-              >
-                {copied
-                  ? "Copied!"
-                  : !fromPortableHash && (portableBusy || !portableUrl)
-                    ? "Preparing link…"
-                    : "Copy invite link"}
-              </button>
-              {apiEnabled() && !fromPortableHash && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  data-publish
-                  disabled={!!cloudBusy}
-                  onClick={() => void publishCloud()}
-                  title="Upload to Voyajes cloud: short link, guest photos, reactions, RSVPs"
-                >
-                  {cloudBusy ?? (hostCloudId ? "☁ Update short link" : "☁ Get short link")}
-                </button>
-              )}
-              {hostCloudId && (
-                <span className="muted vj-small-text" data-short-link>
-                  {shortUrlFor(hostCloudId)}
-                </span>
-              )}
-              {hostCloudId && (
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  data-one-tap-share
-                  onClick={() =>
-                    void shareLink({
-                      title: record.title,
-                      text: isInvitation ? `You're invited: ${record.invitation?.eventName || record.title} 💌` : `${record.title} ✨`,
-                      url: shortUrlFor(hostCloudId),
-                    })
-                  }
-                >
-                  📤 Share link
-                </button>
-              )}
               {!fromPortableHash && portablePack && (
                 <button
                   type="button"
                   className={
                     portableFlags?.chatTruncateRisk
-                      ? "btn btn-primary"
+                      ? "btn btn-soft"
                       : "btn btn-ghost"
                   }
                   onClick={() => downloadInvitePackJson(portablePack)}
@@ -1569,17 +1586,8 @@ export function Share() {
                   Download invite pack
                 </button>
               )}
-              {!isInvitation && (
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  disabled={exporting || whatsappBusy || portableBusy}
-                  onClick={() => void shareToWhatsApp()}
-                >
-                  Share to WhatsApp
-                </button>
-              )}
-            </div>
+              </div>
+            </section>
 
             <p className="muted share-hint" style={{ marginTop: 10 }}>
               Link works in any browser — photos travel with the link. Full video: Export +

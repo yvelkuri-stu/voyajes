@@ -89,6 +89,9 @@ ok(await tv.locator('[data-tv-slide]').count() > 0, 'TV mode shows a slide with 
 // ── guest B: drop + vote + notify me
 const g2 = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const gb = await g2.newPage();
+// the in-app inbox polls every 45s: record every notice it raises (survives reloads) so the
+// check below doesn't race the poll that may fire between the host's release and our reload
+await gb.addInitScript(() => window.addEventListener('voyajes:notice', (e) => { try { const k = 'vj-e2e-notices'; const l = JSON.parse(sessionStorage.getItem(k) || '[]'); l.push(e.detail?.notice?.kind + '|' + e.detail?.notice?.title); sessionStorage.setItem(k, JSON.stringify(l)); } catch {} }));
 gb.on('pageerror', (e) => gerrs.push(String(e)));
 await gb.goto(`${BASE}/live/${cloudId}`); await gb.locator('[data-party-camera]').waitFor({ timeout: 20000 });
 await gb.locator('[data-live-name]').fill('Ravi');
@@ -123,7 +126,8 @@ ok(notices.notices?.[0]?.kind === 'aftermovie', 'notice recorded for push + in-a
 
 // guest B: in-app notification fallback + the voted cut
 await gb.reload();
-const toast = await until(async () => /after-movie is ready/i.test(await gb.locator('[data-inbox-toast], .notif-toast').first().innerText()), 15000);
+const toast = await until(async () => /after-movie is ready/i.test(await gb.locator('[data-inbox-toast], .notif-toast').first().innerText({ timeout: 1000 }))
+  || (await gb.evaluate(() => sessionStorage.getItem('vj-e2e-notices') || '')).includes('aftermovie|'), 15000);
 ok(!!toast, 'guest gets the in-app "after-movie is ready" notification');
 await gb.locator('[data-aftermovie="ready"]').waitFor({ timeout: 25000 }).catch(() => {});
 ok(await gb.locator('[data-aftermovie-player]').count() > 0, 'guest sees the After-Movie player');

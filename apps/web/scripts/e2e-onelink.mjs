@@ -135,7 +135,7 @@ ok(await gp.locator('[data-report-voyage]').count() > 0, 'report voyage button p
 
 await hp.reload(); await hp.locator('[data-manage]').waitFor({ timeout: 20000 }); await hp.waitForTimeout(2500);
 ok(await hp.locator('[data-report-item]').count() >= 1, 'host sees the report');
-ok(/2 guests/.test(await hp.locator('[data-host-headcount]').innerText().catch(() => '')), 'host headcount includes +1');
+{ const hc = await hp.locator('[data-host-headcount]').textContent({ timeout: 5000 }).catch((e) => 'ERR ' + String(e).slice(0, 80)); ok(/2 guests/.test(hc), `host headcount includes +1 (${hc})`); }
 await hp.locator('[data-manage-tab="photos"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-report-hide]').first().click(); await hp.waitForTimeout(2000);
 const s2 = await (await fetch(`${API}/voyages/${cloudId}/social`)).json();
 ok(!s2.comments.some((c) => /spam link/.test(c.body)), 'host hides reported comment → gone for guests');

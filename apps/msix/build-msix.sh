@@ -2,7 +2,7 @@
 # Regenerate the Microsoft Store MSIX via PWABuilder's free packaging service.
 # Fill these from Partner Center → your app → Product identity (they must match exactly):
 #   MS_PACKAGE_ID="12345Voyajes.Voyajes" MS_PUBLISHER_CN="CN=ABCDEF12-..." MS_PUBLISHER_NAME="Your Name" bash build-msix.sh
-# Optional: VOYAJES_URL (default the github.io site; set to your custom domain later), MS_VERSION (default 1.1.0.0)
+# Optional: VOYAJES_URL (default the github.io site; set to your custom domain later), MS_VERSION (default 1.2.0.0)
 set -euo pipefail
 cd "$(dirname "$0")"
 URL="${VOYAJES_URL:-https://yvelkuri-stu.github.io/voyajes/}"

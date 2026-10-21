@@ -50,7 +50,7 @@ const shortUrl = (await hp.locator('[data-short-link]').innerText()).trim();
 ok(/\/v\/c[0-9A-Za-z]{7}$/.test(shortUrl), `publish → short link ${shortUrl}`);
 const cloudId = shortUrl.split('/').pop();
 await hp.locator('[data-manage]').waitFor({ timeout: 20000 });
-await hp.locator('[data-drops-toggle]').click(); await hp.waitForFunction(() => document.querySelector('[data-drops-toggle]')?.checked, null, { timeout: 15000 });
+await hp.locator('[data-manage-tab="photos"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-drops-toggle]').click(); await hp.waitForFunction(() => document.querySelector('[data-drops-toggle]')?.checked, null, { timeout: 15000 });
 
 // guest (fresh context, no storage, no SW)
 const gctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', isMobile: true, hasTouch: true });
@@ -74,7 +74,7 @@ await hp.reload(); await hp.locator('[data-manage]').waitFor({ timeout: 20000 })
 const drops = await hp.locator('[data-drop-item]').count();
 const list = await hp.locator('[data-guestlist]').innerText().catch(() => '');
 ok(drops === 1 && /Asha E2E/.test(list), `host Manage: ${drops} photo in queue, guest list "${list.replace(/\n/g, ' ')}"`);
-await hp.locator('[data-drop-add]').first().click(); await hp.waitForTimeout(2500);
+await hp.locator('[data-manage-tab="photos"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-drop-add]').first().click(); await hp.waitForTimeout(2500);
 const v = await (await fetch(`${API}/voyages/${cloudId}`)).json();
 ok(v.pack.share.playback.clips.length === 3, `"Add to story" appends the guest photo (clips ${v.pack.share.playback.clips.length})`);
 

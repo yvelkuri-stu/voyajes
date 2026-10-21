@@ -48,7 +48,7 @@ const cloudId = shortUrl.split('/').pop();
 ok(/^c[0-9A-Za-z]{7}$/.test(cloudId), `published ${shortUrl}`);
 // guests use the short link on live; a local build can't be reached through it
 const guestUrl = /github\.io/.test(BASE) ? shortUrl : `${BASE}/v/${cloudId}`;
-await hp.locator('[data-aftermovie-host]').waitFor({ timeout: 20000 }).catch(() => {});
+await hp.locator('[data-manage-tab="after"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-aftermovie-host]').waitFor({ timeout: 20000 }).catch(() => {});
 ok(await hp.locator('[data-aftermovie-host]').count() > 0, 'host Manage has the After-Movie panel');
 ok(!!(await until(async () => /automatically after/i.test(await hp.locator('[data-aftermovie-host]').innerText()), 15000)), 'host told guests get it automatically after the event');
 const tvHref = await hp.locator('[data-tv-link]').getAttribute('href').catch(() => null);
@@ -113,7 +113,7 @@ const how = await gb.locator('[data-notify-on]').getAttribute('data-notify-on').
 ok(how === 'push' || how === 'in-app', `notify me → ${how}`);
 
 // ── host shares the after-movie
-await hp.reload(); await hp.locator('[data-release-aftermovie]').waitFor({ timeout: 25000 });
+await hp.reload(); await hp.locator('[data-manage-tab="after"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-release-aftermovie]').waitFor({ timeout: 25000 });
 await hp.waitForFunction(() => !document.querySelector('[data-release-aftermovie]')?.disabled, null, { timeout: 20000 }).catch(() => {});
 await hp.locator('[data-release-aftermovie]').click();
 await hp.locator('[data-aftermovie-msg]').waitFor({ timeout: 20000 }).catch(() => {});

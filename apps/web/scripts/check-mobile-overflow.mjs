@@ -2,7 +2,8 @@
  * Mobile overflow check (v0.5.1): asserts no page-level sideways scroll at
  * 360/375/390/414/420 widths across Home, Create (empty, templates sheet, sample,
  * every inspector incl. Pro, More menu, Save video, story wizard + Breeze), Share host and the
- * guest invite player (old #vj1 link). Fixed-position decor is ignored.
+ * guest invite player (old #vj1 link), v1.2 ceremony templates + the editor dock
+ * layout (4 grouped tabs, one primary Share, preview first). Fixed-position decor is ignored.
  *
  *   pnpm --filter @voyajes/web build && pnpm --filter @voyajes/web preview --port 4310 &
  *   pnpm --filter @voyajes/web test:mobile      # BASE=… CHROME=… W=360,375 to override
@@ -43,6 +44,20 @@ for (const w of (process.env.W || '360,375,390,414,420').split(',').map(Number))
   await p.goto(BASE + '/create?mode=invitation'); await p.waitForTimeout(1000); await log('create empty');
   await p.locator('[aria-label="Theme & templates"]').first().click(); await p.waitForTimeout(500); await log('templates sheet');
   await p.locator('.invite-tpl-card:has-text("Birthday Blast")').first().click(); await p.waitForTimeout(2500); await log('sample loaded');
+  // v1.2 clear-intent layout: one bottom dock (4 grouped tabs + Share), one primary button on screen
+  {
+    const L = await p.evaluate(() => {
+      const d = document.querySelector('[data-editor-dock]'); const r = d?.getBoundingClientRect();
+      const vis = (e) => { const rc = e.getBoundingClientRect(); return rc.width > 0 && rc.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+      const prim = [...document.querySelectorAll('.compose-root .btn-primary')].filter(vis).map((e) => e.textContent.trim());
+      const pv = document.querySelector('.preview-stage')?.getBoundingClientRect();
+      return { tabs: document.querySelectorAll('[data-editor-dock] [data-dock]').length, inView: !!r && r.bottom <= innerHeight + 1 && r.top > innerHeight / 2 && r.left >= -1 && r.right <= innerWidth + 1,
+        prim, previewFirst: !!pv && pv.top < (document.querySelector('.compose-meta-chips')?.getBoundingClientRect().top ?? 1e9) };
+    });
+    const good = L.tabs === 4 && L.inView && L.prim.length === 1 && /Share/.test(L.prim[0]) && L.previewFirst;
+    if (!good) fails++;
+    console.log(`${w} layout dock tabs=${L.tabs} inView=${L.inView} primary=${JSON.stringify(L.prim)} previewFirst=${L.previewFirst} ${good ? 'ok' : 'BAD'}`);
+  }
   await p.locator('.vj-tl-clip').nth(1).click(); await p.waitForTimeout(300); await log('clip inspector');
   await p.locator('.vj-tl-audio').first().click(); await p.waitForTimeout(300); await log('audio inspector');
   await p.locator('.vj-tl-gap').first().click().catch(()=>{}); await p.waitForTimeout(300); await log('gap inspector');
@@ -65,6 +80,10 @@ for (const w of (process.env.W || '360,375,390,414,420').split(',').map(Number))
   await p.locator('[data-wizard-input]').setInputFiles([PH1, PH2, PH3]);
   await p.waitForSelector('.vj-wizard', { state: 'detached', timeout: 30000 }); await p.waitForTimeout(800); await log('breeze story');
   await p.goto(BASE + '/share'); await p.waitForTimeout(2500); await log('share host');
+  await p.goto(BASE + '/themes?tab=templates&filter=ceremony'); await p.waitForTimeout(1200); await log('ceremonies list');
+  for (const id of ['template.mundan-sanskar', 'template.puttu-ventrukalu', 'template.mottai-kaathu-kuthu', 'template.first-haircut']) {
+    await p.goto(BASE + '/create?mode=invitation&template=' + id); await p.waitForTimeout(2200); await log('ceremony ' + id.slice(9));
+  }
   await p.goto(BASE + '/v/p#vj1.' + OLD_HASH); await p.waitForTimeout(1500); await log('guest player');
   await ctx.close();
 }

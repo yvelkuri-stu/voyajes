@@ -252,7 +252,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   const m = req.method;
   const seg = p.split("/").filter(Boolean);
 
-  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "1.1.0", push: !!env.VAPID_PRIVATE_JWK, media: env.MEDIA ? "r2" : "d1" });
+  if (p === "/health" || (p === "/" && !env.APP_ORIGIN)) return json({ ok: true, service: "voyajes-api", version: "1.2.0", push: !!env.VAPID_PRIVATE_JWK, media: env.MEDIA ? "r2" : "d1" });
 
   // app links (custom-domain + store readiness)
   if (p === "/.well-known/assetlinks.json") return json(assetLinks(env.ANDROID_PACKAGE, env.ANDROID_SHA256), 200, { "Cache-Control": "public, max-age=3600" });

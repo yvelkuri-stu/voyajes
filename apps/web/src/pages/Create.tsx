@@ -617,10 +617,10 @@ export function Create() {
         }
       }
       setClips(live);
-      // v1.2: opening a template from the Templates page with an empty project
-      // plays its full sample straight away (images, music, text, transitions).
-      autoSampleRef.current =
-        !fresh && !!paramTemplate && live.length === 0 && !!getTemplateSample(paramTemplate.id);
+      // v1.2: opening a template from the Templates page applies it and plays its
+      // full sample straight away (images, music, text, transitions); the user's
+      // own clips, if any, are kept in the template slots.
+      autoSampleRef.current = !fresh && !!paramTemplate;
       const soundUrls: Record<string, string> = {};
       for (const sound of base.customSounds ?? []) {
         if (sound.source === "file") {
@@ -1691,6 +1691,12 @@ export function Create() {
     if (!hydrated || !autoSampleRef.current || !paramTemplate) return;
     autoSampleRef.current = false;
     applyTemplate(paramTemplate);
+    // one-shot: a reload keeps the user's edits instead of re-applying the template
+    const next = new URLSearchParams(window.location.search);
+    if (next.has("template")) {
+      next.delete("template");
+      setSearchParams(next, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 

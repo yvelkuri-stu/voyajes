@@ -86,7 +86,7 @@ const ics = await (await fetch(`${API}/voyages/${cloudId}/event.ics`)).text();
 ok(/BEGIN:VEVENT/.test(ics) && /SUMMARY:One Link Party/.test(ics) && /DTSTART:\d{8}T\d{6}Z/.test(ics) && /LOCATION:Golden Gate Park/.test(ics), '.ics has event, start and location');
 
 // ── QR cards from Manage
-await hp.locator('[data-qr-cards]').waitFor({ timeout: 20000 });
+await hp.locator('[data-manage-tab="share"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-qr-cards]').waitFor({ timeout: 20000 });
 const [pdfDl] = await Promise.all([hp.waitForEvent('download'), hp.locator('[data-qr-card="a6-pdf"]').click()]);
 const pdf = fs.readFileSync(await pdfDl.path());
 ok(pdf.subarray(0, 5).toString() === '%PDF-' && /MediaBox \[0 0 297.64 419.53\]/.test(pdf.toString('latin1')) && /%%EOF/.test(pdf.toString('latin1')), `A6 PDF card (${pdf.length} B)`);
@@ -103,7 +103,7 @@ const [tDl] = await Promise.all([hp.waitForEvent('download'), hp.locator('[data-
 ok(/table\.pdf$/.test(tDl.suggestedFilename()), 'table card (photo drop) PDF');
 
 // ── host update broadcast
-await hp.locator('[data-host-update-input]').fill('Bring a jacket 🧥');
+await hp.locator('[data-manage-tab="guests"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-host-update-input]').fill('Bring a jacket 🧥');
 await hp.locator('[data-host-update-form] button[type=submit]').click(); await hp.waitForTimeout(1500);
 
 // ── guest
@@ -136,7 +136,7 @@ ok(await gp.locator('[data-report-voyage]').count() > 0, 'report voyage button p
 await hp.reload(); await hp.locator('[data-manage]').waitFor({ timeout: 20000 }); await hp.waitForTimeout(2500);
 ok(await hp.locator('[data-report-item]').count() >= 1, 'host sees the report');
 ok(/2 guests/.test(await hp.locator('[data-host-headcount]').innerText().catch(() => '')), 'host headcount includes +1');
-await hp.locator('[data-report-hide]').first().click(); await hp.waitForTimeout(2000);
+await hp.locator('[data-manage-tab="photos"]').click({ timeout: 20000 }).catch(() => {}); await hp.locator('[data-report-hide]').first().click(); await hp.waitForTimeout(2000);
 const s2 = await (await fetch(`${API}/voyages/${cloudId}/social`)).json();
 ok(!s2.comments.some((c) => /spam link/.test(c.body)), 'host hides reported comment → gone for guests');
 

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "libraryVersion": "2026.10.10.1",
+  "libraryVersion": "2026.10.21.1",
   "generatedAt": "2026-10-07T14:10:00Z",
   "license": "Voyajes original abstract art & synthetic audio — free to use in Voyajes projects (see LIBRARY.md)",
   "items": [
@@ -2354,6 +2354,256 @@
       ],
       "url": "library/photos/tpl-family-holiday-5.webp",
       "thumbnail": "library/photos/tpl-family-holiday-5-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mundan-1",
+      "title": "Mundan 1",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "mundan"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-mundan-1.webp",
+      "thumbnail": "library/photos/tpl-mundan-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mundan-2",
+      "title": "Mundan 2",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "mundan"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-mundan-2.webp",
+      "thumbnail": "library/photos/tpl-mundan-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mundan-3",
+      "title": "Mundan 3",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "mundan"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-mundan-3.webp",
+      "thumbnail": "library/photos/tpl-mundan-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-puttu-1",
+      "title": "Puttu 1",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "puttu"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-puttu-1.webp",
+      "thumbnail": "library/photos/tpl-puttu-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-puttu-2",
+      "title": "Puttu 2",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "puttu"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-puttu-2.webp",
+      "thumbnail": "library/photos/tpl-puttu-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-puttu-3",
+      "title": "Puttu 3",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "puttu"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-puttu-3.webp",
+      "thumbnail": "library/photos/tpl-puttu-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mottai-1",
+      "title": "Mottai 1",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "mottai"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-mottai-1.webp",
+      "thumbnail": "library/photos/tpl-mottai-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mottai-2",
+      "title": "Mottai 2",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "mottai"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-mottai-2.webp",
+      "thumbnail": "library/photos/tpl-mottai-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-mottai-3",
+      "title": "Mottai 3",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "mottai"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-mottai-3.webp",
+      "thumbnail": "library/photos/tpl-mottai-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-firsthaircut-1",
+      "title": "Firsthaircut 1",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "firsthaircut"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-firsthaircut-1.webp",
+      "thumbnail": "library/photos/tpl-firsthaircut-1-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-firsthaircut-2",
+      "title": "Firsthaircut 2",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "firsthaircut"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-firsthaircut-2.webp",
+      "thumbnail": "library/photos/tpl-firsthaircut-2-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-firsthaircut-3",
+      "title": "Firsthaircut 3",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "firsthaircut"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-firsthaircut-3.webp",
+      "thumbnail": "library/photos/tpl-firsthaircut-3-thumb.webp"
+    },
+    {
+      "id": "lib.photo.tpl-firsthaircut-4",
+      "title": "Firsthaircut 4",
+      "kind": "photo",
+      "tags": [
+        "ceremony",
+        "tonsure",
+        "firsthaircut"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/photos/tpl-firsthaircut-4.webp",
+      "thumbnail": "library/photos/tpl-firsthaircut-4-thumb.webp"
+    },
+    {
+      "id": "lib.audio.ceremony-shehnai",
+      "title": "Shehnai Blessing",
+      "kind": "audio",
+      "tags": [
+        "ceremony",
+        "mundan",
+        "shehnai",
+        "festive",
+        "loop",
+        "original"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/audio/ceremony-shehnai.mp3",
+      "durationSec": 14.35
+    },
+    {
+      "id": "lib.audio.ceremony-nadaswaram",
+      "title": "Temple Nadaswaram",
+      "kind": "audio",
+      "tags": [
+        "ceremony",
+        "temple",
+        "nadaswaram",
+        "telugu",
+        "loop",
+        "original"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/audio/ceremony-nadaswaram.mp3",
+      "durationSec": 11.54
+    },
+    {
+      "id": "lib.audio.ceremony-nadaswaram-bright",
+      "title": "Mangala Vadyam",
+      "kind": "audio",
+      "tags": [
+        "ceremony",
+        "tamil",
+        "nadaswaram",
+        "thavil",
+        "loop",
+        "original"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/audio/ceremony-nadaswaram-bright.mp3",
+      "durationSec": 10.71
+    },
+    {
+      "id": "lib.audio.ceremony-musicbox",
+      "title": "First Snip Lullaby",
+      "kind": "audio",
+      "tags": [
+        "ceremony",
+        "baby",
+        "lullaby",
+        "music-box",
+        "loop",
+        "original"
+      ],
+      "sample": true,
+      "ceremony": true,
+      "url": "library/audio/ceremony-musicbox.mp3",
+      "durationSec": 14.29
     }
   ]
 }

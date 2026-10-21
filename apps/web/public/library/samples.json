@@ -3529,6 +3529,569 @@
    "textStyle": "caption-pill",
    "transition": "whip",
    "durationSec": 14.2
+  },
+  "template.mundan-sanskar": {
+   "mood": "ceremony",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-mundan-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "light-leak",
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-mundan-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "float",
+      "inSec": 0.45
+     },
+     "transitionOut": "light-leak",
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-mundan-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.45
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.65,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.ceremony-shehnai",
+     "at": 0,
+     "durationSec": 8.3,
+     "volume": 0.8,
+     "fadeInSec": 0.5,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.2,
+     "durationSec": 1.5,
+     "volume": 0.45,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "मुंडन संस्कार",
+     "at": 0.25,
+     "end": 2.75,
+     "position": "top",
+     "animation": {
+      "in": "fade",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.6,
+     "end": 2.85,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.75,
+     "end": 5.3,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere}",
+     "at": 5.3,
+     "end": 8.3,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "With love · {hostName}",
+     "at": 5.3,
+     "end": 8.3,
+     "position": "bottom",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Sharma & Verma families",
+    "eventName": "Aarav's Mundan Sanskar",
+    "eventWhen": "Sun, 15 Feb · 10:30 AM",
+    "eventWhere": "Shri Ram Mandir, Lucknow"
+   },
+   "durationSec": 8.3,
+   "preview": [
+    "library/photos/tpl-mundan-1-thumb.webp",
+    "library/photos/tpl-mundan-2-thumb.webp",
+    "library/photos/tpl-mundan-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-mundan-1-thumb.webp",
+   "textStyle": "soft-serif",
+   "transition": "light-leak"
+  },
+  "template.puttu-ventrukalu": {
+   "mood": "ceremony",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-puttu-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-puttu-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "float",
+      "inSec": 0.45
+     },
+     "transitionOut": "zoom-through",
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-puttu-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.45
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.6,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.ceremony-nadaswaram",
+     "at": 0,
+     "durationSec": 8.4,
+     "volume": 0.8,
+     "fadeInSec": 0.5,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-chime",
+     "at": 0.2,
+     "durationSec": 1.5,
+     "volume": 0.45,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "పుట్టు వెంట్రుకలు",
+     "at": 0.25,
+     "end": 2.8,
+     "position": "top",
+     "animation": {
+      "in": "fade",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.6,
+     "end": 2.9,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.8,
+     "end": 5.4,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere}",
+     "at": 5.4,
+     "end": 8.4,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "With love · {hostName}",
+     "at": 5.4,
+     "end": 8.4,
+     "position": "bottom",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Reddy & Rao families",
+    "eventName": "Chinni's Puttu Ventrukalu",
+    "eventWhen": "Fri, 6 Mar · 7:00 AM",
+    "eventWhere": "Tirumala Kalyana Katta, Tirupati"
+   },
+   "durationSec": 8.4,
+   "preview": [
+    "library/photos/tpl-puttu-1-thumb.webp",
+    "library/photos/tpl-puttu-2-thumb.webp",
+    "library/photos/tpl-puttu-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-puttu-1-thumb.webp",
+   "textStyle": "vintage-poster",
+   "transition": "zoom-through"
+  },
+  "template.mottai-kaathu-kuthu": {
+   "mood": "ceremony",
+   "grade": "warm",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-mottai-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "push",
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-mottai-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "float",
+      "inSec": 0.45
+     },
+     "transitionOut": "push",
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-mottai-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.45
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.55,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.ceremony-nadaswaram-bright",
+     "at": 0,
+     "durationSec": 8.5,
+     "volume": 0.8,
+     "fadeInSec": 0.5,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.2,
+     "durationSec": 1.5,
+     "volume": 0.45,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "மொட்டை & காது குத்து",
+     "at": 0.25,
+     "end": 2.85,
+     "position": "top",
+     "animation": {
+      "in": "fade",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.6,
+     "end": 2.95,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.85,
+     "end": 5.5,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere}",
+     "at": 5.5,
+     "end": 8.5,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "With love · {hostName}",
+     "at": 5.5,
+     "end": 8.5,
+     "position": "bottom",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Murugan & Lakshmi family",
+    "eventName": "Kavin's Mottai & Kaathu Kuthu",
+    "eventWhen": "Sun, 22 Mar · 9:00 AM",
+    "eventWhere": "Palani Murugan Temple"
+   },
+   "durationSec": 8.5,
+   "preview": [
+    "library/photos/tpl-mottai-1-thumb.webp",
+    "library/photos/tpl-mottai-2-thumb.webp",
+    "library/photos/tpl-mottai-3-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-mottai-1-thumb.webp",
+   "textStyle": "bold-impact",
+   "transition": "push"
+  },
+  "template.first-haircut": {
+   "mood": "ceremony",
+   "grade": "dreamy",
+   "clips": [
+    {
+     "media": "lib.photo.tpl-firsthaircut-1",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "fade",
+      "emphasis": "ken-burns",
+      "inSec": 0.5
+     },
+     "transitionOut": "slide",
+     "transitionSpec": {
+      "durationSec": 0.5,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-firsthaircut-2",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "zoom-in",
+      "emphasis": "float",
+      "inSec": 0.45
+     },
+     "transitionOut": "slide",
+     "transitionSpec": {
+      "durationSec": 0.5,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-firsthaircut-3",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "slide-up",
+      "emphasis": "ken-burns-out",
+      "inSec": 0.45
+     },
+     "transitionOut": "slide",
+     "transitionSpec": {
+      "durationSec": 0.5,
+      "easing": "ease-in-out"
+     }
+    },
+    {
+     "media": "lib.photo.tpl-firsthaircut-4",
+     "durationSec": 3.2,
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse",
+      "inSec": 0.35
+     },
+     "transitionOut": null,
+     "transitionSpec": {
+      "durationSec": 0.5,
+      "easing": "ease-in-out"
+     }
+    }
+   ],
+   "audio": [
+    {
+     "ref": "lib:lib.audio.ceremony-musicbox",
+     "at": 0,
+     "durationSec": 11.3,
+     "volume": 0.8,
+     "fadeInSec": 0.5,
+     "fadeOutSec": 1.4,
+     "loop": true,
+     "label": null
+    },
+    {
+     "ref": "lib:lib.audio.stinger-sparkle",
+     "at": 0.2,
+     "durationSec": 1.5,
+     "volume": 0.45,
+     "loop": false,
+     "label": null
+    }
+   ],
+   "text": [
+    {
+     "role": "title",
+     "value": "First Haircut ✂️",
+     "at": 0.25,
+     "end": 2.9,
+     "position": "top",
+     "animation": {
+      "in": "fade",
+      "emphasis": "float"
+     }
+    },
+    {
+     "role": "title",
+     "value": "{eventName}",
+     "at": 0.6,
+     "end": 3.0,
+     "position": "center",
+     "animation": {
+      "in": "pop",
+      "emphasis": "pulse"
+     }
+    },
+    {
+     "role": "subtitle",
+     "value": "{eventWhen}",
+     "at": 2.9,
+     "end": 5.6,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "{eventWhere}",
+     "at": 5.6,
+     "end": 11.3,
+     "position": "lower-third",
+     "animation": {
+      "in": "slide-up"
+     }
+    },
+    {
+     "role": "caption",
+     "value": "With love · {hostName}",
+     "at": 5.6,
+     "end": 11.3,
+     "position": "bottom",
+     "animation": {
+      "in": "fade"
+     }
+    }
+   ],
+   "invitation": {
+    "hostName": "Mia & Leo",
+    "eventName": "Noah's First Haircut",
+    "eventWhen": "Sat, 11 Apr · 11 AM",
+    "eventWhere": "Little Curls Studio · 8 Bay St"
+   },
+   "durationSec": 11.3,
+   "preview": [
+    "library/photos/tpl-firsthaircut-1-thumb.webp",
+    "library/photos/tpl-firsthaircut-2-thumb.webp",
+    "library/photos/tpl-firsthaircut-3-thumb.webp",
+    "library/photos/tpl-firsthaircut-4-thumb.webp"
+   ],
+   "cover": "library/photos/tpl-firsthaircut-1-thumb.webp",
+   "textStyle": "clean-sans",
+   "transition": "slide"
   }
  }
 }

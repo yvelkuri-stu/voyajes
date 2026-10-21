@@ -15,6 +15,7 @@ import {
 import {
   getKidsSafeTemplates,
   getInvitationTemplates,
+  getCeremonyTemplates,
   getTemplates,
   isInvitationTemplate,
   templateComboSummary,
@@ -32,6 +33,7 @@ export function Themes() {
   const kidsMode = prefs.kidsMode;
   const tab: Tab = params.get("tab") === "templates" ? "templates" : "themes";
   const filterInvitation = params.get("filter") === "invitation";
+  const filterCeremony = params.get("filter") === "ceremony";
   const themes = useMemo(
     () =>
       kidsMode
@@ -43,6 +45,7 @@ export function Themes() {
   );
   const templates = useMemo(() => {
     const base = kidsMode ? getKidsSafeTemplates() : getTemplates();
+    if (filterCeremony) return getCeremonyTemplates();
     if (filterInvitation) {
       const invites = getInvitationTemplates();
       if (!kidsMode) return invites;
@@ -51,7 +54,7 @@ export function Themes() {
       return filtered.length ? filtered : invites;
     }
     return base;
-  }, [kidsMode, filterInvitation]);
+  }, [kidsMode, filterInvitation, filterCeremony]);
   const [selectedTheme, setSelectedTheme] = useState<ThemeCard>(() => getThemes()[0]);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateCard>(
     () => getTemplates()[0],
@@ -80,10 +83,11 @@ export function Themes() {
     setParams(p, { replace: true });
   };
 
-  const setTemplateFilter = (invitationOnly: boolean) => {
+  const setTemplateFilter = (filter: boolean | "ceremony") => {
     const p = new URLSearchParams(params);
     p.set("tab", "templates");
-    if (invitationOnly) p.set("filter", "invitation");
+    if (filter === "ceremony") p.set("filter", "ceremony");
+    else if (filter) p.set("filter", "invitation");
     else p.delete("filter");
     setParams(p, { replace: true });
   };
@@ -132,7 +136,7 @@ export function Themes() {
           </button>
           <button
             type="button"
-            className={`chip${tab === "templates" && !filterInvitation ? " chip-active" : ""}`}
+            className={`chip${tab === "templates" && !filterInvitation && !filterCeremony ? " chip-active" : ""}`}
             onClick={() => setTemplateFilter(false)}
           >
             Templates ({(kidsMode ? getKidsSafeTemplates() : getTemplates()).length})
@@ -144,6 +148,15 @@ export function Themes() {
             title="Invitation packs for guest playback shares"
           >
             Invitations ({getInvitationTemplates().length})
+          </button>
+          <button
+            type="button"
+            className={`chip chip-ceremony${tab === "templates" && filterCeremony ? " chip-active" : ""}`}
+            onClick={() => setTemplateFilter("ceremony")}
+            title="Head tonsure, first haircut and other family ceremonies"
+            data-filter-ceremony
+          >
+            🪔 Ceremonies ({getCeremonyTemplates().length})
           </button>
         </div>
       </div>

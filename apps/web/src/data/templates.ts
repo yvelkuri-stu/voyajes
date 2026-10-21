@@ -68,6 +68,14 @@ export function getInvitationTemplates(): TemplateCard[] {
   return getTemplates().filter(isInvitationTemplate);
 }
 
+/** v1.2: ceremonies (head tonsure / first haircut, …) */
+export function isCeremonyTemplate(t: TemplateCard): boolean {
+  return (t as TemplateCard & { category?: string }).category === "ceremonies" || t.tags.includes("ceremony");
+}
+export function getCeremonyTemplates(): TemplateCard[] {
+  return getTemplates().filter(isCeremonyTemplate);
+}
+
 export function getVoyageTemplates(): TemplateCard[] {
   return getTemplates().filter((t) => !isInvitationTemplate(t));
 }

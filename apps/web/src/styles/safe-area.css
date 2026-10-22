@@ -110,3 +110,26 @@ html.vj-show-insets::after {
   border-style: solid; border-color: rgba(255, 0, 80, 0.28);
   border-width: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l);
 }
+
+/* Landscape phones (short screens): the tool dock becomes a vertical rail on the right so the
+   preview keeps the full height; it stays clear of side cutouts and the gesture bar. */
+@media (orientation: landscape) and (max-height: 520px) {
+  html .vj-dock {
+    left: auto; right: calc(8px + var(--sa-r));
+    top: calc(70px + var(--sa-t)); bottom: calc(8px + var(--sa-b));
+    transform: none; width: 84px; height: auto;
+    flex-direction: column; justify-content: center; gap: 6px; padding: 6px;
+    animation: vjSheetUp 420ms cubic-bezier(.2, .9, .3, 1) both;
+  }
+  html .vj-dock-tabs { grid-template-columns: 1fr; flex: 0 1 auto; }
+  html .vj-dock-tab { min-height: 42px; gap: 1px; }
+  html .vj-dock-share { width: 100%; padding: 0 6px; min-height: 46px; font-size: 0.85rem; }
+  html .compose-root { padding-bottom: calc(24px + var(--sa-b)); padding-right: 96px; }
+  html .compose-root.is-minimalist .compose-side-panel.mini-sheet-open,
+  html .compose-root.is-minimalist .compose-side-panel.mini-sheet-open.mini-sheet-theme {
+    top: calc(70px + var(--sa-t)); bottom: calc(8px + var(--sa-b)); height: auto; max-height: none;
+    right: calc(100px + var(--sa-r)); left: auto; width: min(380px, calc(100vw - 120px - var(--sa-l) - var(--sa-r)));
+  }
+  html .compose-root.is-minimalist .preview-stage { max-height: calc(100dvh - 40px - var(--sa-t) - var(--sa-b)); }
+}
+html .am-tv-empty { padding: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l); }

@@ -101,8 +101,11 @@ export async function initNative() {
   };
   try {
     const [{ StatusBar, Style }, { SplashScreen }, { App }] = await Promise.all([import("@capacitor/status-bar"), import("@capacitor/splash-screen"), import("@capacitor/app")]);
+    // v1.2.1 edge-to-edge: the web view draws under transparent system bars (light icons on our dark UI);
+    // layout keeps clear of them via --sa-* (safe-area.css), fed by SystemBars-injected insets on Android.
+    await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
     await StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-    if (platform() === "android") await StatusBar.setBackgroundColor({ color: "#0B0D12" }).catch(() => {});
+    if (platform() === "android") await StatusBar.setBackgroundColor({ color: "#00000000" }).catch(() => {});
     void App.addListener("backButton", ({ canGoBack }) => (canGoBack ? history.back() : App.exitApp()));
     // Open shared web links (https://…/voyajes/v/…) inside the app
     void App.addListener("appUrlOpen", ({ url }) => {

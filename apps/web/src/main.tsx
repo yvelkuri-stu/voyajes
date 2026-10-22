@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./styles/global.css";
 import "./styles/layout.css";
+import "./styles/safe-area.css";
 import { initNative } from "./lib/native";
 void initNative();
 

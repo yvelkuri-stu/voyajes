@@ -203,3 +203,26 @@
   /* keep preview + dock on one phone screen */
   .compose-root.is-minimalist .preview-stage { max-height: calc(100dvh - 330px); min-height: 300px; }
 }
+
+/* v1.2.1: Manage tabs always fit — equal columns; phones get icon + short label */
+.vj-tabs-fit { display: grid; grid-template-columns: repeat(var(--vj-tabs-n, 4), minmax(0, 1fr)); overflow: visible; }
+.vj-tabs-fit .vj-tab { position: relative; min-width: 0; white-space: normal; text-align: center; line-height: 1.15; }
+.vj-tabs-fit .vj-tab-short { display: none; }
+.vj-tabs-fit .vj-tab-count {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: inline-grid; place-items: center;
+  background: #ff4d8d; color: #fff; font-size: 0.66rem; font-weight: 800; opacity: 1;
+}
+@media (max-width: 560px) {
+  .vj-tabs-fit .vj-tab { flex-direction: column; gap: 3px; padding: 8px 4px; font-size: 0.72rem; }
+  .vj-tabs-fit .vj-tab-ic { font-size: 1.1rem; }
+  .vj-tabs-fit .vj-tab-long { display: none; }
+  .vj-tabs-fit .vj-tab-short { display: inline; }
+  .vj-tabs-fit .vj-tab-count { position: absolute; top: 3px; right: 6px; }
+}
+/* Share details: a quiet fold-away block */
+.share-aside-summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.share-aside-summary::-webkit-details-marker { display: none; }
+.share-aside-summary h3 { margin: 0; }
+.share-aside-summary::after { content: "▾"; opacity: 0.6; transition: transform 200ms ease; }
+details[open] > .share-aside-summary::after { transform: rotate(180deg); }
+details.share-aside[open] > .share-aside-summary { margin-bottom: 10px; }

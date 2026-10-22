@@ -1698,8 +1698,15 @@ export function Share() {
           </div>
         </div>
 
-        <aside className="share-aside panel">
-          <h3>Share details</h3>
+        {/* v1.2.1: on phones the technical details fold away at the very bottom */}
+        <details
+          className="share-aside panel"
+          open={typeof window !== "undefined" && !!window.matchMedia?.("(min-width: 841px)").matches}
+          data-share-details
+        >
+          <summary className="share-aside-summary">
+            <h3>Share details</h3>
+          </summary>
           <dl className="share-dl">
             <dt>Share id</dt>
             <dd>
@@ -1746,7 +1753,7 @@ export function Share() {
             pack in the URL hash so guests need no local data. Same id is reused when
             you reopen Share from Compose.
           </p>
-        </aside>
+        </details>
       </div>
 
       <p style={{ textAlign: "center", marginTop: 28 }}>

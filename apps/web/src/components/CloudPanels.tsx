@@ -447,11 +447,11 @@ export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: P
       </button>
     ) : null;
   const isInvite = cur.share.mode === "invitation";
-  const tabs: { id: ManageTab; label: string; icon: string; count?: number }[] = [
-    { id: "guests", label: isInvite ? "Guests & RSVP" : "Guests", icon: "👥", count: isInvite ? h.rsvps.filter((r) => r.answer === "yes").length : undefined },
-    { id: "photos", label: "Photos & moderation", icon: "🖼️", count: queue.length + (h.reports?.length ?? 0) || undefined },
-    { id: "share", label: "Share & print", icon: "🔗" },
-    ...(isInvite ? [{ id: "after" as ManageTab, label: "After-movie", icon: "🎬" }] : []),
+  const tabs: { id: ManageTab; label: string; short: string; icon: string; count?: number }[] = [
+    { id: "guests", label: isInvite ? "Guests & RSVP" : "Guests", short: "Guests", icon: "👥", count: isInvite ? h.rsvps.filter((r) => r.answer === "yes").length : undefined },
+    { id: "photos", label: "Photos & moderation", short: "Photos", icon: "🖼️", count: queue.length + (h.reports?.length ?? 0) || undefined },
+    { id: "share", label: "Share & print", short: "Share", icon: "🔗" },
+    ...(isInvite ? [{ id: "after" as ManageTab, label: "After-movie", short: "After-movie", icon: "🎬" }] : []),
   ];
   const active: ManageTab = tabs.some((t) => t.id === tab) ? tab : "guests";
   const pick = (id: ManageTab) => {
@@ -465,7 +465,7 @@ export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: P
   return (
     <section className="vj-manage" aria-label="Manage" data-manage>
       <h3 className="vj-sec-h"><span aria-hidden>🛠️</span> Manage</h3>
-      <div className="vj-tabs" role="tablist" aria-label="Manage sections">
+      <div className="vj-tabs vj-tabs-fit" role="tablist" aria-label="Manage sections" style={{ ["--vj-tabs-n" as string]: tabs.length }}>
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -481,8 +481,10 @@ export function HostManage({ cloudId, pack, onPack }: { cloudId: string; pack: P
               e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
             }}
           >
-            <span aria-hidden>{t.icon}</span> {t.label}
-            {t.count ? <span className="vj-tab-count">· {t.count}</span> : null}
+            <span className="vj-tab-ic" aria-hidden>{t.icon}</span>
+            <span className="vj-tab-long">{t.label}</span>
+            <span className="vj-tab-short" aria-hidden>{t.short}</span>
+            {t.count ? <span className="vj-tab-count">{t.count}</span> : null}
           </button>
         ))}
       </div>

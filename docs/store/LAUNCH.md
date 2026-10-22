@@ -59,7 +59,7 @@ New personal accounts **must run a closed test with at least 12 testers who stay
 you're allowed to apply for Production.
 1. Test and release → Testing → **Closed testing** → create track "Friends" → **Create new release**.
 2. Choose **Use Google-generated key** (Play App Signing; recommended). Upload
-   `apps/mobile/dist/voyajes-release-upload-signed.aab`. Release name `1.2.0 (10200)`. Notes from `listing.md` → What's new.
+   `apps/mobile/dist/voyajes-release-upload-signed.aab`. Release name `1.2.1 (10201)`. Notes from `listing.md` → What's new.
 3. Testers: make a Google Group (or list the emails) with **at least 12 people** (aim for 15–20 so dropouts don't reset you).
    Share the opt-in link from the track page; each person taps **Become a tester** and installs from Play.
 4. Wait **14 full days** with ≥12 people opted in. Ask them to actually open it a few times; Google asks what feedback you got.
@@ -100,7 +100,7 @@ In Xcode → target **App** → **Signing & Capabilities**:
 1. Team: your developer team; Bundle Identifier `app.voyajes` (or your chosen id). Tick "Automatically manage signing".
 2. Capabilities already declared in `App.entitlements`: **Push Notifications**, **Associated Domains**
    (`applinks:voyajes-api.yeshu501.workers.dev`). Xcode registers them for you. If push isn't set up yet, you can remove that capability.
-3. Version 1.2.0, Build 10200 (already set). Product → **Archive** → Distribute App → **App Store Connect** → Upload.
+3. Version 1.2.1, Build 10201 (already set). Product → **Archive** → Distribute App → **App Store Connect** → Upload.
 ### App Store Connect
 1. https://appstoreconnect.apple.com → My Apps → **+ New App** → iOS, name Voyajes, Bundle ID as above, SKU `voyajes`.
 2. Fill from `listing.md` (subtitle, promo text, description, keywords, support and privacy URLs), **App Privacy** from

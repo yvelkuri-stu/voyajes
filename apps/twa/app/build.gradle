@@ -57,8 +57,8 @@ android {
         applicationId "app.voyajes.twa"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 10200
-        versionName "1.2.0"
+        versionCode 10201
+        versionName "1.2.1"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name

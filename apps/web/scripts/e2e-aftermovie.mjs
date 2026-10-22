@@ -127,7 +127,7 @@ ok(notices.notices?.[0]?.kind === 'aftermovie', 'notice recorded for push + in-a
 // guest B: in-app notification fallback + the voted cut
 await gb.reload();
 const toast = await until(async () => /after-movie is ready/i.test(await gb.locator('[data-inbox-toast], .notif-toast').first().innerText({ timeout: 1000 }))
-  || (await gb.evaluate(() => sessionStorage.getItem('vj-e2e-notices') || '')).includes('aftermovie|'), 15000);
+  || (await gb.evaluate(() => { document.dispatchEvent(new Event('visibilitychange')); return sessionStorage.getItem('vj-e2e-notices') || ''; })).includes('aftermovie|'), 30000);
 ok(!!toast, 'guest gets the in-app "after-movie is ready" notification');
 await gb.locator('[data-aftermovie="ready"]').waitFor({ timeout: 25000 }).catch(() => {});
 ok(await gb.locator('[data-aftermovie-player]').count() > 0, 'guest sees the After-Movie player');

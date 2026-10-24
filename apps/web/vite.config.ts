@@ -76,6 +76,19 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         // v1.0 Web Push handler (public/push-sw.js)
         importScripts: ["push-sw.js"],
+        // v1.3: real-recording audio is NOT precached (≈14 MB); each track is cached on first play.
+        runtimeCaching: [
+          {
+            urlPattern: /\/(library\/audio|catalog\/previews)\/[^/]+\.m4a$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "voyajes-audio-v1",
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [200] },
+              rangeRequests: true,
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,

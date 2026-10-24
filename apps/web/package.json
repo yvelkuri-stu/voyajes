@@ -1,6 +1,6 @@
 {
   "name": "@voyajes/web",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,8 @@
     "test:onelink": "node scripts/e2e-onelink.mjs",
     "test:aftermovie": "node scripts/e2e-aftermovie.mjs",
     "test:storybrain": "node scripts/e2e-storybrain.mjs",
-    "test:ceremonies": "node scripts/e2e-ceremonies.mjs"
+    "test:ceremonies": "node scripts/e2e-ceremonies.mjs",
+    "test:audio": "node scripts/e2e-audio.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

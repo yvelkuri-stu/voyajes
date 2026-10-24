@@ -1,7 +1,7 @@
 /**
  * v1.2 Ceremonies e2e: the 4 head-tonsure invitation templates are listed under
  * Themes → 🪔 Ceremonies with image preview cards, and each one opens as a COMPLETE
- * playable sample (own art, own audio, Indic-script text in Noto fonts, event fields,
+ * playable sample (own art, real licensed audio, Indic-script text in Noto fonts, event fields,
  * transitions). One is shared end-to-end.
  *
  *   BASE=https://yvelkuri-stu.github.io/voyajes node scripts/e2e-ceremonies.mjs
@@ -43,7 +43,7 @@ for (const c of CER) {
   const au = lib.items.find((x) => x.id === `lib.audio.${c.audio}`);
   const ar = au && (await fetch(`${BASE}/${au.url}`));
   const buf = ar && ar.ok ? Buffer.from(await ar.arrayBuffer()) : Buffer.alloc(0);
-  ok(buf.length > 20000 && (buf.subarray(0, 3).toString() === 'ID3' || buf[0] === 0xff), `${c.audio} audio served (${buf.length} B mp3)`);
+  ok(buf.length > 20000 && buf.subarray(4, 8).toString() === 'ftyp' && !!au?.credit?.license, `${c.audio} real recording served (${buf.length} B AAC, ${au?.credit?.license} · ${au?.credit?.author})`);
 }
 
 // ── Themes → Ceremonies chip → preview cards

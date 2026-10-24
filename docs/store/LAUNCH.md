@@ -8,7 +8,7 @@ No custom domain is needed to launch. Switching later is covered at the end.
 |---|---|
 | Android app (Capacitor), debug, installable | `apps/mobile/dist/voyajes-debug.apk` |
 | Android app bundle, **unsigned** | `apps/mobile/dist/voyajes-release-unsigned.aab` |
-| Android app bundle, **signed with your upload key**: upload this one to Play | `apps/mobile/dist/voyajes-release-upload-signed.aab` |
+| Android app bundle, **signed with your upload key**: upload this one to Play (v1.3.0, versionCode 10300) | `apps/mobile/dist/voyajes-release-upload-signed.aab` |
 | Android TWA alternative (Bubblewrap), signed | `apps/twa/dist/voyajes-twa-release.aab` / `.apk` |
 | Microsoft Store package (test identity) | `apps/msix/dist/voyajes-msix-store-package.zip` |
 | iOS Xcode project | `apps/mobile/ios/App/App.xcworkspace` |
@@ -33,48 +33,108 @@ No custom domain is needed to launch. Switching later is covered at the end.
 
 ---
 
-## 1. Google Play (5 once)
+## 1. Google Play: step-by-step checklist (v1.3.0, beginner-friendly)
 
-### Sign up
-1. Go to https://play.google.com/console/signup, choose **Personal** (or Organisation if you have a company with a D-U-N-S number).
-2. Pay the $25, verify your identity (ID + address) and your phone. Verification can take a few days.
+Tick these off in order. You need: a Google account, a government photo ID, a phone, a card for the **one-time US$25 fee**,
+and about 12 friends with Android phones. Voyajes is a **free app with no ads and no in-app purchases**; monetization
+decisions are yours, and nothing below sets up payments.
 
-### Create the app
-1. **Create app** → name `Voyajes` → App → Free → accept the declarations.
-2. **Set up your app** (left menu → Dashboard), fill each section from these files:
-   - Privacy policy: `https://yvelkuri-stu.github.io/voyajes/privacy`
-   - App access: "All functionality available without special access"
-   - Ads: **No**
-   - Content rating: `content-rating.md` (IARC answers)
-   - Target audience: **13+**
-   - Data safety: `privacy-data-safety.md`
-   - Government apps / financial / health: **No**
-3. **Store listing** (Grow → Store presence → Main store listing): copy from `listing.md`. Then upload:
-   - App icon `graphics/play-icon-512.png`, feature graphic `graphics/play-feature-graphic-1024x500.png`
-   - Phone screenshots `screenshots/android-phone/*.jpg` (1080×1920), 10-inch tablet `screenshots/android-tablet-10/*.jpg`
-     (use the same tablet set for 7-inch).
+**1. Create the developer account.** Go to https://play.google.com/console/signup and sign in with the Google account
+   that should own the app (use one you'll keep; ownership is hard to move later).
+   - **Personal**: choose this if you're publishing as yourself. No company paperwork. Your name, plus the country you
+     enter, appear on the store page. New personal accounts **must** do the closed test in step 9 before going live.
+   - **Organization**: only if you have a registered company. It needs a **D-U-N-S number** (free from Dun & Bradstreet at
+     https://www.dnb.com/duns.html, and it can take **up to 30 days**), a company website and a company email/phone. The
+     12-tester rule doesn't apply. If you don't have a company, pick Personal; you can't switch the account type afterwards.
 
-### Upload, and the 12 testers / 14 days rule
-New personal accounts **must run a closed test with at least 12 testers who stay opted in for 14 days in a row** before
-you're allowed to apply for Production.
-1. Test and release → Testing → **Closed testing** → create track "Friends" → **Create new release**.
-2. Choose **Use Google-generated key** (Play App Signing; recommended). Upload
-   `apps/mobile/dist/voyajes-release-upload-signed.aab`. Release name `1.2.1 (10201)`. Notes from `listing.md` → What's new.
-3. Testers: make a Google Group (or list the emails) with **at least 12 people** (aim for 15–20 so dropouts don't reset you).
-   Share the opt-in link from the track page; each person taps **Become a tester** and installs from Play.
-4. Wait **14 full days** with ≥12 people opted in. Ask them to actually open it a few times; Google asks what feedback you got.
-5. Dashboard → **Apply for production** → answer the questions (who tested, what you changed) → wait for review (often 1–7 days).
-6. Each new upload needs a higher `versionCode`: `VOYAJES_VERSION_CODE=10101 VOYAJES_VERSION_NAME=1.1.1 bash apps/mobile/scripts/build-android.sh release`.
+**2. Verify your identity.** In the console, **Account details** asks for your legal name and address (they must match your ID),
+   then a photo of a government ID, then a code sent to your phone and your contact email. Google usually confirms within
+   **1–3 days**, sometimes longer. You can't publish until this shows **Verified**. Personal accounts also have to prove they
+   own an Android phone: install the **Google Play Console** app on it and sign in with the same account when asked.
+   Use an ID and a card in **your legal name**; if they don't match, Google keeps the fee.
 
-### Fill ANDROID_SHA256 (makes short links open the app)
-After the first upload: Play Console → Test and release → **App integrity** → App signing → copy **SHA-256 certificate fingerprint**
-of the **App signing key**. Then in `apps/api/wrangler.toml`:
-```toml
-ANDROID_PACKAGE = "app.voyajes"
-ANDROID_SHA256 = "<PLAY APP SIGNING SHA-256>,C8:07:61:E0:D7:05:0C:A5:0A:27:97:13:6F:B0:16:B0:A0:82:EB:15:13:6D:9D:CE:E7:23:BD:7C:EE:82:D3:7C"
-```
-(The second value is your upload key and is already there.) Deploy: `PATH=$HOME/.local/node22/bin:$PATH bash scripts/deploy-api.sh`.
-Check: https://voyajes-api.yeshu501.workers.dev/.well-known/assetlinks.json should list both.
+**3. Pay the US$25 registration fee.** It's a one-time card payment during signup, not yearly. That's the only cost
+   on the Play side.
+
+**4. Create the app.** Home → **Create app**:
+   - App name `Voyajes` · Default language English (US) · **App** (not Game) · **Free** · tick the Developer Program
+     Policies + US export laws declarations → **Create app**.
+   - Package name: it's set by the first upload, **`app.voyajes`**, and can never change (see step 0.1 if you want another).
+
+**5. Upload the app bundle (AAB).** Build the signed bundle (already built for 1.3.0, file below; rebuild any time):
+   ```bash
+   cd apps/mobile && bash scripts/build-android.sh release   # → apps/mobile/dist/voyajes-release-upload-signed.aab
+   ```
+   You upload it in step 9 (closed testing). Release name `1.3.0 (10300)`; every later upload needs a higher versionCode:
+   `VOYAJES_VERSION_CODE=10301 VOYAJES_VERSION_NAME=1.3.1 bash scripts/build-android.sh release`.
+   **Never upload `.secrets/` or share the `.jks` / passwords.** The AAB only carries a *signature*, not the key.
+
+**6. Play App Signing (accept the default).** On your first release Play shows **"Releases signed by Google Play"**.
+   Keep **Use Google-generated key** (recommended). Google holds the *app signing key*; your `.secrets/android` key is only
+   the *upload key*. If you ever lose the upload key, the account owner can request an upload-key reset under
+   **Test and release → App integrity**. Back up `.secrets/android/` anyway (step 0.2).
+
+**7. Store listing (Grow users → Store presence → Main store listing).** Everything is ready in `docs/store/`:
+   | Field | Where |
+   |---|---|
+   | Short + full description, What's new | `docs/store/listing.md` |
+   | App icon 512×512 | `docs/store/graphics/play-icon-512.png` |
+   | Feature graphic 1024×500 | `docs/store/graphics/play-feature-graphic-1024x500.png` |
+   | Phone screenshots (2–8) | `docs/store/screenshots/android-phone/*.jpg` |
+   | 7-inch and 10-inch tablet screenshots | `docs/store/screenshots/android-tablet-10/*.jpg` (same set for both) |
+   | Privacy policy URL | `https://yvelkuri-stu.github.io/voyajes/privacy` |
+   Category: **Photography** · Contact email: the inbox from step 0.3. Sound credits for the CC BY music are in the app
+   (`/credits`), so you don't need to repeat them in the listing.
+
+**8. App content declarations (left menu → Policy and programs → App content).** Answer from our kit:
+   - **Privacy policy**: the URL above.
+   - **App access**: *All functionality is available without special access* (no login).
+   - **Ads**: **No, my app does not contain ads.**
+   - **Content rating**: start the IARC questionnaire and copy `docs/store/content-rating.md`. Category *Utility,
+     productivity, communication or other*. Everything **No** except **"Users can interact / exchange content: Yes"**.
+     Expected: Everyone / PEGI 3 with "Users interact".
+   - **Target audience and content**: **13–15, 16–17, 18+** only. Do **not** tick under-13 (that pulls in the Families policy).
+     "Could the app unintentionally appeal to children?" **No**.
+   - **Data safety**: copy `docs/store/privacy-data-safety.md` → *Google Play*. Summary: collects optional photos/videos,
+     name, other user content, approximate location and a device id. Not shared, encrypted in transit, users can request
+     deletion, no account creation.
+   - **Government / financial / health / news / COVID apps**: **No** to all. **Advertising ID**: **No**.
+   - **Photo & video permissions**: not needed (the app uses the system photo picker).
+
+**9. Closed testing: 12 testers, 14 days in a row** (required for new personal accounts):
+   1. **Test and release → Testing → Closed testing → Create track** (call it `Friends`) → **Create new release** → upload
+      `apps/mobile/dist/voyajes-release-upload-signed.aab` (steps 5–6) → release notes from `listing.md` → **Save → Review →
+      Start rollout to Closed testing**. The first review takes from a few hours to a few days.
+   2. **Testers tab** → *Create email list* → add the Gmail/Google-account addresses of **at least 12 people (invite 15–20**,
+      because if fewer than 12 stay opted in the 14-day clock doesn't count). Or use a Google Group's address.
+   3. Copy the **opt-in link** (Testers tab, "Join on the web") and send it to them. Each tester opens it **on their Android
+      phone, with the same Google account**, taps **Become a tester**, then **Download it on Google Play** and installs.
+   4. Keep **≥12 testers opted in for 14 continuous days**. Ask them to open the app every couple of days and send you feedback
+      (screenshots, bugs). Write the feedback down; Google asks about it. Ship fixes as new closed-test releases (higher versionCode).
+   5. The Dashboard shows the progress. Testers may join on different days, but you need 12 who have each stayed opted in
+      for the **last 14 days in a row** when you apply. Anyone who opts out and back in restarts their own clock.
+   6. Tip: you can use **Internal testing** (up to 100 testers, no review, available before setup is complete) for a quick
+      smoke test first. It doesn't count toward the 14 days.
+
+**10. Apply for production.** When the counter is done: **Dashboard → Apply for production**. Answer honestly: how you
+   recruited testers, what feedback you got, what you changed, and why the app is ready. Review usually takes **up to 7 days**.
+   Once approved: **Production → Create new release** → *add from library* (the same AAB, or a newer one) → countries
+   (all, or start with yours) → **Start rollout** (a 20% staged rollout is a safe first step).
+
+**11. Set `ANDROID_SHA256` and redeploy the API** so `…/v/<id>` short links open the installed app instead of the browser.
+   After the first upload: **Test and release → App integrity → App signing** → copy the **SHA-256 certificate fingerprint**
+   of the **App signing key** (Google's, not the upload key). Put it first in `apps/api/wrangler.toml`:
+   ```toml
+   ANDROID_PACKAGE = "app.voyajes"
+   ANDROID_SHA256 = "<PLAY APP SIGNING SHA-256>,C8:07:61:E0:D7:05:0C:A5:0A:27:97:13:6F:B0:16:B0:A0:82:EB:15:13:6D:9D:CE:E7:23:BD:7C:EE:82:D3:7C"
+   ```
+   (the second value is the upload key, already there). Then deploy and check:
+   ```bash
+   PATH=$HOME/.local/node22/bin:$PATH bash scripts/deploy-api.sh
+   curl -s https://voyajes-api.yeshu501.workers.dev/.well-known/assetlinks.json   # must list both fingerprints
+   ```
+   On a phone with the Play build installed, tap a share link and it should open in Voyajes.
+   (Optional) Play Console → **Grow users → Deep links** should then show the domain as verified.
 
 ### TWA instead of Capacitor? (optional, Android only)
 `apps/twa/` is the PWABuilder/Bubblewrap version, package `app.voyajes.twa`. It always shows the live site, so updates need no new upload.

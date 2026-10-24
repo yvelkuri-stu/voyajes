@@ -158,6 +158,7 @@ import {
   type FreshMode,
 } from "../lib/startFresh";
 import { MediaImporter } from "../components/MediaImporter";
+import { AudioBrowser } from "../components/AudioBrowser";
 import { Timeline, type TLSelection } from "../components/editor/Timeline";
 import {
   AnimationPicker,
@@ -1306,6 +1307,9 @@ export function Create() {
           label: audioRefLabel(a.ref),
         })),
       );
+      // v1.3: the sample's music bed (real recording) is the project's track → BPM / beat-sync follow it
+      const bed = sample.audio.find((a) => a.loop);
+      if (bed && getBeatByRef(bed.ref)) setAudioTrackRef(bed.ref);
       setGrade(sample.grade);
       if (sample.transition) setTransitionOverride(sample.transition);
       if (sample.textStyle) setTextStyle(sample.textStyle);
@@ -1456,7 +1460,7 @@ export function Create() {
         const lk = getLook(themeId);
         const musicLocked = proLocks.includes("music");
         const bedRef = musicLocked ? audioTrackRef : lk.music.ref;
-        const bpm = musicLocked ? getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm : lk.music.bpm;
+        const bpm = musicLocked ? getBeatByRef(audioTrackRef)?.bpm ?? selectedBeat.bpm : getBeatByRef(lk.music.ref)?.bpm ?? lk.music.bpm;
         const plan = breezePlan(items, {
           seed,
           bpm,
@@ -2514,6 +2518,34 @@ export function Create() {
     setSelection({ type: "audio", id });
     setInspectorOpen(true);
   }, [layout, activeIndex, elapsed, totalDuration, editAudio, audioTrackRef, audioLabelFor]);
+
+  /** v1.3 audio browser: one-tap Use. Loops become the music bed (beat-sync follows their BPM); SFX drop at the playhead. */
+  const applyTrack = useCallback(
+    (beat: BeatCard) => {
+      lockPro("music");
+      if (beat.audioType === "sfx") {
+        const at = Math.round(((layout.starts[activeIndex] ?? 0) + elapsed) * 100) / 100;
+        const id = `aud-${Math.random().toString(36).slice(2, 8)}`;
+        editAudio((l) => [
+          ...l,
+          { id, ref: beat.packRef, at, durationSec: Math.round((beat.durationSec ?? 2) * 100) / 100, volume: 0.7, fadeInSec: 0, fadeOutSec: 0.2, loop: false, label: beat.name },
+        ]);
+        setStatus(`SFX · ${beat.name} added at ${at.toFixed(1)}s`);
+        return;
+      }
+      setAudioClips((prev) =>
+        prev && !prev.some((a) => a.ref === audioTrackRef)
+          ? [
+              ...prev,
+              { id: `aud-${Math.random().toString(36).slice(2, 8)}`, ref: beat.packRef, at: 0, durationSec: Math.round(totalDuration * 100) / 100, volume: 0.8, fadeInSec: 0.4, fadeOutSec: 1.2, loop: true, label: beat.name },
+            ]
+          : prev,
+      );
+      selectBeat(beat);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layout, activeIndex, elapsed, editAudio, audioTrackRef, totalDuration, selectBeat],
+  );
 
   const snapshot: EditorSnapshot = useMemo(
     () => ({
@@ -5162,8 +5194,9 @@ export function Create() {
               </button>
             </div>
             <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>
-              Catalog beats or import your own · mix or replace · beat-sync · ducking.
+              Real recordings — tap ▶ to hear, Use to set the music. Beat-sync follows the track's BPM.
             </p>
+            <AudioBrowser currentRef={audioTrackRef} onUse={applyTrack} onStatus={setStatus} />
 
             <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
               Custom sounds
@@ -5291,7 +5324,7 @@ export function Create() {
             </div>
 
             <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 6 }}>
-              Catalog beats
+              Theme beats
             </div>
             <div className="beat-list">
               {beats.map((beat) => {

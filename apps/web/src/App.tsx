@@ -9,6 +9,7 @@ import { Share, ShareBootstrap } from "./pages/Share";
 import { SignIn } from "./pages/SignIn";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Terms, Privacy } from "./pages/Legal";
+import { Credits } from "./pages/Credits";
 import { LiveCamera } from "./pages/LiveCamera";
 import { TvMode } from "./pages/TvMode";
 import { YearInVoyages } from "./pages/YearInVoyages";
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="auth/callback" element={<AuthCallback />} />
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
+        <Route path="credits" element={<Credits />} />
       </Route>
     </Routes>
   );

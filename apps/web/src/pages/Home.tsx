@@ -115,7 +115,7 @@ export function Home() {
         </div>
       </section>
       <p className="muted home-legal" style={{ textAlign: "center", fontSize: ".75rem", margin: "18px 0" }}>
-        <Link to="/terms" data-home-terms>Terms</Link> · <Link to="/privacy">Privacy</Link> · <a href={CONTACT.href}>Contact</a>
+        <Link to="/terms" data-home-terms>Terms</Link> · <Link to="/privacy">Privacy</Link> · <Link to="/credits" data-home-credits>Credits</Link> · <a href={CONTACT.href}>Contact</a>
       </p>
       <StartFreshSheet
         open={ask}

@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "libraryVersion": "2026.10.10.1",
+ "libraryVersion": "2026.10.23.1",
  "samples": {
   "template.midnight-metro": {
    "mood": "party",
@@ -3589,9 +3589,9 @@
      "label": null
     },
     {
-     "ref": "lib:lib.audio.stinger-chime",
+     "ref": "lib:lib.audio.sfx-conch",
      "at": 0.2,
-     "durationSec": 1.5,
+     "durationSec": 4.0,
      "volume": 0.45,
      "loop": false,
      "label": null
@@ -3726,9 +3726,9 @@
      "label": null
     },
     {
-     "ref": "lib:lib.audio.stinger-chime",
+     "ref": "lib:lib.audio.sfx-temple-bell",
      "at": 0.2,
-     "durationSec": 1.5,
+     "durationSec": 4.0,
      "volume": 0.45,
      "loop": false,
      "label": null
@@ -3863,9 +3863,9 @@
      "label": null
     },
     {
-     "ref": "lib:lib.audio.stinger-sparkle",
+     "ref": "lib:lib.audio.sfx-temple-bell",
      "at": 0.2,
-     "durationSec": 1.5,
+     "durationSec": 4.0,
      "volume": 0.45,
      "loop": false,
      "label": null
@@ -4016,7 +4016,7 @@
     {
      "ref": "lib:lib.audio.stinger-sparkle",
      "at": 0.2,
-     "durationSec": 1.5,
+     "durationSec": 2.42,
      "volume": 0.45,
      "loop": false,
      "label": null

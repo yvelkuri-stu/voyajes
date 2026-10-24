@@ -260,7 +260,7 @@ describe("v0.9 One Link", () => {
     expect(a.data[0].target).toMatchObject({ package_name: "app.voyajes.twa", sha256_cert_fingerprints: ["AA:BB"] });
     const i = await call("/.well-known/apple-app-site-association");
     expect(i.data.applinks.details[0].appIDs).toEqual(["TEAM.app.voyajes"]);
-    expect((await call("/health")).data.version).toBe("1.2.1");
+    expect((await call("/health")).data.version).toBe("1.3.0");
   });
 });
 

@@ -35,7 +35,7 @@ export function Terms() {
         our servers.
       </p>
       <p>
-        See also our <Link to="/privacy">privacy policy</Link>.
+        See also our <Link to="/privacy">privacy policy</Link> and <Link to="/credits">sound credits</Link> (CC BY attributions for the bundled music).
       </p>
     </article>
   );

@@ -4,10 +4,10 @@ Curated **first-party** futuristic / colorful assets shipped with the app (`publ
 
 ## License
 
-All photos and audio in this folder are **original Voyajes works** created for the product:
+Photos in this folder are **original Voyajes works**; audio is third-party, licence-verified (credits below):
 
 - **Photos** — procedurally generated abstract art (gradients, grids, orbs, skylines). Not scraped from stock sites.
-- **Audio** — synthetic ambient pads / tones generated with open tools (ffmpeg lavfi). No third-party samples.
+- **Audio** — since v1.3.0, **real recordings** under CC0 / public domain / CC BY (see *Audio credits* below). The old synthesized loops were removed.
 
 **You may use these assets freely inside Voyajes projects** (create, invite, export, share). Redistribution of the raw library files outside Voyajes should keep this credit:
 
@@ -37,8 +37,7 @@ a music loop + a short stinger on the audio track, transitions, animated text la
 Invitation samples include placeholder host / event / when / where text that users overwrite.
 
 All sample assets are **original, procedurally generated** by `scripts/gen_library_samples.py`
-(Python + PIL/numpy for images, numpy synthesis → ffmpeg for audio). No stock photos, no samples,
-no third-party recordings. Same licence as above: free to use in Voyajes projects.
+(Python + PIL/numpy). Template **audio** now comes from the real-recording library below.
 
 Regenerate (deterministic):
 
@@ -132,3 +131,80 @@ images (`lib.photo.bday-balloons`, …) stay in the library so v0.5.0/0.5.1 shar
 ```bash
 python3 scripts/gen_library_samples.py && (cd scripts && python3 gen_genz_samples.py)
 ```
+
+## Audio credits (library 2026.10.23.1)
+
+Built by `scripts/audio/build_audio_library.py` from `scripts/audio/sources.json`: each source is cut to a
+whole number of bars (or crossfaded for free-time recordings), equal-power crossfaded so it loops seamlessly,
+normalised to **-14 LUFS** (SFX -16 LUFS, -1 dBTP limiter), and encoded **AAC-LC 128 kb/s .m4a**. BPM, beat
+offset and 64-bin waveform peaks are measured on the shipped file and stored in `manifest.json`.
+
+Every licence below was checked at the source page (Wikimedia Commons file page / incompetech.com) on 2026-10-23.
+Only CC0, public domain and CC BY are used — **no NC, ND or share-alike, no rips**. CC BY tracks require credit:
+the app shows it on the **Credits** page (Settings → Credits / `#/credits`) and in the audio browser, and users who
+publish a video should paste the credit line (the audio browser has a *Copy credit* button).
+
+| ID | Title | Category | BPM | Length | Source work | Author | Licence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `lib.audio.ceremony-shehnai` | Shehnai & Veena Blessing | Festive Indian | 148 | 19.5s | [Veena And Shenai](https://commons.wikimedia.org/wiki/File:Veena_And_Shenai_%28Antti_Luode%29.mp3) | Antti Luode | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.ceremony-nadaswaram` | Temple Nadaswaram | Festive Indian | 115 | 24.0s | [Thakil & Nadaswaram during temple Deeparadhana](https://commons.wikimedia.org/wiki/File:Thakil_%26_Nadaswaram_during_temple_Deeparadhana.ogg) | Vis M | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `lib.audio.ceremony-nadaswaram-bright` | Mangala Vadyam | Festive Indian | 116 | 24.0s | [Thakil & Nadaswaram during temple Deeparadhana](https://commons.wikimedia.org/wiki/File:Thakil_%26_Nadaswaram_during_temple_Deeparadhana.ogg) | Vis M | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `lib.audio.ceremony-musicbox` | First Snip Music Box | Lullaby | 89 | 22.0s | [Lullaby wound up clock](https://commons.wikimedia.org/wiki/File:Lullaby_wound_up_clock.ogg) | stephan (pdsounds.org) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.festive-dhol` | Dhol Baraat | Festive Indian | 88 | 16.4s | [DHOL BEAT](https://commons.wikimedia.org/wiki/File:DHOL_BEAT.wav) | Johnny Kalsi (The Dhol Foundation) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.festive-chenda` | Chenda Melam | Festive Indian | 105 | 18.0s | [Chenda melam at temple 02](https://commons.wikimedia.org/wiki/File:Chenda_melam_at_temple_02.ogg) | Vis M | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `lib.audio.festival-lights` | Vadodara Lights | Festive Indian | 98 | 19.7s | [Vadodora](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Vadodora) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.festive-naraina` | Naraina | Gen Z | 81 | 20.8s | [Naraina](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Naraina) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.devotional-veena` | Kiravani Veena | Devotional | 152 | 24.0s | [Kiravani (alapana & tanam)](https://commons.wikimedia.org/wiki/File:Kiravani-L_Ramakrishnan.ogg) | L. Ramakrishnan | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `lib.audio.devotional-sarod` | Dhaka Sarod | Devotional | 120 | 22.0s | [Dhaka](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Dhaka) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.chill-jalandhar` | Jalandhar Groove | Chill | 162 | 19.3s | [Jalandhar](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Jalandhar) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.lullaby-bells` | Guten Abend Music Box | Lullaby | 120 | 20.0s | [Lullaby wound up clock ("Guten Abend, gut' Nacht")](https://commons.wikimedia.org/wiki/File:Lullaby_wound_up_clock_guten_abend_gute_nacht.ogg) | stephan (pdsounds.org) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.lullaby-victoria` | Melodie Victoria | Lullaby | 89 | 18.9s | [Melodie Victoria](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Melodie%20Victoria) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.birthday-bounce` | Monkeys Spinning Monkeys | Upbeat | 144 | 18.4s | [Monkeys Spinning Monkeys](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Monkeys%20Spinning%20Monkeys) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.party-pulse` | Voxel Revolution | Gen Z | 123 | 15.6s | [Voxel Revolution](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Voxel%20Revolution) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.travel-breeze` | Life of Riley | Upbeat | 101 | 18.9s | [Life of Riley](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Life%20of%20Riley) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.upbeat-happy-alley` | Happy Alley | Upbeat | 112 | 17.1s | [Happy Alley](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Happy%20Alley) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.holiday-chimes` | Jingle Bells | Upbeat | 120 | 16.0s | [Jingle Bells](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Jingle%20Bells%203) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.retro-groove` | Funkorama | Upbeat | 101 | 18.9s | [Funkorama](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Funkorama) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.grad-anthem` | Americana | Cinematic | 104 | 20.8s | [Americana](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Americana) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.deep-hum` | Long Road Ahead | Cinematic | 74 | 19.5s | [Long Road Ahead B](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Long%20Road%20Ahead%20B) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.cinematic-heroic` | Heroic Age | Cinematic | 130 | 14.8s | [Heroic Age](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Heroic%20Age) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.wedding-strings` | Canon in D | Cinematic | 81 | 23.8s | [Canon in D Major (Pachelbel, arr.)](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Canon%20in%20D%20Major) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.love-waltz` | Court of the Queen | Cinematic | 95 | 20.8s | [Court of the Queen](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Court%20of%20the%20Queen) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.soft-pad` | Dreamer | Chill | 100 | 19.2s | [Dreamer](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Dreamer) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.cozy-keys` | Local Forecast | Chill | 82 | 17.6s | [Local Forecast - Elevator](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Local%20Forecast%20-%20Elevator) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.pink-drift` | Groove Grove | Chill | 70 | 20.6s | [Groove Grove](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Groove%20Grove) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.aurora-wash` | Tropical Waves | Chill | 126 | 20.0s | [Ocean Waves on a Tropical Beach](https://commons.wikimedia.org/wiki/File:Ocean_Waves_on_a_Tropical_Beach.ogg) | Jarrod Stanley | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `lib.audio.crystal-shimmer` | Ascending the Vale | Cinematic | 90 | 21.3s | [Ascending the Vale](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Ascending%20the%20Vale) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.romance-piano` | There is Romance | Chill | 93 | 20.7s | [There is Romance](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=There%20is%20Romance) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.pulse-glow` | Chill Wave | Gen Z | 101 | 18.9s | [Chill Wave](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Chill%20Wave) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.genz-werq` | Werq | Gen Z | 126 | 15.2s | [Werq](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Werq) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.genz-getting-it-done` | Getting it Done | Gen Z | 135 | 14.2s | [Getting it Done](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Getting%20it%20Done) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.genz-cipher` | Cipher | Gen Z | 152 | 12.6s | [Cipher](https://incompetech.com/music/royalty-free/index.html?isrc=&Search=Search&keywords=Cipher2) | Kevin MacLeod (incompetech.com) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `lib.audio.stinger-sparkle` | Wind Chimes | SFX | — | 2.4s | [Windchimes](https://commons.wikimedia.org/wiki/File:Windchimes.ogg) | Esc861 | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.stinger-whoosh` | Whoosh | SFX | — | 1.6s | [Highway from Bridge, Center (single pass-by)](https://commons.wikimedia.org/wiki/File:Highway_from_bridge_center.ogg) | stephan (pdsounds.org) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.stinger-chime` | Bell Ding | SFX | — | 2.6s | [Bell-ring](https://commons.wikimedia.org/wiki/File:Bell-ring.flac) | qubodup | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `lib.audio.sfx-temple-bell` | Temple Ghanta | SFX | — | 4.0s | [Ghanta - leather mallet](https://commons.wikimedia.org/wiki/File:274316_the-very-real-horst_ghanta-leather-mallet-2015-05-16.wav) | the_very_Real_Horst | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `lib.audio.sfx-conch` | Shankh (Conch) | SFX | — | 5.5s | [Conch shell](https://commons.wikimedia.org/wiki/File:Conch_shell.ogg) | Dbolton (Wikimedia Commons) | [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/) |
+| `lib.audio.sfx-applause` | Family Applause | SFX | — | 5.0s | [applause-I](https://commons.wikimedia.org/wiki/File:Applause_i.ogg) | thore (pdsounds.org) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.sfx-cheer` | Clap & Hurray | SFX | — | 4.5s | [Clapping hurray](https://commons.wikimedia.org/wiki/File:Clapping_hurray.ogg) | starlite (pdsounds.org) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.sfx-firecracker` | Diwali Crackers | SFX | — | 4.0s | [Firecracker sounds 2022-12-31T23-25-40](https://commons.wikimedia.org/wiki/File:Firecracker_sounds_2022-12-31T23-25-40.ogg) | Almanta | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `lib.audio.sfx-singing-bowl` | Singing Bowl | SFX | — | 6.0s | [SingingBowl1](https://commons.wikimedia.org/wiki/File:SingingBowl1.ogg) | BambooBeast | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+| `lib.audio.sfx-shutter` | Camera Shutter | SFX | — | 1.2s | [Holga shuttersound](https://commons.wikimedia.org/wiki/File:Holga_shuttersound.ogg) | Doitashimashite (nl.wikipedia) | [Public domain](https://creativecommons.org/publicdomain/mark/1.0/) |
+
+Notes:
+- **Shehnai & Veena Blessing** (`lib.audio.ceremony-shehnai`): Produced track built from sampled shehnai + veena (not a live field recording) - the closest legitimately licensed shehnai we could find.
+- **Temple Nadaswaram** (`lib.audio.ceremony-nadaswaram`): Live temple recording (Tamil Nadu). Opening section.
+- **Mangala Vadyam** (`lib.audio.ceremony-nadaswaram-bright`): Live temple recording (Tamil Nadu). Closing section with thavil.
+- **First Snip Music Box** (`lib.audio.ceremony-musicbox`): Real wind-up music-box recording.
+- **Dhol Baraat** (`lib.audio.festive-dhol`): Live dhol recording (via Freesound).
+- **Chenda Melam** (`lib.audio.festive-chenda`): Live temple recording (Kerala).
+- **Kiravani Veena** (`lib.audio.devotional-veena`): Live veena improvisation, 2004.
+- **Guten Abend Music Box** (`lib.audio.lullaby-bells`): Real wind-up music-box recording (Brahms' lullaby).
+- **Tropical Waves** (`lib.audio.aurora-wash`): Field recording (ambience, no music).
+
+**CC BY authors to credit:** Antti Luode, Dbolton (Wikimedia Commons), Johnny Kalsi (The Dhol Foundation), Kevin MacLeod (incompetech.com), Vis M.
+
+Kevin MacLeod credit text (CC BY 3.0): *Music by Kevin MacLeod (incompetech.com) — Licensed under Creative Commons: By Attribution 3.0 — https://creativecommons.org/licenses/by/3.0/*
+
+Rebuild: `python3 scripts/audio/build_audio_library.py && python3 scripts/audio/apply_audio_manifest.py`
+(sources are downloaded from the URLs above into `--src`, default `/workspace/audio-src`).

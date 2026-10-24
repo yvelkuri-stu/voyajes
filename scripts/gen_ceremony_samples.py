@@ -367,7 +367,7 @@ def main():
     beats = {p["id"] for p in cat["packs"] if p["kind"] == "audio" or p["id"].startswith("audio.")}
     trans = {p.get("transition") for p in cat["packs"] if p["kind"] == "template"}
     man_path = os.path.join(LIB, "manifest.json"); man = json.load(open(man_path))
-    items = [i for i in man["items"] if not i.get("ceremony")]
+    items = [i for i in man["items"] if not i.get("ceremony") or i["kind"] == "audio"]  # audio: scripts/audio/
     os.makedirs(os.path.join(LIB, "photos"), exist_ok=True); os.makedirs(os.path.join(LIB, "audio"), exist_ok=True)
     A = art(); scenes = {}
     for key, paints in A.items():
@@ -381,11 +381,8 @@ def main():
                           "url": f"library/photos/{sid}.webp", "thumbnail": f"library/photos/{sid}-thumb.webp"})
             ids.append(sid)
         scenes[key] = ids
-    for aid, (title, kind, tags) in AUDIO.items():
-        d = write_mp3(song(kind), os.path.join(LIB, "audio", f"{aid}.mp3"))
-        items.append({"id": f"lib.audio.{aid}", "title": title, "kind": "audio", "tags": tags + ["loop", "original"], "sample": True, "ceremony": True,
-                      "url": f"library/audio/{aid}.mp3", "durationSec": round(d, 2)})
-    man["items"] = items; man["libraryVersion"] = "2026.10.21.1"
+    # v1.3.0: ceremony music is real recordings (scripts/audio/sources.json); no synthesis here any more.
+    man["items"] = items
     json.dump(man, open(man_path, "w"), indent=2, ensure_ascii=False)
 
     cat["packs"] = [p for p in cat["packs"] if p["id"] not in {t["id"] for t in TEMPLATES}]

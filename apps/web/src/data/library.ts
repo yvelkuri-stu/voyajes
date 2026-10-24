@@ -1,5 +1,6 @@
 /**
- * Voyajes free media library — curated abstract photos + synthetic ambient audio.
+ * Voyajes free media library — curated abstract photos + real, licence-verified audio
+ * (CC0 / public domain / CC BY — see public/library/LIBRARY.md and the Credits page).
  */
 import manifesto from "../../public/library/manifest.json";
 import { assetUrl } from "../lib/assetUrl";
@@ -14,11 +15,36 @@ export type LibraryItem = {
   url: string;
   thumbnail?: string;
   durationSec?: number;
+  /** Audio: browser category (festive-indian, devotional, lullaby, upbeat, cinematic, chill, genz, sfx) */
+  category?: string;
+  audioType?: "loop" | "sfx";
+  /** Measured on the shipped file (scripts/audio/build_audio_library.py) */
+  bpm?: number;
+  beatOffsetSec?: number;
+  beatsPerBar?: number;
+  pulse?: "steady" | "free";
+  lufs?: number;
+  sizeBytes?: number;
+  /** 64 normalised waveform peaks (0..1) */
+  peaks?: number[];
+  credit?: AudioCredit;
+  sample?: boolean;
+  ceremony?: boolean;
+};
+
+export type AudioCredit = {
+  work: string;
+  author: string;
+  license: string;
+  licenseUrl: string;
+  sourceUrl: string;
+  note?: string;
 };
 
 type Manifest = {
   libraryVersion: string;
   items: LibraryItem[];
+  audioCategories?: { id: string; label: string }[];
 };
 
 const manifest = manifesto as Manifest;
@@ -33,6 +59,23 @@ export function getLibraryItems(kind?: LibraryKind): LibraryItem[] {
 
 export function getLibraryItem(id: string): LibraryItem | undefined {
   return (manifest.items ?? []).find((i) => i.id === id);
+}
+
+export const AUDIO_CATEGORIES: { id: string; label: string; emoji: string }[] = [
+  { id: "festive-indian", label: "Festive Indian", emoji: "🪔" },
+  { id: "devotional", label: "Devotional", emoji: "🛕" },
+  { id: "lullaby", label: "Lullaby", emoji: "🧸" },
+  { id: "upbeat", label: "Upbeat", emoji: "🎉" },
+  { id: "cinematic", label: "Cinematic", emoji: "🎬" },
+  { id: "chill", label: "Chill", emoji: "🌊" },
+  { id: "genz", label: "Gen Z", emoji: "⚡" },
+  { id: "sfx", label: "SFX", emoji: "✨" },
+];
+
+/** One-line credit, e.g. “Vadodora” by Kevin MacLeod (incompetech.com) — CC BY 3.0 */
+export function creditLine(c: AudioCredit | undefined): string {
+  if (!c) return "";
+  return `“${c.work}” by ${c.author} — ${c.license}`;
 }
 
 export function libraryAssetUrl(path: string): string {

@@ -597,7 +597,8 @@ def main():
         os.makedirs(os.path.join(base, "photos"), exist_ok=True); os.makedirs(os.path.join(base, "audio"), exist_ok=True)
     man_path = os.path.join(LIB, "manifest.json")
     man = json.load(open(man_path))
-    items = [i for i in man["items"] if not i.get("sample")]
+    # v1.3.0: audio is real, licence-verified recordings owned by scripts/audio/ — keep those items untouched.
+    items = [i for i in man["items"] if not i.get("sample") or i["kind"] == "audio"]
     for mood, scenes in SCENES.items():
         for sid, title, tags, paint in scenes:
             img = paint().convert("RGB")
@@ -605,18 +606,10 @@ def main():
             img.resize((240, 240), Image.LANCZOS).save(os.path.join(LIB, "photos", f"{sid}-thumb.webp"), "WEBP", quality=70)
             items.append({"id": f"lib.photo.{sid}", "title": title, "kind": "photo", "tags": tags + [mood], "sample": True,
                           "url": f"library/photos/{sid}.webp", "thumbnail": f"library/photos/{sid}-thumb.webp"})
-    loop_dur = {}
-    for lid, cfg in LOOPS.items():
-        d = write_mp3(make_loop(cfg), os.path.join(LIB, "audio", f"{lid}.mp3"))
-        loop_dur[lid] = d
-        items.append({"id": f"lib.audio.{lid}", "title": cfg["title"], "kind": "audio", "tags": cfg["tags"] + ["loop"], "sample": True,
-                      "url": f"library/audio/{lid}.mp3", "durationSec": round(d, 2), "bpm": cfg["bpm"]})
-    for sid, (title, tags) in STINGERS.items():
-        d = write_mp3(make_stinger(sid), os.path.join(LIB, "audio", f"{sid}.mp3"))
-        items.append({"id": f"lib.audio.{sid}", "title": title, "kind": "audio", "tags": tags, "sample": True,
-                      "url": f"library/audio/{sid}.mp3", "durationSec": round(d, 2)})
+    loop_dur = {i["id"].split("lib.audio.")[1]: i["durationSec"] for i in items if i["kind"] == "audio"}
+    # (synthesized loops/stingers removed in v1.3.0 — see scripts/audio/build_audio_library.py)
     man["items"] = items
-    man["libraryVersion"] = "2026.10.09.1"
+    man["libraryVersion"] = man.get("libraryVersion", "2026.10.09.1")
     json.dump(man, open(man_path, "w"), indent=2, ensure_ascii=False)
 
     # templates: add new ones to the catalog manifest

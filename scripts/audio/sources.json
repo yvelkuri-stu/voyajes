@@ -1,0 +1,1008 @@
+{
+ "comment": "Real, redistributable recordings for the Voyajes audio library. Built by scripts/audio/build_audio_library.py. Every entry carries its licence + source URL; nothing here is NC/ND/SA or ripped.",
+ "licenses": {
+  "CC0 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "Public domain": "https://creativecommons.org/publicdomain/mark/1.0/",
+  "CC BY 2.5": "https://creativecommons.org/licenses/by/2.5/",
+  "CC BY 3.0": "https://creativecommons.org/licenses/by/3.0/",
+  "CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/"
+ },
+ "tracks": [
+  {
+   "id": "ceremony-shehnai",
+   "title": "Shehnai & Veena Blessing",
+   "category": "festive-indian",
+   "tags": [
+    "ceremony",
+    "mundan",
+    "shehnai",
+    "veena",
+    "north-indian",
+    "festive"
+   ],
+   "src": "c-shenai.mp3",
+   "commons": "Veena And Shenai (Antti Luode).mp3",
+   "start": 40,
+   "len": 20,
+   "grid": true,
+   "work": "Veena And Shenai",
+   "author": "Antti Luode",
+   "license": "CC BY 3.0",
+   "note": "Produced track built from sampled shehnai + veena (not a live field recording) - the closest legitimately licensed shehnai we could find."
+  },
+  {
+   "id": "ceremony-nadaswaram",
+   "title": "Temple Nadaswaram",
+   "category": "festive-indian",
+   "tags": [
+    "ceremony",
+    "puttu-ventrukalu",
+    "nadaswaram",
+    "thavil",
+    "telugu",
+    "temple",
+    "festive"
+   ],
+   "src": "c-nadaswaram.ogg",
+   "commons": "Thakil & Nadaswaram during temple Deeparadhana.ogg",
+   "start": 4,
+   "len": 24,
+   "grid": false,
+   "xfade": 1.2,
+   "work": "Thakil & Nadaswaram during temple Deeparadhana",
+   "author": "Vis M",
+   "license": "CC BY 4.0",
+   "note": "Live temple recording (Tamil Nadu). Opening section."
+  },
+  {
+   "id": "ceremony-nadaswaram-bright",
+   "title": "Mangala Vadyam",
+   "category": "festive-indian",
+   "tags": [
+    "ceremony",
+    "mottai",
+    "kaathu-kuthu",
+    "nadaswaram",
+    "thavil",
+    "tamil",
+    "festive"
+   ],
+   "src": "c-nadaswaram.ogg",
+   "commons": "Thakil & Nadaswaram during temple Deeparadhana.ogg",
+   "start": 586,
+   "len": 24,
+   "grid": false,
+   "xfade": 1.2,
+   "work": "Thakil & Nadaswaram during temple Deeparadhana",
+   "author": "Vis M",
+   "license": "CC BY 4.0",
+   "note": "Live temple recording (Tamil Nadu). Closing section with thavil."
+  },
+  {
+   "id": "ceremony-musicbox",
+   "title": "First Snip Music Box",
+   "category": "lullaby",
+   "tags": [
+    "ceremony",
+    "first-haircut",
+    "baby",
+    "lullaby",
+    "music-box"
+   ],
+   "src": "c-lullaby-clock.ogg",
+   "commons": "Lullaby wound up clock.ogg",
+   "start": "auto",
+   "len": 22,
+   "grid": false,
+   "xfade": 0.8,
+   "work": "Lullaby wound up clock",
+   "author": "stephan (pdsounds.org)",
+   "license": "Public domain",
+   "note": "Real wind-up music-box recording."
+  },
+  {
+   "id": "festive-dhol",
+   "title": "Dhol Baraat",
+   "category": "festive-indian",
+   "tags": [
+    "dhol",
+    "baraat",
+    "bhangra",
+    "wedding",
+    "festive",
+    "punjabi"
+   ],
+   "src": "c-dhol.wav",
+   "commons": "DHOL BEAT.wav",
+   "start": "auto",
+   "len": 16,
+   "grid": true,
+   "work": "DHOL BEAT",
+   "author": "Johnny Kalsi (The Dhol Foundation)",
+   "license": "CC BY 3.0",
+   "note": "Live dhol recording (via Freesound)."
+  },
+  {
+   "id": "festive-chenda",
+   "title": "Chenda Melam",
+   "category": "festive-indian",
+   "tags": [
+    "chenda",
+    "kerala",
+    "temple",
+    "festive",
+    "percussion",
+    "onam"
+   ],
+   "src": "c-chenda.ogg",
+   "commons": "Chenda melam at temple 02.ogg",
+   "start": 120,
+   "len": 18,
+   "grid": false,
+   "xfade": 0.6,
+   "work": "Chenda melam at temple 02",
+   "author": "Vis M",
+   "license": "CC BY 4.0",
+   "note": "Live temple recording (Kerala)."
+  },
+  {
+   "id": "festival-lights",
+   "title": "Vadodara Lights",
+   "category": "festive-indian",
+   "tags": [
+    "festival",
+    "diwali",
+    "sitar",
+    "bansuri",
+    "festive"
+   ],
+   "src": "km-vadodora.mp3",
+   "incompetech": "Vadodora.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Vadodora",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 97
+  },
+  {
+   "id": "festive-naraina",
+   "title": "Naraina",
+   "category": "genz",
+   "tags": [
+    "bollywood",
+    "club",
+    "festive-indian",
+    "sangeet",
+    "party"
+   ],
+   "src": "km-naraina.mp3",
+   "incompetech": "Naraina.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Naraina",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 81
+  },
+  {
+   "id": "devotional-veena",
+   "title": "Kiravani Veena",
+   "category": "devotional",
+   "tags": [
+    "veena",
+    "carnatic",
+    "raga",
+    "puja",
+    "calm",
+    "temple"
+   ],
+   "src": "c-veena.ogg",
+   "commons": "Kiravani-L Ramakrishnan.ogg",
+   "start": "auto",
+   "len": 24,
+   "grid": false,
+   "xfade": 1.5,
+   "work": "Kiravani (alapana & tanam)",
+   "author": "L. Ramakrishnan",
+   "license": "CC0 1.0",
+   "note": "Live veena improvisation, 2004."
+  },
+  {
+   "id": "devotional-sarod",
+   "title": "Dhaka Sarod",
+   "category": "devotional",
+   "tags": [
+    "sarod",
+    "dilruba",
+    "drone",
+    "meditative",
+    "hindustani"
+   ],
+   "src": "km-dhaka.mp3",
+   "incompetech": "Dhaka.mp3",
+   "start": "auto",
+   "len": 22,
+   "grid": false,
+   "xfade": 1.5,
+   "work": "Dhaka",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0"
+  },
+  {
+   "id": "chill-jalandhar",
+   "title": "Jalandhar Groove",
+   "category": "chill",
+   "tags": [
+    "sitar",
+    "groove",
+    "indian",
+    "chill",
+    "travel"
+   ],
+   "src": "km-jalandhar.mp3",
+   "incompetech": "Jalandhar.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Jalandhar",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 81
+  },
+  {
+   "id": "lullaby-bells",
+   "title": "Guten Abend Music Box",
+   "category": "lullaby",
+   "tags": [
+    "baby-shower",
+    "lullaby",
+    "music-box",
+    "gentle",
+    "baby"
+   ],
+   "src": "c-lullaby-clock2.ogg",
+   "commons": "Lullaby wound up clock guten abend gute nacht.ogg",
+   "start": "auto",
+   "len": 20,
+   "grid": false,
+   "xfade": 0.8,
+   "work": "Lullaby wound up clock (\"Guten Abend, gut' Nacht\")",
+   "author": "stephan (pdsounds.org)",
+   "license": "Public domain",
+   "note": "Real wind-up music-box recording (Brahms' lullaby)."
+  },
+  {
+   "id": "lullaby-victoria",
+   "title": "Melodie Victoria",
+   "category": "lullaby",
+   "tags": [
+    "music-box",
+    "gentle",
+    "baby",
+    "sweet"
+   ],
+   "src": "km-melodie-victoria.mp3",
+   "incompetech": "Melodie Victoria.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Melodie Victoria",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 89
+  },
+  {
+   "id": "birthday-bounce",
+   "title": "Monkeys Spinning Monkeys",
+   "category": "upbeat",
+   "tags": [
+    "birthday",
+    "party",
+    "kids",
+    "playful",
+    "upbeat"
+   ],
+   "src": "km-monkeys-spinning-monkeys.mp3",
+   "incompetech": "Monkeys Spinning Monkeys.mp3",
+   "start": "auto",
+   "len": 18,
+   "grid": true,
+   "work": "Monkeys Spinning Monkeys",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 144
+  },
+  {
+   "id": "party-pulse",
+   "title": "Voxel Revolution",
+   "category": "genz",
+   "tags": [
+    "party",
+    "night",
+    "dance",
+    "electronic"
+   ],
+   "src": "km-voxel-revolution.mp3",
+   "incompetech": "Voxel Revolution.mp3",
+   "start": "auto",
+   "len": 16,
+   "grid": true,
+   "work": "Voxel Revolution",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 122
+  },
+  {
+   "id": "travel-breeze",
+   "title": "Life of Riley",
+   "category": "upbeat",
+   "tags": [
+    "travel",
+    "breezy",
+    "ukulele",
+    "sunny"
+   ],
+   "src": "km-life-of-riley.mp3",
+   "incompetech": "Life of Riley.mp3",
+   "start": "auto",
+   "len": 19,
+   "grid": true,
+   "work": "Life of Riley",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 102
+  },
+  {
+   "id": "upbeat-happy-alley",
+   "title": "Happy Alley",
+   "category": "upbeat",
+   "tags": [
+    "happy",
+    "guitar",
+    "sunny",
+    "brunch"
+   ],
+   "src": "km-happy-alley.mp3",
+   "incompetech": "Happy Alley.mp3",
+   "start": "auto",
+   "len": 17,
+   "grid": true,
+   "work": "Happy Alley",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 112
+  },
+  {
+   "id": "holiday-chimes",
+   "title": "Jingle Bells",
+   "category": "upbeat",
+   "tags": [
+    "holiday",
+    "winter",
+    "christmas",
+    "bells"
+   ],
+   "src": "km-jingle-bells-3.mp3",
+   "incompetech": "Jingle Bells 3.mp3",
+   "start": "auto",
+   "len": 16,
+   "grid": true,
+   "work": "Jingle Bells",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 120
+  },
+  {
+   "id": "retro-groove",
+   "title": "Funkorama",
+   "category": "upbeat",
+   "tags": [
+    "retro",
+    "funk",
+    "vhs",
+    "groove"
+   ],
+   "src": "km-funkorama.mp3",
+   "incompetech": "Funkorama.mp3",
+   "start": "auto",
+   "len": 19,
+   "grid": true,
+   "work": "Funkorama",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 101
+  },
+  {
+   "id": "grad-anthem",
+   "title": "Americana",
+   "category": "cinematic",
+   "tags": [
+    "graduation",
+    "uplifting",
+    "epic",
+    "orchestral"
+   ],
+   "src": "km-americana.mp3",
+   "incompetech": "Americana.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Americana",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 104
+  },
+  {
+   "id": "deep-hum",
+   "title": "Long Road Ahead",
+   "category": "cinematic",
+   "tags": [
+    "epic",
+    "choir",
+    "trailer",
+    "night"
+   ],
+   "src": "km-long-road-ahead-b.mp3",
+   "incompetech": "Long Road Ahead B.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Long Road Ahead B",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 74
+  },
+  {
+   "id": "cinematic-heroic",
+   "title": "Heroic Age",
+   "category": "cinematic",
+   "tags": [
+    "epic",
+    "adventure",
+    "orchestral",
+    "trailer"
+   ],
+   "src": "km-heroic-age.mp3",
+   "incompetech": "Heroic Age.mp3",
+   "start": "auto",
+   "len": 15,
+   "grid": true,
+   "work": "Heroic Age",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 129
+  },
+  {
+   "id": "wedding-strings",
+   "title": "Canon in D",
+   "category": "cinematic",
+   "tags": [
+    "wedding",
+    "romantic",
+    "strings",
+    "harp",
+    "classical"
+   ],
+   "src": "km-canon-in-d-major.mp3",
+   "incompetech": "Canon in D Major.mp3",
+   "start": "auto",
+   "len": 24,
+   "grid": true,
+   "work": "Canon in D Major (Pachelbel, arr.)",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 80
+  },
+  {
+   "id": "love-waltz",
+   "title": "Court of the Queen",
+   "category": "cinematic",
+   "tags": [
+    "anniversary",
+    "romantic",
+    "waltz",
+    "elegant"
+   ],
+   "src": "km-court-of-the-queen.mp3",
+   "incompetech": "Court of the Queen.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "beatsPerBar": 3,
+   "work": "Court of the Queen",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 95
+  },
+  {
+   "id": "soft-pad",
+   "title": "Dreamer",
+   "category": "chill",
+   "tags": [
+    "calm",
+    "piano",
+    "soft",
+    "ambient"
+   ],
+   "src": "km-dreamer.mp3",
+   "incompetech": "Dreamer.mp3",
+   "start": "auto",
+   "len": 19,
+   "grid": true,
+   "work": "Dreamer",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 100
+  },
+  {
+   "id": "cozy-keys",
+   "title": "Local Forecast",
+   "category": "chill",
+   "tags": [
+    "cozy",
+    "dinner",
+    "brunch",
+    "keys",
+    "lounge"
+   ],
+   "src": "km-local-forecast---elevator.mp3",
+   "incompetech": "Local Forecast - Elevator.mp3",
+   "start": "auto",
+   "len": 18,
+   "grid": true,
+   "work": "Local Forecast - Elevator",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 82
+  },
+  {
+   "id": "pink-drift",
+   "title": "Groove Grove",
+   "category": "chill",
+   "tags": [
+    "chill",
+    "lofi",
+    "mellow",
+    "night"
+   ],
+   "src": "km-groove-grove.mp3",
+   "incompetech": "Groove Grove.mp3",
+   "start": "auto",
+   "len": 20,
+   "grid": true,
+   "work": "Groove Grove",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 70
+  },
+  {
+   "id": "aurora-wash",
+   "title": "Tropical Waves",
+   "category": "chill",
+   "tags": [
+    "ocean",
+    "beach",
+    "ambience",
+    "nature",
+    "travel"
+   ],
+   "src": "c-ocean.ogg",
+   "commons": "Ocean Waves on a Tropical Beach.ogg",
+   "start": 60,
+   "len": 20,
+   "grid": false,
+   "xfade": 2.0,
+   "work": "Ocean Waves on a Tropical Beach",
+   "author": "Jarrod Stanley",
+   "license": "CC0 1.0",
+   "note": "Field recording (ambience, no music)."
+  },
+  {
+   "id": "crystal-shimmer",
+   "title": "Ascending the Vale",
+   "category": "cinematic",
+   "tags": [
+    "harp",
+    "choir",
+    "dreamy",
+    "mystical"
+   ],
+   "src": "km-ascending-the-vale.mp3",
+   "incompetech": "Ascending the Vale.mp3",
+   "start": "auto",
+   "len": 21,
+   "grid": true,
+   "work": "Ascending the Vale",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 90
+  },
+  {
+   "id": "romance-piano",
+   "title": "There is Romance",
+   "category": "chill",
+   "tags": [
+    "romantic",
+    "piano",
+    "anniversary",
+    "tender"
+   ],
+   "src": "km-there-is-romance.mp3",
+   "incompetech": "There is Romance.mp3",
+   "start": "auto",
+   "len": 21,
+   "grid": true,
+   "work": "There is Romance",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 93
+  },
+  {
+   "id": "pulse-glow",
+   "title": "Chill Wave",
+   "category": "genz",
+   "tags": [
+    "synthwave",
+    "neon",
+    "chill",
+    "night"
+   ],
+   "src": "km-chill-wave.mp3",
+   "incompetech": "Chill Wave.mp3",
+   "start": "auto",
+   "len": 19,
+   "grid": true,
+   "work": "Chill Wave",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 100
+  },
+  {
+   "id": "genz-werq",
+   "title": "Werq",
+   "category": "genz",
+   "tags": [
+    "house",
+    "dance",
+    "fashion",
+    "party"
+   ],
+   "src": "km-werq.mp3",
+   "incompetech": "Werq.mp3",
+   "start": "auto",
+   "len": 15,
+   "grid": true,
+   "work": "Werq",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 125
+  },
+  {
+   "id": "genz-getting-it-done",
+   "title": "Getting it Done",
+   "category": "genz",
+   "tags": [
+    "electro",
+    "hype",
+    "montage",
+    "bright"
+   ],
+   "src": "km-getting-it-done.mp3",
+   "incompetech": "Getting it Done.mp3",
+   "start": "auto",
+   "len": 14,
+   "grid": true,
+   "work": "Getting it Done",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 135
+  },
+  {
+   "id": "genz-cipher",
+   "title": "Cipher",
+   "category": "genz",
+   "tags": [
+    "electronic",
+    "bright",
+    "uplifting",
+    "tech"
+   ],
+   "src": "km-cipher2.mp3",
+   "incompetech": "Cipher2.mp3",
+   "start": "auto",
+   "len": 13,
+   "grid": true,
+   "work": "Cipher",
+   "author": "Kevin MacLeod (incompetech.com)",
+   "license": "CC BY 3.0",
+   "listedBpm": 150
+  },
+  {
+   "id": "stinger-sparkle",
+   "title": "Wind Chimes",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "stinger",
+    "sparkle",
+    "magic",
+    "chimes"
+   ],
+   "src": "c-windchimes.ogg",
+   "commons": "Windchimes.ogg",
+   "start": "onset",
+   "len": 2.4,
+   "work": "Windchimes",
+   "author": "Esc861",
+   "license": "Public domain"
+  },
+  {
+   "id": "stinger-whoosh",
+   "title": "Whoosh",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "stinger",
+    "whoosh",
+    "transition",
+    "swish"
+   ],
+   "src": "c-highway.ogg",
+   "commons": "Highway from bridge center.ogg",
+   "start": "loudest",
+   "len": 1.6,
+   "work": "Highway from Bridge, Center (single pass-by)",
+   "author": "stephan (pdsounds.org)",
+   "license": "Public domain"
+  },
+  {
+   "id": "stinger-chime",
+   "title": "Bell Ding",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "stinger",
+    "chime",
+    "reveal",
+    "bell"
+   ],
+   "src": "c-bell.flac",
+   "commons": "Bell-ring.flac",
+   "start": "onset",
+   "len": 2.6,
+   "work": "Bell-ring",
+   "author": "qubodup",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "sfx-temple-bell",
+   "title": "Temple Ghanta",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "temple",
+    "bell",
+    "ghanta",
+    "puja",
+    "ceremony"
+   ],
+   "src": "c-ghanta.wav",
+   "commons": "274316 the-very-real-horst ghanta-leather-mallet-2015-05-16.wav",
+   "start": "onset",
+   "len": 4.0,
+   "work": "Ghanta - leather mallet",
+   "author": "the_very_Real_Horst",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "sfx-conch",
+   "title": "Shankh (Conch)",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "conch",
+    "shankh",
+    "ceremony",
+    "temple",
+    "auspicious"
+   ],
+   "src": "c-conch.ogg",
+   "commons": "Conch shell.ogg",
+   "start": "onset",
+   "len": 5.5,
+   "work": "Conch shell",
+   "author": "Dbolton (Wikimedia Commons)",
+   "license": "CC BY 2.5"
+  },
+  {
+   "id": "sfx-applause",
+   "title": "Family Applause",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "applause",
+    "clap",
+    "celebration",
+    "crowd"
+   ],
+   "src": "c-applause.ogg",
+   "commons": "Applause i.ogg",
+   "start": "onset",
+   "len": 5.0,
+   "work": "applause-I",
+   "author": "thore (pdsounds.org)",
+   "license": "Public domain"
+  },
+  {
+   "id": "sfx-cheer",
+   "title": "Clap & Hurray",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "cheer",
+    "woohoo",
+    "party",
+    "celebration"
+   ],
+   "src": "c-hurray.ogg",
+   "commons": "Clapping hurray.ogg",
+   "start": "onset",
+   "len": 4.5,
+   "work": "Clapping hurray",
+   "author": "starlite (pdsounds.org)",
+   "license": "Public domain"
+  },
+  {
+   "id": "sfx-firecracker",
+   "title": "Diwali Crackers",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "firecracker",
+    "diwali",
+    "new-year",
+    "festive"
+   ],
+   "src": "c-firecracker.ogg",
+   "commons": "Firecracker sounds 2022-12-31T23-25-40.ogg",
+   "start": "loudest",
+   "len": 4.0,
+   "work": "Firecracker sounds 2022-12-31T23-25-40",
+   "author": "Almanta",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "sfx-singing-bowl",
+   "title": "Singing Bowl",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "bowl",
+    "calm",
+    "meditation",
+    "intro"
+   ],
+   "src": "c-bowl.ogg",
+   "commons": "SingingBowl1.ogg",
+   "start": "onset",
+   "len": 6.0,
+   "work": "SingingBowl1",
+   "author": "BambooBeast",
+   "license": "Public domain"
+  },
+  {
+   "id": "sfx-shutter",
+   "title": "Camera Shutter",
+   "category": "sfx",
+   "kind": "sfx",
+   "tags": [
+    "camera",
+    "shutter",
+    "photo",
+    "click"
+   ],
+   "src": "c-shutter.ogg",
+   "commons": "Holga shuttersound.ogg",
+   "start": "onset",
+   "len": 1.2,
+   "work": "Holga shuttersound",
+   "author": "Doitashimashite (nl.wikipedia)",
+   "license": "Public domain"
+  }
+ ],
+ "catalog": [
+  {
+   "catalogId": "audio.warm-acoustic-092",
+   "file": "warm-acoustic",
+   "category": "chill",
+   "src": "km-easy-lemon.mp3",
+   "incompetech": "Easy Lemon.mp3",
+   "work": "Easy Lemon",
+   "len": 20,
+   "listedBpm": 82
+  },
+  {
+   "catalogId": "audio.neon-pulse-118",
+   "file": "neon-pulse",
+   "category": "genz",
+   "src": "km-electrodoodle.mp3",
+   "incompetech": "Electrodoodle.mp3",
+   "work": "Electrodoodle",
+   "len": 17,
+   "listedBpm": 120
+  },
+  {
+   "catalogId": "audio.ocean-drift-084",
+   "file": "ocean-drift",
+   "category": "chill",
+   "src": "km-floating-cities.mp3",
+   "incompetech": "Floating Cities.mp3",
+   "work": "Floating Cities",
+   "len": 20,
+   "listedBpm": 120
+  },
+  {
+   "catalogId": "audio.funk-loop-104",
+   "file": "funk-loop",
+   "category": "upbeat",
+   "src": "km-funk-game-loop.mp3",
+   "incompetech": "Funk Game Loop.mp3",
+   "work": "Funk Game Loop",
+   "len": 18,
+   "listedBpm": 104
+  },
+  {
+   "catalogId": "audio.hyperfun-128",
+   "file": "hyperfun",
+   "category": "upbeat",
+   "src": "km-hyperfun.mp3",
+   "incompetech": "Hyperfun.mp3",
+   "work": "Hyperfun",
+   "len": 16,
+   "listedBpm": 200
+  },
+  {
+   "catalogId": "audio.hot-swing-180",
+   "file": "hot-swing",
+   "category": "upbeat",
+   "src": "km-hot-swing.mp3",
+   "incompetech": "Hot Swing.mp3",
+   "work": "Hot Swing",
+   "len": 16,
+   "listedBpm": 144
+  },
+  {
+   "catalogId": "audio.lobby-time-096",
+   "file": "lobby-time",
+   "category": "chill",
+   "src": "km-lobby-time.mp3",
+   "incompetech": "Lobby Time.mp3",
+   "work": "Lobby Time",
+   "len": 18,
+   "listedBpm": 128
+  },
+  {
+   "catalogId": "audio.spy-glass-100",
+   "file": "spy-glass",
+   "category": "cinematic",
+   "src": "km-spy-glass.mp3",
+   "incompetech": "Spy Glass.mp3",
+   "work": "Spy Glass",
+   "len": 19,
+   "listedBpm": 110
+  },
+  {
+   "catalogId": "audio.carefree-140",
+   "file": "carefree",
+   "category": "upbeat",
+   "src": "km-carefree.mp3",
+   "incompetech": "Carefree.mp3",
+   "work": "Carefree",
+   "len": 18,
+   "listedBpm": 96
+  }
+ ]
+}

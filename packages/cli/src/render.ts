@@ -279,6 +279,7 @@ export function resolveBeatAudioFile(
   }
   if (beatId) {
     const short = beatId.replace(/^audio\./, "").replace(/-\d+$/, "");
+    candidates.push(join(catalogRoot, "previews", `${short}.m4a`));
     candidates.push(join(catalogRoot, "previews", `${short}.mp3`));
   }
   for (const c of candidates) {

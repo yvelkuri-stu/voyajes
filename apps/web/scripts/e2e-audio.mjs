@@ -114,7 +114,8 @@ const playing = await row.evaluate((e) => e.classList.contains('is-playing') && 
 ok(playing, 'preview ▶ plays with a moving waveform playhead');
 const meta = await row.locator('.vj-ab-meta').textContent();
 const dhol = libAudio.find((i) => i.id === 'lib.audio.festive-dhol');
-ok(meta.includes(`${Math.round(dhol.bpm)} BPM`) && /CC BY/.test(meta), `row shows BPM + licence (${meta.trim()})`);
+const metaN = meta.replace(/\s+/g, ' ').trim();
+ok(metaN.includes(`${Math.round(dhol.bpm)} BPM`) && /CC BY/.test(metaN), `row shows BPM + licence (${metaN})`);
 // beat-sync on, then one-tap Use
 const before = await p.evaluate(() => JSON.parse(localStorage.getItem('voyajes.draft.v1') || '{}'));
 await row.locator('[data-audio-use]').click(); await p.waitForTimeout(1200);
